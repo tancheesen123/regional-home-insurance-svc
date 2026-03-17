@@ -1,0 +1,6 @@
+@ApplicationInforceService.WebAPI_HostAddress = http://localhost:5149
+
+GET {{ApplicationInforceService.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
