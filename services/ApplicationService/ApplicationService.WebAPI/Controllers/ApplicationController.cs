@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ApplicationService.Core.Application.Interfaces;
+using ApplicationService.Core.Domain.Entities;
 
 namespace ApplicationService.WebAPI.Controllers
 {
@@ -7,25 +8,38 @@ namespace ApplicationService.WebAPI.Controllers
     [Route("api/[controller]")]
     public class ApplicationController : ControllerBase
     {
+        private readonly IApplicationRepository _repository;
         private readonly IQuotationServiceClient _quotationClient;
 
-        public ApplicationController(IQuotationServiceClient quotationClient)
+        public ApplicationController(
+            IApplicationRepository repository,
+            IQuotationServiceClient quotationClient)
         {
+            _repository = repository;
             _quotationClient = quotationClient;
         }
 
-        [HttpGet("with-quotation/{quotationId}")]
-        public async Task<IActionResult> GetWithQuotation(Guid quotationId)
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            // ✅ Calls QuotationService internally
-            var quotation = await _quotationClient.GetQuotationAsync(quotationId);
+            var applications = await _repository.GetAllAsync();
+            return Ok(applications);
+        }
 
-            return Ok(new
-            {
-                ApplicationId = Guid.NewGuid(),
-                Status = "Pending",
-                Quotation = quotation  // ← data from QuotationService
-            });
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var application = await _repository.GetByIdAsync(id);
+            if (application == null) return NotFound();
+            return Ok(application);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] ApplicationEntity application)
+        {
+            await _repository.AddAsync(application);
+            await _repository.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetById), new { id = application.Id }, application);
         }
     }
 }

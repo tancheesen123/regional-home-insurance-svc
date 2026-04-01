@@ -1,5 +1,7 @@
-using ApplicationService.Core.Application.Interfaces;
+using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Shared.HttpClients;
+using ApplicationService.Core.Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,9 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+
 builder.Services.AddHttpClient("QuotationService", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:55822");
+    var url = builder.Configuration["ServiceUrls:QuotationService"];
+    client.BaseAddress = new Uri(url);
 });
 
 builder.Services.AddScoped<IQuotationServiceClient, QuotationServiceClient>();

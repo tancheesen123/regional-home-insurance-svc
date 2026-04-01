@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.22" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
@@ -15,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ApplicationService.Core.Application\ApplicationService.Core.Application.csproj" />
     <ProjectReference Include="..\ApplicationService.Infrastructure.Shared\ApplicationService.Infrastructure.Shared.csproj" />
+    <ProjectReference Include="..\ApplicationService.Infrastructure.Persistence\ApplicationService.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
