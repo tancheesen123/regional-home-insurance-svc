@@ -12,6 +12,11 @@ namespace ApplicationService.Infrastructure.Persistence
         {
         }
 
+        protected ApplicationDbContext(DbContextOptions options)
+            : base(options)
+        {
+        }
+
         public DbSet<ApplicationEntity> Applications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
