@@ -4,6 +4,17 @@
     <ProjectReference Include="..\ApplicationService.Core.Domain\ApplicationService.Core.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="AuthService\" />
+    <Folder Include="ValuableService\" />
+    <Folder Include="QuotationService\" />
+    <Folder Include="ProposalService\" />
+    <Folder Include="ProfileService\" />
+    <Folder Include="ProductService\" />
+    <Folder Include="PolicyService\" />
+    <Folder Include="PaymentService\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

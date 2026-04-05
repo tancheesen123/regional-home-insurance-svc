@@ -16,6 +16,23 @@ builder.Services.AddDbContext<IDApplicationDbContext>(options =>
 builder.Services.AddDbContext<KHApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("KHUnityDb")));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DbContextResolver>();
@@ -36,7 +53,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCors("AllowReact");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
