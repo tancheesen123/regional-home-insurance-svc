@@ -37,6 +37,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DbContextResolver>();
 builder.Services.AddScoped<IApplicationRepository, RegionalApplicationRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 
 builder.Services.AddHttpClient("QuotationService", client =>
 {
