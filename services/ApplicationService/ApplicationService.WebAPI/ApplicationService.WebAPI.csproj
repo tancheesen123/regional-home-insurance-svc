@@ -24,4 +24,11 @@
     <ProjectReference Include="..\ApplicationService.Infrastructure.Persistence\ApplicationService.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\IDN\" />
+    <Folder Include="Controllers\KHM\" />
+    <Folder Include="Controllers\PHL\" />
+    <Folder Include="Docs\" />
+  </ItemGroup>
+
 </Project>
