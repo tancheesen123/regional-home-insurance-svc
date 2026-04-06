@@ -1,6 +1,6 @@
 using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Shared.HttpClients;
-using ApplicationService.Core.Application.Interfaces;
+using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
 using ApplicationService.Core.Application.AuthService.Services;
 using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
@@ -44,6 +44,7 @@ builder.Services.AddScoped<IApplicationRepository, RegionalApplicationRepository
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CustomerGetAllQuery).Assembly));
+builder.Services.AddAutoMapper(typeof(CustomerGetAllQuery).Assembly);
 
 builder.Services.AddHttpClient("QuotationService", client =>
 {

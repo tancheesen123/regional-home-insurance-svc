@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApplicationService.Core.Application.DTOs
+namespace ApplicationService.Core.Application.AuthService.DTOs
 {
     // Mirror of QuotationService response
     public class QuotationDto

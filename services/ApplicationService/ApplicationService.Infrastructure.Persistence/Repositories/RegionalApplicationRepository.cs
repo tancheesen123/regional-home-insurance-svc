@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ApplicationService.Core.Application.Interfaces;
 using ApplicationService.Core.Domain.Entities;
+using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 
 namespace ApplicationService.Infrastructure.Persistence.Repositories
 {

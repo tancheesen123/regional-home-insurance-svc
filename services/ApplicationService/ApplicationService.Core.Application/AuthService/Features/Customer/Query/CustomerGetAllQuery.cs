@@ -1,6 +1,7 @@
 ﻿using ApplicationService.Core.Application.AuthService.DTOs;
 using ApplicationService.Core.Application.AuthService.DTOs.Customer;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
+using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
