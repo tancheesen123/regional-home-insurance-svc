@@ -56,5 +56,12 @@ Step to Add new API
 - create service
 - create service interface
 - create repository
--update customerMappingProfile (webAPI -> Extension ->ApplicationServiceExtension)
+-update mapping customerMappingProfile (webAPI -> Extension ->ApplicationServiceExtension)
 -update persistenceServiceExtension (webAPI -> Extension ->PersistenceServiceExtension)
+
+//ignore jwt token
+Adding [AllowAnonymous] to future public endpoints (e.g., registration):
+
+[AllowAnonymous]
+[HttpPost("[action]")]
+public async Task<IActionResult> Register(...) { }

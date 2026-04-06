@@ -1,6 +1,9 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Query;
+using ApplicationService.Core.Application.AuthService.Features.Auth.Command;
+using ApplicationService.Core.Application.AuthService.DTOs.Auth;
 using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 
 namespace ApplicationService.WebAPI.Controllers
@@ -27,10 +30,32 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(customers);
         }
 
+        [AllowAnonymous]
         [HttpGet("[action]")]
         public async Task<IActionResult> AuthGetAll([FromQuery] AuthGetAllQuery filter)
         {
             return Ok(await _mediator.Send(filter));
+        }
+
+        [AllowAnonymous]
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            try
+            {
+                var command = new LoginCommand
+                {
+                    Email    = request.Email,
+                    Password = request.Password
+                };
+
+                var result = await _mediator.Send(command);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
 
         //[HttpGet("{id}")]

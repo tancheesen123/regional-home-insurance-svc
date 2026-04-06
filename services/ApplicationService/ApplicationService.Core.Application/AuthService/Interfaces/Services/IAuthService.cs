@@ -10,5 +10,6 @@ namespace ApplicationService.Core.Application.AuthService.Interfaces.Services
     public interface IAuthService
     {
         Task<AuthGetAllResponse> GetAllCustomerAsync();
+        Task<LoginResponse> LoginAsync(string email, string password);
     }
 }

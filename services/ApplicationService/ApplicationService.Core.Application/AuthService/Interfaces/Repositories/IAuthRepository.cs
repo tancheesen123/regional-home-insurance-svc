@@ -10,5 +10,6 @@ namespace ApplicationService.Core.Application.AuthService.Interfaces.Repositorie
     public interface IAuthRepository
     {
         Task<List<UserAccount>> GetAllAuthAsync();
+        Task<UserAccount?> GetByEmailAsync(string email);
     }
 }

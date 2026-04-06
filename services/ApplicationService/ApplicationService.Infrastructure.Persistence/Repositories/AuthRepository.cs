@@ -17,5 +17,11 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
         {
             return await _resolver.Resolve().UserAccounts.ToListAsync();
         }
+
+        public async Task<UserAccount?> GetByEmailAsync(string email)
+        {
+            return await _resolver.Resolve().UserAccounts
+                .FirstOrDefaultAsync(u => u.Email == email);
+        }
     }
 }
