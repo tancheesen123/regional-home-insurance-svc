@@ -47,3 +47,14 @@ INSERT INTO Customers (CustomerId, Name, IcNumber, Address, Contact, Email, Regi
 ('CUST-ID-001', 'Budi Santoso', 'ID-KTP-3201012345', 'Jl. Sudirman No. 10, Jakarta Pusat, DKI Jakarta', '+62 812 1234 5678', 'budi.santoso@email.id', 'ID', 'USR-ID-001'),
 ('CUST-ID-002', 'Siti Rahayu',  'ID-KTP-3578029876', 'Jl. Raya Darmo No. 55, Surabaya, Jawa Timur',    '+62 813 2345 6789', 'siti.rahayu@email.id',  'ID', 'USR-ID-002'),
 ('CUST-ID-003', 'Agus Widodo',  'ID-KTP-3471034567', 'Jl. Malioboro No. 88, Yogyakarta, DIY',           '+62 814 3456 7890', 'agus.widodo@email.id',  'ID', 'USR-ID-003');
+
+
+Step to Add new API
+- Create new controller
+- create query (inside feature)
+- create response (inside DTO)\
+- create service
+- create service interface
+- create repository
+-update customerMappingProfile (webAPI -> Extension ->ApplicationServiceExtension)
+-update persistenceServiceExtension (webAPI -> Extension ->PersistenceServiceExtension)

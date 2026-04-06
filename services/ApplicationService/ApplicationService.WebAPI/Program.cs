@@ -1,11 +1,5 @@
-using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Shared.HttpClients;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
-using ApplicationService.Core.Application.AuthService.Interfaces.Services;
-using ApplicationService.Core.Application.AuthService.Services;
-using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
-using ApplicationService.Infrastructure.Persistence.Repositories;
-using Microsoft.EntityFrameworkCore;
+using ApplicationService.WebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,12 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<PHApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("PHUnityDb")));
-builder.Services.AddDbContext<IDApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("IDUnityDb")));
-builder.Services.AddDbContext<KHApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("KHUnityDb")));
+
+builder.Services.AddPersistenceServices(builder.Configuration);
+builder.Services.AddApplicationServices();
 
 builder.Services.AddCors(options =>
 {
@@ -34,25 +25,12 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<DbContextResolver>();
-builder.Services.AddScoped<IApplicationRepository, RegionalApplicationRepository>();
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CustomerGetAllQuery).Assembly));
-builder.Services.AddAutoMapper(typeof(CustomerGetAllQuery).Assembly);
-
 builder.Services.AddHttpClient("QuotationService", client =>
 {
     var url = builder.Configuration["ServiceUrls:QuotationService"];
     client.BaseAddress = new Uri(url);
 });
 
-builder.Services.AddScoped<IQuotationServiceClient, QuotationServiceClient>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
