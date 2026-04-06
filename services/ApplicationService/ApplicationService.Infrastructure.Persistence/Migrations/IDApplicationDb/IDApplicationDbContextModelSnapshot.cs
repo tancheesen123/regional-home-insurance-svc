@@ -22,36 +22,483 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ApplicationEntity", b =>
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("CustomerId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("ApplicantName")
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Contact")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("IcNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("PolicyType")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<decimal>("Premium")
-                        .HasColumnType("decimal(18,2)");
+                    b.HasKey("CustomerId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
+                {
+                    b.Property<string>("PaymentId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("GatewayName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProposalId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.HasKey("Id");
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.ToTable("Applications");
+                    b.HasKey("PaymentId");
+
+                    b.HasIndex("GatewayName");
+
+                    b.HasIndex("ProposalId");
+
+                    b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PaymentGateway", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupportedRegions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("PaymentGateways");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>
+                {
+                    b.Property<string>("PolicyId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("CoverageAmount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IssuedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PolicyNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProposalId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("PolicyId");
+
+                    b.HasIndex("ProposalId")
+                        .IsUnique();
+
+                    b.ToTable("Policies");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PolicyDocument", b =>
+                {
+                    b.Property<string>("DocumentId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PolicyId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("DocumentId");
+
+                    b.HasIndex("PolicyId");
+
+                    b.ToTable("PolicyDocuments");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Product", b =>
+                {
+                    b.Property<string>("ProductId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RegionalRate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ProductId");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
+                {
+                    b.Property<string>("ProposalId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("QuotationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("ProposalId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("QuotationId")
+                        .IsUnique();
+
+                    b.ToTable("Proposals");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Quotation", b =>
+                {
+                    b.Property<string>("QuotationId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Premium")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.HasKey("QuotationId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HashedPassword")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserAccounts");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
+                {
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QuotationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("ItemId");
+
+                    b.HasIndex("QuotationId");
+
+                    b.ToTable("ValuableItems");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.UserAccount", "UserAccount")
+                        .WithOne("Customer")
+                        .HasForeignKey("ApplicationService.Core.Domain.Entities.Customer", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UserAccount");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.PaymentGateway", "PaymentGateway")
+                        .WithMany("Payments")
+                        .HasForeignKey("GatewayName")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Proposal", "Proposal")
+                        .WithMany("Payments")
+                        .HasForeignKey("ProposalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PaymentGateway");
+
+                    b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Proposal", "Proposal")
+                        .WithOne("Policy")
+                        .HasForeignKey("ApplicationService.Core.Domain.Entities.Policy", "ProposalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PolicyDocument", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Policy", "Policy")
+                        .WithMany("PolicyDocuments")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Customer", "Customer")
+                        .WithMany("Proposals")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
+                        .WithOne("Proposal")
+                        .HasForeignKey("ApplicationService.Core.Domain.Entities.Proposal", "QuotationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Quotation", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Customer", "Customer")
+                        .WithMany("Quotations")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Product", "Product")
+                        .WithMany("Quotations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
+                        .WithMany("ValuableItems")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
+                {
+                    b.Navigation("Proposals");
+
+                    b.Navigation("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PaymentGateway", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>
+                {
+                    b.Navigation("PolicyDocuments");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Product", b =>
+                {
+                    b.Navigation("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
+                {
+                    b.Navigation("Payments");
+
+                    b.Navigation("Policy")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Quotation", b =>
+                {
+                    b.Navigation("Proposal")
+                        .IsRequired();
+
+                    b.Navigation("ValuableItems");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
+                {
+                    b.Navigation("Customer")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

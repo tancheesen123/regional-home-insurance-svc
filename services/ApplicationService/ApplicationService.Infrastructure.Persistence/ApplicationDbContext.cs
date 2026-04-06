@@ -117,7 +117,8 @@ namespace ApplicationService.Infrastructure.Persistence
 
                 entity.HasOne(e => e.Quotation)
                       .WithOne(q => q.Proposal)
-                      .HasForeignKey<Proposal>(e => e.QuotationId);
+                      .HasForeignKey<Proposal>(e => e.QuotationId)
+                      .OnDelete(DeleteBehavior.NoAction);
             });
 
             // Policy
