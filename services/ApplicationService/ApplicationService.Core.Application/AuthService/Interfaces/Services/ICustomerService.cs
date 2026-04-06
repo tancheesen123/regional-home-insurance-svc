@@ -1,14 +1,9 @@
-﻿using ApplicationService.Core.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ApplicationService.Core.Application.AuthService.DTOs.Customer;
 
 namespace ApplicationService.Core.Application.AuthService.Interfaces.Services
 {
     public interface ICustomerService
     {
-        Task<Customer> GetAllCustomerAsync();
+        Task<CustomerGetAllResponse> GetAllCustomerAsync();
     }
 }

@@ -1,8 +1,11 @@
 using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Shared.HttpClients;
 using ApplicationService.Core.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using ApplicationService.Core.Application.AuthService.Interfaces.Services;
+using ApplicationService.Core.Application.AuthService.Services;
+using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
 using ApplicationService.Infrastructure.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +42,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DbContextResolver>();
 builder.Services.AddScoped<IApplicationRepository, RegionalApplicationRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CustomerGetAllQuery).Assembly));
 
 builder.Services.AddHttpClient("QuotationService", client =>
 {

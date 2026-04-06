@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ApplicationService.Core.Application.AuthService.DTOs
+﻿namespace ApplicationService.Core.Application.AuthService.DTOs.Customer
 {
     public class CustomerGetAllResponse
+    {
+        public List<CustomerDetail> Customers { get; set; } = new();
+    }
+
+    public class CustomerDetail
     {
         public string CustomerId { get; set; }
         public string Name { get; set; }
