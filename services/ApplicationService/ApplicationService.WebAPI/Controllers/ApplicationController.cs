@@ -19,27 +19,27 @@ namespace ApplicationService.WebAPI.Controllers
             _quotationClient = quotationClient;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var applications = await _repository.GetAllAsync();
-            return Ok(applications);
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> GetAll()
+        //{
+        //    var applications = await _repository.GetAllAsync();
+        //    return Ok(applications);
+        //}
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var application = await _repository.GetByIdAsync(id);
-            if (application == null) return NotFound();
-            return Ok(application);
-        }
+        //[HttpGet("{id}")]
+        //public async Task<IActionResult> GetById(Guid id)
+        //{
+        //    var application = await _repository.GetByIdAsync(id);
+        //    if (application == null) return NotFound();
+        //    return Ok(application);
+        //}
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ApplicationEntity application)
-        {
-            await _repository.AddAsync(application);
-            await _repository.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = application.Id }, application);
-        }
+        //[HttpPost]
+        //public async Task<IActionResult> Create([FromBody] ApplicationEntity application)
+        //{
+        //    await _repository.AddAsync(application);
+        //    await _repository.SaveChangesAsync();
+        //    return CreatedAtAction(nameof(GetById), new { id = application.Id }, application);
+        //}
     }
 }

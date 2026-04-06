@@ -13,22 +13,22 @@ namespace ApplicationService.Infrastructure.Persistence
             _context = context;
         }
 
-        public async Task<List<ApplicationEntity>> GetAllAsync()
-        {
-            return await _context.Applications.ToListAsync();
-        }
+        //public async Task<List<ApplicationEntity>> GetAllAsync()
+        //{
+        //    return await _context.Applications.ToListAsync();
+        //}
 
-        public async Task<ApplicationEntity?> GetByIdAsync(Guid id)
-        {
-            return await _context.Applications.FindAsync(id);
-        }
+        //public async Task<ApplicationEntity?> GetByIdAsync(Guid id)
+        //{
+        //    return await _context.Applications.FindAsync(id);
+        //}
 
-        public async Task AddAsync(ApplicationEntity application)
-        {
-            application.Id = Guid.NewGuid();
-            application.CreatedAt = DateTime.UtcNow;
-            await _context.Applications.AddAsync(application);
-        }
+        //public async Task AddAsync(ApplicationEntity application)
+        //{
+        //    application.Id = Guid.NewGuid();
+        //    application.CreatedAt = DateTime.UtcNow;
+        //    await _context.Applications.AddAsync(application);
+        //}
 
         public async Task SaveChangesAsync()
         {
