@@ -1,17 +1,8 @@
 ﻿using ApplicationService.Core.Application.AuthService.DTOs;
 using ApplicationService.Core.Application.AuthService.DTOs.Customer;
-using AutoMapper;
-using Azure;
+using ApplicationService.Core.Application.AuthService.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
-using ApplicationService.Core.Application.AuthService.Interfaces.Services;
 
 namespace ApplicationService.Core.Application.AuthService.Features.Customer.Query
 {

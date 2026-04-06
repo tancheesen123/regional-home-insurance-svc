@@ -1,43 +1,43 @@
-﻿using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
+﻿using ApplicationService.Core.Application.AuthService.DTOs.Customer;
+using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
-using AutoMapper;
 using Microsoft.Extensions.Logging;
-using ApplicationService.Core.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ApplicationService.Core.Application.AuthService.Services
 {
     public class CustomerService : ICustomerService
     {
         private readonly ILogger<CustomerService> _logger;
-        private readonly IMapper _mapper;
         private readonly ICustomerRepository _customerRepository;
 
         public CustomerService(
-            ILogger<CustomerService> logger, 
-            IMapper mapper,
+            ILogger<CustomerService> logger,
             ICustomerRepository customerRepository)
         {
             _logger = logger;
-            _mapper = mapper;
             _customerRepository = customerRepository;
-            
         }
 
-        public async Task<Customer> GetAllCustomerAsync()
+        public async Task<CustomerGetAllResponse> GetAllCustomerAsync()
         {
-            var eventEntity = await _customerRepository.GetAllAsync();
-            //if (eventEntity == null)
-            //{
-            //    throw new NotFoundException("APP001 : No proposal found with the passed ID " + id, ErrorCodeHandler.GetErrorCode("0339"));
-            //}
-            return eventEntity;
+            _logger.LogInformation("=== CustomerService.GetAllCustomerAsync ===");
+
+            var customers = await _customerRepository.GetAllAsync();
+
+            return new CustomerGetAllResponse
+            {
+                Customers = customers.Select(c => new CustomerDetail
+                {
+                    CustomerId = c.CustomerId,
+                    Name      = c.Name,
+                    IcNumber  = c.IcNumber,
+                    Address   = c.Address,
+                    Contact   = c.Contact,
+                    Email     = c.Email,
+                    Region    = c.Region,
+                    UserId    = c.UserId
+                }).ToList()
+            };
         }
     }
-
-
 }

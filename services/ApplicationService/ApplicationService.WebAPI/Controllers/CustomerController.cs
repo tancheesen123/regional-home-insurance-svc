@@ -1,6 +1,4 @@
-﻿using ApplicationService.Core.Domain.Entities;
-using MediatR;
-using Microsoft.AspNetCore.Components.Forms;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
 using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
@@ -12,28 +10,27 @@ namespace ApplicationService.WebAPI.Controllers
     public class CustomerController : ControllerBase
     {
         private readonly ICustomerRepository _repository;
-        private readonly IQuotationServiceClient _quotationClient;
+        private readonly IMediator _mediator;
 
         public CustomerController(
             ICustomerRepository repository,
-            IQuotationServiceClient quotationClient)
+            IMediator mediator)
         {
             _repository = repository;
-            _quotationClient = quotationClient;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var applications = await _repository.GetAllAsync();
-            return Ok(applications);
+            var customers = await _repository.GetAllAsync();
+            return Ok(customers);
         }
 
         [HttpGet("[action]")]
         public async Task<IActionResult> CustomerGetAll([FromQuery] CustomerGetAllQuery filter)
         {
-            //filter.CountryCode = "ID";
-            return Ok(await Mediator.Send(filter));
+            return Ok(await _mediator.Send(filter));
         }
 
         //[HttpGet("{id}")]
