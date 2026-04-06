@@ -13,9 +13,9 @@ namespace ApplicationService.Infrastructure.Persistence
             _resolver = resolver;
         }
 
-        //public async Task<List<ApplicationEntity>> GetAllAsync()
+        //public async Task<List<Customer>> GetAllAsync()
         //{
-        //    return await _resolver.Resolve().Applications.ToListAsync();
+        //    return await _resolver.Resolve().Customers.ToListAsync();
         //}
 
         //public async Task<ApplicationEntity?> GetByIdAsync(Guid id)
