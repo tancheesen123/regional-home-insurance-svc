@@ -2,6 +2,7 @@ using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Shared.HttpClients;
 using ApplicationService.Core.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ApplicationService.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 

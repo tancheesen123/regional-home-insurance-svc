@@ -2,7 +2,7 @@
 using ApplicationService.Core.Application.Interfaces;
 using ApplicationService.Core.Domain.Entities;
 
-namespace ApplicationService.Infrastructure.Persistence
+namespace ApplicationService.Infrastructure.Persistence.Repositories
 {
     public class ApplicationRepository : IApplicationRepository
     {

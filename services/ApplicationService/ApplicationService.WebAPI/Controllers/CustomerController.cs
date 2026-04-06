@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ApplicationService.Core.Application.Interfaces;
-using ApplicationService.Core.Domain.Entities;
+﻿using ApplicationService.Core.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Mvc;
+using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
+using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 
 namespace ApplicationService.WebAPI.Controllers
 {
@@ -24,6 +27,13 @@ namespace ApplicationService.WebAPI.Controllers
         {
             var applications = await _repository.GetAllAsync();
             return Ok(applications);
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> CustomerGetAll([FromQuery] CustomerGetAllQuery filter)
+        {
+            //filter.CountryCode = "ID";
+            return Ok(await Mediator.Send(filter));
         }
 
         //[HttpGet("{id}")]
