@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="AuthService\" />
+    <Folder Include="AuthService\Features\Customer\Commands\" />
     <Folder Include="ValuableService\" />
     <Folder Include="QuotationService\" />
     <Folder Include="ProposalService\" />
@@ -13,6 +13,12 @@
     <Folder Include="ProductService\" />
     <Folder Include="PolicyService\" />
     <Folder Include="PaymentService\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="Azure.Core" Version="1.38.0" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,7 +1,7 @@
 ﻿using System.Net.Http;
 using System.Net.Http.Json;
-using ApplicationService.Core.Application.DTOs;
-using ApplicationService.Core.Application.Interfaces;
+using ApplicationService.Core.Application.AuthService.DTOs;
+using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 
 namespace ApplicationService.Infrastructure.Shared.HttpClients
 {

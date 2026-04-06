@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ApplicationService.Core.Domain.Entities;
 
 
-namespace ApplicationService.Core.Application.AuthService.Interfaces
+namespace ApplicationService.Core.Application.AuthService.Interfaces.Repositories
 {
     public interface ICustomerRepository
     {

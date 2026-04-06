@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ApplicationService.Core.Application.AuthService.DTOs;
 
-namespace ApplicationService.Core.Application.AuthService.Interfaces
+namespace ApplicationService.Core.Application.AuthService.Interfaces.Repositories
 {
     public interface IQuotationServiceClient
     {
