@@ -17,6 +17,19 @@
         public string UserId { get; set; }
     }
 
+    public class GetCustomerByUserIdResponse
+    {
+        public string CustomerId { get; set; }
+        public string Name { get; set; }
+        public string IcNumber { get; set; }
+        public string Address { get; set; }
+        public string Contact { get; set; }
+        public string Email { get; set; }
+        public string Region { get; set; }
+        public string UserId { get; set; }
+        public string? ProfilePictureUrl { get; set; }
+    }
+
     public class UpdateCustomerRequest
     {
         public string Name { get; set; }
