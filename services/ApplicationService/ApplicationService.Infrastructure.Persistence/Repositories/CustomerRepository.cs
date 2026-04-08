@@ -1,21 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 using ApplicationService.Core.Domain.Entities;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 
 namespace ApplicationService.Infrastructure.Persistence.Repositories
 {
-    public class CustomerRepository : ICustomerRepository
+    public class CustomerRepository : GenericRepository<Customer>, ICustomerRepository
     {
-        private readonly DbContextResolver _resolver;
-
-        public CustomerRepository(DbContextResolver resolver)
-        {
-            _resolver = resolver;
-        }
-
-        public async Task<List<Customer>> GetAllAsync()
-        {
-            return await _resolver.Resolve().Customers.ToListAsync();
-        }
+        public CustomerRepository(DbContextResolver resolver) : base(resolver) { }
     }
 }

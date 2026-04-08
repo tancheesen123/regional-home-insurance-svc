@@ -1,15 +1,12 @@
-﻿using ApplicationService.Core.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ApplicationService.Core.Application.Common.Interfaces;
+using ApplicationService.Core.Domain.Entities;
 
 namespace ApplicationService.Core.Application.AuthService.Interfaces.Repositories
 {
-    public interface IAuthRepository
+    public interface IAuthRepository : IGenericRepository<UserAccount>
     {
-        Task<List<UserAccount>> GetAllAuthAsync();
         Task<UserAccount?> GetByEmailAsync(string email);
+        Task RegisterAsync(UserAccount userAccount, Customer customer);
+        Task UpdateIsVerifiedAsync(string userId);
     }
 }

@@ -1,11 +1,11 @@
 ﻿using ApplicationService.Core.Application.AuthService.DTOs;
-using ApplicationService.Core.Application.AuthService.DTOs.Customer;
-using ApplicationService.Core.Application.AuthService.Interfaces.Services;
+using ApplicationService.Core.Application.ProfileService.DTOs.Customer;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace ApplicationService.Core.Application.AuthService.Features.Customer.Query
+namespace ApplicationService.Core.Application.ProfileService.Features.Customer.Query
 {
     public class CustomerGetAllQuery: IRequest<Response<CustomerGetAllResponse>>
     {

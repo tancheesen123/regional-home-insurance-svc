@@ -6,5 +6,7 @@ namespace ApplicationService.Core.Application.AuthService.Settings
         public string Issuer { get; set; }
         public string Audience { get; set; }
         public int ExpiryHours { get; set; }
+        public int VerificationExpiryHours { get; set; }
+        public string BaseUrl { get; set; }
     }
 }

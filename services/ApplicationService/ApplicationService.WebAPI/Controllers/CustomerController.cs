@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
+using ApplicationService.Core.Application.ProfileService.Features.Customer.Query;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 
 namespace ApplicationService.WebAPI.Controllers
 {

@@ -1,10 +1,10 @@
-﻿using ApplicationService.Core.Application.AuthService.DTOs.Customer;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
-using ApplicationService.Core.Application.AuthService.Interfaces.Services;
+﻿using ApplicationService.Core.Application.ProfileService.DTOs.Customer;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 
-namespace ApplicationService.Core.Application.AuthService.Services
+namespace ApplicationService.Core.Application.ProfileService.Services
 {
     public class CustomerService : ICustomerService
     {

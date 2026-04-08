@@ -5,11 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="AuthService\Features\Customer\Commands\" />
+    <Folder Include="AuthService\Mappings\" />
+    <Folder Include="ProfileService\Features\Customer\Commands\" />
     <Folder Include="ValuableService\" />
     <Folder Include="QuotationService\" />
     <Folder Include="ProposalService\" />
-    <Folder Include="ProfileService\" />
     <Folder Include="ProductService\" />
     <Folder Include="PolicyService\" />
     <Folder Include="PaymentService\" />
