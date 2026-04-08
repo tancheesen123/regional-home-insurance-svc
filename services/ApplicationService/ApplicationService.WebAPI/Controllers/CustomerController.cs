@@ -1,5 +1,7 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ApplicationService.Core.Application.ProfileService.DTOs.Customer;
+using ApplicationService.Core.Application.ProfileService.Features.Customer.Command;
 using ApplicationService.Core.Application.ProfileService.Features.Customer.Query;
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 
@@ -17,7 +19,7 @@ namespace ApplicationService.WebAPI.Controllers
             IMediator mediator)
         {
             _repository = repository;
-            _mediator = mediator;
+            _mediator   = mediator;
         }
 
         [HttpGet]
@@ -33,20 +35,34 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(await _mediator.Send(filter));
         }
 
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetById(Guid id)
-        //{
-        //    var application = await _repository.GetByIdAsync(id);
-        //    if (application == null) return NotFound();
-        //    return Ok(application);
-        //}
+        [HttpPost("[action]/{customerId}")]
+        public async Task<IActionResult> UpdateCustomerData(string customerId, [FromBody] UpdateCustomerRequest request)
+        {
+            var command = new UpdateCustomerCommand
+            {
+                CustomerId = customerId,
+                Request    = request
+            };
+            return Ok(await _mediator.Send(command));
+        }
 
-        //[HttpPost]
-        //public async Task<IActionResult> Create([FromBody] ApplicationEntity application)
-        //{
-        //    await _repository.AddAsync(application);
-        //    await _repository.SaveChangesAsync();
-        //    return CreatedAtAction(nameof(GetById), new { id = application.Id }, application);
-        //}
+        [HttpPost("[action]/{customerId}")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfilePicture(string customerId, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file was uploaded." });
+
+            var command = new UploadProfilePictureCommand
+            {
+                CustomerId  = customerId,
+                FileStream  = file.OpenReadStream(),
+                FileName    = file.FileName,
+                ContentType = file.ContentType,
+                FileSize    = file.Length
+            };
+
+            return Ok(await _mediator.Send(command));
+        }
     }
 }

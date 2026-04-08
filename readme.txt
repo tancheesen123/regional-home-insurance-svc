@@ -65,3 +65,6 @@ Adding [AllowAnonymous] to future public endpoints (e.g., registration):
 [AllowAnonymous]
 [HttpPost("[action]")]
 public async Task<IActionResult> Register(...) { }
+
+dotnet ef migrations add AddProfilePictureToCustomer --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI

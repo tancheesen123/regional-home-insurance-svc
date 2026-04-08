@@ -52,6 +52,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("ProfilePicturePath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Region")
                         .IsRequired()
                         .HasMaxLength(2)

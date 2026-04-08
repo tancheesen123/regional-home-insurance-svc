@@ -11,6 +11,7 @@ using ApplicationService.Core.Application.ProfileService.Features.Customer.Query
 using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using ApplicationService.Core.Application.ProfileService.Mappings;
 using ApplicationService.Core.Application.ProfileService.Services;
+using ApplicationService.Core.Application.ProfileService.Settings;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -34,6 +35,7 @@ namespace ApplicationService.WebAPI.Extensions
             // Settings
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+            services.Configure<FileStorageSettings>(configuration.GetSection("FileStorageSettings"));
 
             // JWT Authentication
             var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
