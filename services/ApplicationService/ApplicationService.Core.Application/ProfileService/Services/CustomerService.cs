@@ -31,8 +31,6 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             _fileStorageSettings = fileStorageSettings.Value;
         }
 
-        // ── GetAll ────────────────────────────────────────────────────────────
-
         public async Task<CustomerGetAllResponse> GetAllCustomerAsync()
         {
             _logger.LogInformation("=== CustomerService.GetAllCustomerAsync ===");
@@ -45,7 +43,31 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             };
         }
 
-        // ── UpdateCustomer ────────────────────────────────────────────────────
+        public async Task<GetCustomerByUserIdResponse> GetCustomerByUserIdAsync(string userId)
+        {
+            _logger.LogInformation("=== CustomerService.GetCustomerByIdAsync ===");
+
+            var customer = await _customerRepository.FindAsync(c => c.UserId == userId);
+            if (customer == null)
+                throw new KeyNotFoundException($"No customer found for UserId '{userId}'.");
+
+            var profilePictureUrl = string.IsNullOrEmpty(customer.ProfilePicturePath)
+                ? null
+                : $"{_fileStorageSettings.BaseUrl}/{customer.ProfilePicturePath}";
+
+            return new GetCustomerByUserIdResponse
+            {
+                CustomerId        = customer.CustomerId,
+                Name              = customer.Name,
+                IcNumber          = customer.IcNumber,
+                Address           = customer.Address,
+                Contact           = customer.Contact,
+                Email             = customer.Email,
+                Region            = customer.Region,
+                UserId            = customer.UserId,
+                ProfilePictureUrl = profilePictureUrl
+            };
+        }
 
         public async Task<UpdateCustomerResponse> UpdateCustomerAsync(UpdateCustomerCommand request)
         {

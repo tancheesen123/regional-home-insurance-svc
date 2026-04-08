@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <Folder Include="AuthService\Mappings\" />
-    <Folder Include="ProfileService\Features\Customer\Commands\" />
     <Folder Include="ValuableService\" />
     <Folder Include="QuotationService\" />
     <Folder Include="ProposalService\" />

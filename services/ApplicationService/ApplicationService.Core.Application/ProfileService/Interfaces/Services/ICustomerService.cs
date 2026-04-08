@@ -6,6 +6,7 @@ namespace ApplicationService.Core.Application.ProfileService.Interfaces.Services
     public interface ICustomerService
     {
         Task<CustomerGetAllResponse> GetAllCustomerAsync();
+        Task<GetCustomerByUserIdResponse> GetCustomerByUserIdAsync(string userId);
         Task<UpdateCustomerResponse> UpdateCustomerAsync(UpdateCustomerCommand request);
         Task<UploadProfilePictureResponse> UploadProfilePictureAsync(UploadProfilePictureCommand request);
     }
