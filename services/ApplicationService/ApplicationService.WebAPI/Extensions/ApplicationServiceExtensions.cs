@@ -1,13 +1,16 @@
-using ApplicationService.Core.Application.AuthService.Features.Customer.Query;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Query;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Command;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
-using ApplicationService.Core.Application.AuthService.Mappings;
 using ApplicationService.Core.Application.AuthService.Services;
 using ApplicationService.Core.Application.AuthService.Settings;
+using ApplicationService.Infrastructure.Shared.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using ApplicationService.Core.Application.ProfileService.Features.Customer.Query;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
+using ApplicationService.Core.Application.ProfileService.Mappings;
+using ApplicationService.Core.Application.ProfileService.Services;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -26,9 +29,11 @@ namespace ApplicationService.WebAPI.Extensions
             // Services
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IEmailService, EmailService>();
 
-            // JWT Settings
+            // Settings
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
             // JWT Authentication
             var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();

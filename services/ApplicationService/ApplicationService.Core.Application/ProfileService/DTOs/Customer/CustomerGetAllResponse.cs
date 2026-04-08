@@ -1,4 +1,4 @@
-﻿namespace ApplicationService.Core.Application.AuthService.DTOs.Customer
+﻿namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
 {
     public class CustomerGetAllResponse
     {

@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Query;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Command;
 using ApplicationService.Core.Application.AuthService.DTOs.Auth;
-using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
+using Microsoft.IdentityModel.Tokens;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 
 namespace ApplicationService.WebAPI.Controllers
 {
@@ -43,18 +44,59 @@ namespace ApplicationService.WebAPI.Controllers
         {
             try
             {
-                var command = new LoginCommand
+                var result = await _mediator.Send(new LoginCommand
                 {
                     Email    = request.Email,
                     Password = request.Password
-                };
-
-                var result = await _mediator.Send(command);
+                });
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            try
+            {
+                var result = await _mediator.Send(new RegisterCommand
+                {
+                    Name     = request.Name,
+                    Email    = request.Email,
+                    Password = request.Password,
+                    IcNumber = request.IcNumber,
+                    Address  = request.Address,
+                    Contact  = request.Contact,
+                    Region   = request.Region
+                });
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("[action]")]
+        public async Task<IActionResult> VerifyEmail([FromQuery] string token, [FromQuery] string email)
+        {
+            try
+            {
+                var result = await _mediator.Send(new VerifyEmailCommand { Token = token, Email = email });
+                return Ok(new { message = "Email verified successfully. You can now log in." });
+            }
+            catch (SecurityTokenException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
         }
 
