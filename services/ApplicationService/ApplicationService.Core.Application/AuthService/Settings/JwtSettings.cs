@@ -8,5 +8,6 @@ namespace ApplicationService.Core.Application.AuthService.Settings
         public int ExpiryHours { get; set; }
         public int VerificationExpiryHours { get; set; }
         public string BaseUrl { get; set; }
+        public string FrontendUrl { get; set; }
     }
 }
