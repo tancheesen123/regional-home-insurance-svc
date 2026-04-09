@@ -1,9 +1,11 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Query;
 using ApplicationService.Core.Application.AuthService.Features.Auth.Command;
 using ApplicationService.Core.Application.AuthService.DTOs.Auth;
+using ApplicationService.Core.Application.AuthService.Settings;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 
@@ -15,13 +17,16 @@ namespace ApplicationService.WebAPI.Controllers
     {
         private readonly ICustomerRepository _repository;
         private readonly IMediator _mediator;
+        private readonly JwtSettings _jwtSettings;
 
         public AuthController(
             ICustomerRepository repository,
-            IMediator mediator)
+            IMediator mediator,
+            IOptions<JwtSettings> jwtSettings)
         {
-            _repository = repository;
-            _mediator = mediator;
+            _repository   = repository;
+            _mediator     = mediator;
+            _jwtSettings  = jwtSettings.Value;
         }
 
         [HttpGet]
@@ -87,33 +92,18 @@ namespace ApplicationService.WebAPI.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new VerifyEmailCommand { Token = token, Email = email });
-                return Ok(new { message = "Email verified successfully. You can now log in." });
+                await _mediator.Send(new VerifyEmailCommand { Token = token, Email = email });
+
+                return Redirect($"{_jwtSettings.FrontendUrl}?verified=true");
             }
-            catch (SecurityTokenException ex)
+            catch (SecurityTokenException)
             {
-                return BadRequest(new { message = ex.Message });
+                return Redirect($"{_jwtSettings.FrontendUrl}?verified=false&error=invalid_token");
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return Redirect($"{_jwtSettings.FrontendUrl}?verified=false&error=user_not_found");
             }
         }
-
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetById(Guid id)
-        //{
-        //    var application = await _repository.GetByIdAsync(id);
-        //    if (application == null) return NotFound();
-        //    return Ok(application);
-        //}
-
-        //[HttpPost]
-        //public async Task<IActionResult> Create([FromBody] ApplicationEntity application)
-        //{
-        //    await _repository.AddAsync(application);
-        //    await _repository.SaveChangesAsync();
-        //    return CreatedAtAction(nameof(GetById), new { id = application.Id }, application);
-        //}
     }
 }

@@ -119,7 +119,7 @@ namespace ApplicationService.Core.Application.AuthService.Services
             // Generate verification JWT token (short-lived)
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.VerificationExpiryHours);
             var verificationToken = GenerateJwtToken(userId, request.Email, "email-verification", expiresAt);
-            var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}";
+            var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}&countryCode={request.Region.ToUpper()}";
 
             await _emailService.SendVerificationEmailAsync(request.Email, request.Name, verificationLink);
 

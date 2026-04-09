@@ -23,10 +23,13 @@ namespace ApplicationService.Infrastructure.Persistence
 
         public ApplicationDbContext Resolve()
         {
-            var countryCode = _httpContextAccessor.HttpContext?
-                .Request.Headers["X-Country-Code"]
-                .ToString()
-                .ToUpper();
+            var request     = _httpContextAccessor.HttpContext?.Request;
+            var countryCode = request?.Headers["X-Country-Code"].ToString();
+
+            if (string.IsNullOrEmpty(countryCode))
+                countryCode = request?.Query["countryCode"].ToString();
+
+            countryCode = countryCode?.ToUpper();
 
             return countryCode switch
             {
