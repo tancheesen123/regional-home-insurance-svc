@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class Proposal
+    public class Proposal : TransactionBaseEntity
     {
         public string ProposalId { get; set; }
         public string Status { get; set; } // "PENDING", "INFORCED", "CANCELLED"

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ApplicationService.Core.Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class ApplicationEntity
+    public class ApplicationEntity : TransactionBaseEntity
     {
         public Guid Id { get; set; }
         public string ApplicantName { get; set; }

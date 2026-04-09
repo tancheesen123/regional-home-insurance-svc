@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class ValuableItem
+    public class ValuableItem : TransactionBaseEntity
     {
         public string ItemId { get; set; }
         public string Description { get; set; }

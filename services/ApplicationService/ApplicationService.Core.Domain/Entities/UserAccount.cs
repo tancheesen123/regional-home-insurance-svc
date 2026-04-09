@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class UserAccount
+    public class UserAccount : TransactionBaseEntity
     {
         public string UserId { get; set; }
         public string Email { get; set; }

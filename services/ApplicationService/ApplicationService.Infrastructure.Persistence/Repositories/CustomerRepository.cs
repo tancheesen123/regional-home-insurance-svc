@@ -1,10 +1,23 @@
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 using ApplicationService.Core.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApplicationService.Infrastructure.Persistence.Repositories
 {
     public class CustomerRepository : GenericRepository<Customer>, ICustomerRepository
     {
-        public CustomerRepository(DbContextResolver resolver) : base(resolver) { }
+        private readonly DbContextResolver _resolver;
+
+        public CustomerRepository(DbContextResolver resolver) : base(resolver)
+        {
+            _resolver = resolver;
+        }
+
+        public async Task<Customer?> GetByUserIdAsync(string userId)
+        {
+            return await _resolver.Resolve().Customers
+                .Include(c => c.Address)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+        }
     }
 }

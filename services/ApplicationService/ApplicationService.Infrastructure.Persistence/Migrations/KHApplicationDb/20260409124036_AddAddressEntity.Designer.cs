@@ -4,16 +4,19 @@ using ApplicationService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
+namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    [DbContext(typeof(IDApplicationDbContext))]
-    partial class IDApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(KHApplicationDbContext))]
+    [Migration("20260409124036_AddAddressEntity")]
+    partial class AddAddressEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,12 +85,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -97,9 +94,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -113,12 +107,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -146,12 +134,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -161,9 +143,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
@@ -182,12 +161,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("PaymentId");
 
@@ -208,24 +181,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SupportedRegions")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Name");
 
@@ -241,17 +199,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<decimal>("CoverageAmount")
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("IssuedAt")
                         .HasColumnType("datetime2");
@@ -274,12 +223,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("PolicyId");
 
                     b.HasIndex("ProposalId")
@@ -293,12 +236,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<string>("DocumentId")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -314,19 +251,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("PolicyId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
@@ -344,18 +272,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -368,12 +287,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<string>("RegionalRate")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ProductId");
 
@@ -389,16 +302,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("QuotationId")
                         .IsRequired()
@@ -409,12 +316,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ProposalId");
 
@@ -432,12 +333,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -445,9 +340,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
 
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Premium")
                         .HasColumnType("decimal(10,2)");
@@ -461,12 +353,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("QuotationId");
 
@@ -483,12 +369,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -498,17 +378,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
 
@@ -521,29 +392,14 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("QuotationId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Value")
                         .HasColumnType("decimal(10,2)");

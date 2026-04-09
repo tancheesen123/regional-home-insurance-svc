@@ -3,6 +3,7 @@ using ApplicationService.Core.Application.ProfileService.Features.Customer.Comma
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using ApplicationService.Core.Application.ProfileService.Settings;
+using ApplicationService.Core.Domain.Entities;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,6 +32,8 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             _fileStorageSettings = fileStorageSettings.Value;
         }
 
+        // ── GetAll ────────────────────────────────────────────────────────────
+
         public async Task<CustomerGetAllResponse> GetAllCustomerAsync()
         {
             _logger.LogInformation("=== CustomerService.GetAllCustomerAsync ===");
@@ -43,11 +46,13 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             };
         }
 
+        // ── GetCustomerByUserId ───────────────────────────────────────────────
+
         public async Task<GetCustomerByUserIdResponse> GetCustomerByUserIdAsync(string userId)
         {
-            _logger.LogInformation("=== CustomerService.GetCustomerByIdAsync ===");
+            _logger.LogInformation("=== CustomerService.GetCustomerByUserIdAsync ===");
 
-            var customer = await _customerRepository.FindAsync(c => c.UserId == userId);
+            var customer = await _customerRepository.GetByUserIdAsync(userId);
             if (customer == null)
                 throw new KeyNotFoundException($"No customer found for UserId '{userId}'.");
 
@@ -60,27 +65,61 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                 CustomerId        = customer.CustomerId,
                 Name              = customer.Name,
                 IcNumber          = customer.IcNumber,
-                Address           = customer.Address,
                 Contact           = customer.Contact,
                 Email             = customer.Email,
                 Region            = customer.Region,
                 UserId            = customer.UserId,
-                ProfilePictureUrl = profilePictureUrl
+                ProfilePictureUrl = profilePictureUrl,
+                Address           = customer.Address == null ? null : new AddressDto
+                {
+                    AddressLine1 = customer.Address.AddressLine1,
+                    AddressLine2 = customer.Address.AddressLine2,
+                    City         = customer.Address.City,
+                    Postcode     = customer.Address.Postcode,
+                    State        = customer.Address.State
+                }
             };
         }
+
+        // ── UpdateCustomer ────────────────────────────────────────────────────
 
         public async Task<UpdateCustomerResponse> UpdateCustomerAsync(UpdateCustomerCommand request)
         {
             _logger.LogInformation("=== CustomerService.UpdateCustomerAsync ===");
 
-            var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
+            var customer = await _customerRepository.GetByUserIdAsync(request.CustomerId);
             if (customer == null)
                 throw new KeyNotFoundException($"Customer '{request.CustomerId}' not found.");
 
             customer.Name     = request.Request.Name;
             customer.IcNumber = request.Request.IcNumber;
-            customer.Address  = request.Request.Address;
             customer.Contact  = request.Request.Contact;
+
+            // Update or create address
+            if (request.Request.Address != null)
+            {
+                if (customer.Address != null)
+                {
+                    customer.Address.AddressLine1 = request.Request.Address.AddressLine1;
+                    customer.Address.AddressLine2 = request.Request.Address.AddressLine2;
+                    customer.Address.City         = request.Request.Address.City;
+                    customer.Address.Postcode     = request.Request.Address.Postcode;
+                    customer.Address.State        = request.Request.Address.State;
+                    customer.Address.UpdatedAt    = DateTime.UtcNow;
+                }
+                else
+                {
+                    customer.Address = new AddressEntity
+                    {
+                        Id           = Guid.NewGuid().ToString(),
+                        AddressLine1 = request.Request.Address.AddressLine1,
+                        AddressLine2 = request.Request.Address.AddressLine2,
+                        City         = request.Request.Address.City,
+                        Postcode     = request.Request.Address.Postcode,
+                        State        = request.Request.Address.State
+                    };
+                }
+            }
 
             _customerRepository.Update(customer);
             await _customerRepository.SaveChangesAsync();
@@ -90,8 +129,15 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                 CustomerId = customer.CustomerId,
                 Name       = customer.Name,
                 IcNumber   = customer.IcNumber,
-                Address    = customer.Address,
                 Contact    = customer.Contact,
+                Address    = customer.Address == null ? null : new AddressDto
+                {
+                    AddressLine1 = customer.Address.AddressLine1,
+                    AddressLine2 = customer.Address.AddressLine2,
+                    City         = customer.Address.City,
+                    Postcode     = customer.Address.Postcode,
+                    State        = customer.Address.State
+                },
                 Message    = "Customer data updated successfully."
             };
         }
@@ -102,21 +148,17 @@ namespace ApplicationService.Core.Application.ProfileService.Services
         {
             _logger.LogInformation("=== CustomerService.UploadProfilePictureAsync ===");
 
-            // Validate customer exists
             var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
             if (customer == null)
                 throw new KeyNotFoundException($"Customer '{request.CustomerId}' not found.");
 
-            // Validate file size
             if (request.FileSize > MaxFileSizeBytes)
                 throw new InvalidOperationException("File size exceeds the 5MB limit.");
 
-            // Validate file extension
             var extension = Path.GetExtension(request.FileName).ToLowerInvariant();
             if (!AllowedExtensions.Contains(extension))
                 throw new InvalidOperationException($"File type '{extension}' is not allowed. Allowed: jpg, jpeg, png, gif.");
 
-            // Delete old profile picture if exists
             if (!string.IsNullOrEmpty(customer.ProfilePicturePath))
             {
                 var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), customer.ProfilePicturePath);
@@ -124,12 +166,10 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                     File.Delete(oldFilePath);
             }
 
-            // Ensure upload directory exists
             var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), _fileStorageSettings.UploadPath);
             if (!Directory.Exists(uploadFolder))
                 Directory.CreateDirectory(uploadFolder);
 
-            // Save file as {customerId}{extension}
             var fileName     = $"{request.CustomerId}{extension}";
             var fullFilePath = Path.Combine(uploadFolder, fileName);
 
@@ -138,21 +178,17 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                 await request.FileStream.CopyToAsync(fileStream);
             }
 
-            // Store relative path in DB
             var relativePath = Path.Combine(_fileStorageSettings.UploadPath, fileName).Replace("\\", "/");
             customer.ProfilePicturePath = relativePath;
 
             _customerRepository.Update(customer);
             await _customerRepository.SaveChangesAsync();
 
-            // Build public URL
-            var profilePictureUrl = $"{_fileStorageSettings.BaseUrl}/{relativePath}";
-
             return new UploadProfilePictureResponse
             {
-                CustomerId       = customer.CustomerId,
-                ProfilePictureUrl = profilePictureUrl,
-                Message          = "Profile picture uploaded successfully."
+                CustomerId        = customer.CustomerId,
+                ProfilePictureUrl = $"{_fileStorageSettings.BaseUrl}/{relativePath}",
+                Message           = "Profile picture uploaded successfully."
             };
         }
     }

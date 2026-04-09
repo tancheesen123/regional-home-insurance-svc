@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class Policy
+    public class Policy : TransactionBaseEntity
     {
         public string PolicyId { get; set; }
         public string PolicyNumber { get; set; }

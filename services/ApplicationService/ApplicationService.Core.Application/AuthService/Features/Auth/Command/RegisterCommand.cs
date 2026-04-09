@@ -1,6 +1,7 @@
 using ApplicationService.Core.Application.AuthService.DTOs;
 using ApplicationService.Core.Application.AuthService.DTOs.Auth;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
+using ApplicationService.Core.Application.ProfileService.DTOs.Customer;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -12,9 +13,9 @@ namespace ApplicationService.Core.Application.AuthService.Features.Auth.Command
         public string Email { get; set; }
         public string Password { get; set; }
         public string IcNumber { get; set; }
-        public string Address { get; set; }
         public string Contact { get; set; }
         public string Region { get; set; }
+        public AddressDto? Address { get; set; }
 
         public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Response<RegisterResponse>>
         {
