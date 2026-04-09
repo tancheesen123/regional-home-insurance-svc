@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class PolicyDocument
+    public class PolicyDocument : TransactionBaseEntity
     {
         public string DocumentId { get; set; }
         public string FileName { get; set; }

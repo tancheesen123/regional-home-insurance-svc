@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class Payment
+    public class Payment : TransactionBaseEntity
     {
         public string PaymentId { get; set; }
         public decimal Amount { get; set; }

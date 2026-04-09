@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class Quotation
+    public class Quotation : TransactionBaseEntity
     {
         public string QuotationId { get; set; }
         public decimal Premium { get; set; }

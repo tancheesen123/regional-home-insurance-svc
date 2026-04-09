@@ -100,10 +100,18 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 Name       = request.Name,
                 Email      = request.Email,
                 IcNumber   = request.IcNumber,
-                Address    = request.Address,
                 Contact    = request.Contact,
                 Region     = request.Region.ToUpper(),
-                UserId     = userId
+                UserId     = userId,
+                Address    = request.Address == null ? null : new AddressEntity
+                {
+                    Id           = Guid.NewGuid().ToString(),
+                    AddressLine1 = request.Address.AddressLine1,
+                    AddressLine2 = request.Address.AddressLine2,
+                    City         = request.Address.City,
+                    Postcode     = request.Address.Postcode,
+                    State        = request.Address.State
+                }
             };
 
             await _authRepository.RegisterAsync(userAccount, customer);

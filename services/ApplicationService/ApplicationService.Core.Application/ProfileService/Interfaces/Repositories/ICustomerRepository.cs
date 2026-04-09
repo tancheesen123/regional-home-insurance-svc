@@ -5,5 +5,6 @@ namespace ApplicationService.Core.Application.ProfileService.Interfaces.Reposito
 {
     public interface ICustomerRepository : IGenericRepository<Customer>
     {
+        Task<Customer?> GetByUserIdAsync(string userId);
     }
 }

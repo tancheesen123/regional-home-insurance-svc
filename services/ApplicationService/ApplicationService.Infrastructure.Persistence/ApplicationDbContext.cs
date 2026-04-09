@@ -17,6 +17,7 @@ namespace ApplicationService.Infrastructure.Persistence
 
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<AddressEntity> Addresses { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
         public DbSet<ValuableItem> ValuableItems { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -38,6 +39,20 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.IsVerified).IsRequired();
             });
 
+            // Address
+            modelBuilder.Entity<AddressEntity>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.AddressLine1).HasMaxLength(100);
+                entity.Property(e => e.AddressLine2).HasMaxLength(100);
+                entity.Property(e => e.City).HasMaxLength(100);
+                entity.Property(e => e.Postcode).HasMaxLength(10);
+                entity.Property(e => e.State).HasMaxLength(100);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+            });
+
             // Customer
             modelBuilder.Entity<Customer>(entity =>
             {
@@ -45,7 +60,7 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.IcNumber).HasMaxLength(30);
-                entity.Property(e => e.Address).HasColumnType("TEXT");
+                entity.Property(e => e.AddressId).HasMaxLength(50);
                 entity.Property(e => e.Contact).HasMaxLength(20);
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
@@ -54,6 +69,11 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasOne(e => e.UserAccount)
                       .WithOne(u => u.Customer)
                       .HasForeignKey<Customer>(e => e.UserId);
+
+                entity.HasOne(e => e.Address)
+                      .WithOne(a => a.Customer)
+                      .HasForeignKey<Customer>(e => e.AddressId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Product

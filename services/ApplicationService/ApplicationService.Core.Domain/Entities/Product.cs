@@ -1,6 +1,8 @@
+using ApplicationService.Core.Domain.Common;
+
 namespace ApplicationService.Core.Domain.Entities
 {
-    public class Product
+    public class Product : TransactionBaseEntity
     {
         public string ProductId { get; set; }
         public string Name { get; set; }
