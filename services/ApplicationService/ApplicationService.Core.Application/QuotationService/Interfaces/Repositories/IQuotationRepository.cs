@@ -10,6 +10,8 @@ namespace ApplicationService.Core.Application.QuotationService.Interfaces.Reposi
         Task AddPolicyAsync(Policy policy);
         Task UpdateQuotationStatusAsync(string quotationId, string status);
         Task UpdateQuotationPlanAsync(Quotation quotation);
+        Task<List<ValuableItem>> GetValuablesByQuotationIdAsync(string quotationId);
+        Task ReplaceValuableItemsAsync(string quotationId, List<ValuableItem> newItems);
         Task SaveChangesAsync();
     }
 }

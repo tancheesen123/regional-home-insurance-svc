@@ -107,3 +107,15 @@ dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --con
 dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
 dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
 
+
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
+
+dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+
+dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+
+dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
+
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext

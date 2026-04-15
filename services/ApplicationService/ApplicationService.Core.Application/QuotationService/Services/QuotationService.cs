@@ -155,6 +155,116 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
         }
 
+        // ── DeclareValuables ──────────────────────────────────────────────────
+
+        // Category rules: (maxPerItem, maxTotalPerCategory, premiumRate)
+        private static readonly Dictionary<string, (decimal MaxPerItem, decimal MaxTotal, decimal Rate)> CategoryLimits =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["jewellery"]        = (10_000m, 30_000m, 0.020m),  // 2.0 %
+                ["electronics"]      = ( 8_000m, 20_000m, 0.015m),  // 1.5 %
+                ["artwork"]          = (15_000m, 30_000m, 0.018m),  // 1.8 %
+                ["sports-equipment"] = ( 5_000m, 15_000m, 0.015m),  // 1.5 %
+                ["other"]            = ( 5_000m, 20_000m, 0.015m),  // 1.5 %
+            };
+
+        public async Task<DeclareValuablesResponse> DeclareValuablesAsync(DeclareValuablesRequest request)
+        {
+            _logger.LogInformation("=== QuotationService.DeclareValuablesAsync ===");
+
+            var quotation = await _quotationRepository.GetByIdAsync(request.QuotationId);
+            if (quotation == null)
+                throw new KeyNotFoundException($"Quotation '{request.QuotationId}' not found.");
+
+            if (quotation.Status != "QUOTED")
+                throw new InvalidOperationException($"Quotation is in '{quotation.Status}' status and cannot be modified.");
+
+            if (string.IsNullOrEmpty(quotation.PlanType))
+                throw new InvalidOperationException("Plan has not been customised yet. Call CustomizePlan before declaring valuables.");
+
+            // ── Validate each item ────────────────────────────────────────────
+            var categoryTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in request.Items)
+            {
+                if (!CategoryLimits.TryGetValue(item.Category, out var limits))
+                    throw new ArgumentException($"Unknown category '{item.Category}'. Valid categories: {string.Join(", ", CategoryLimits.Keys)}.");
+
+                if (item.Value <= 0)
+                    throw new ArgumentException($"Item '{item.Description}' must have a value greater than zero.");
+
+                if (item.Value > limits.MaxPerItem)
+                    throw new ArgumentException(
+                        $"'{item.Description}' ({item.Category}) declared value {item.Value:C} exceeds the per-item limit of {limits.MaxPerItem:C}.");
+
+                categoryTotals[item.Category] = categoryTotals.GetValueOrDefault(item.Category) + item.Value;
+            }
+
+            // Validate category totals
+            foreach (var (cat, total) in categoryTotals)
+            {
+                var limits = CategoryLimits[cat];
+                if (total > limits.MaxTotal)
+                    throw new ArgumentException(
+                        $"Total declared value for '{cat}' ({total:C}) exceeds the category limit of {limits.MaxTotal:C}.");
+            }
+
+            // ── Build ValuableItem entities ───────────────────────────────────
+            var now          = DateTime.UtcNow;
+            var itemEntities = request.Items.Select(i => new ValuableItem
+            {
+                ItemId      = Guid.NewGuid().ToString(),
+                Category    = i.Category.ToLower(),
+                Description = i.Description,
+                Value       = i.Value,
+                QuotationId = request.QuotationId,
+                CreatedAt   = now
+            }).ToList();
+
+            // ── Calculate valuables premium ───────────────────────────────────
+            var itemResponses = itemEntities.Select(e =>
+            {
+                var rate    = CategoryLimits[e.Category].Rate;
+                var premium = Math.Round(e.Value * rate, 2);
+                return (Entity: e, Premium: premium);
+            }).ToList();
+
+            decimal totalDeclaredValue = itemResponses.Sum(x => x.Entity.Value);
+            decimal valuablesPremium   = itemResponses.Sum(x => x.Premium);
+
+            // ── Update quotation premium ──────────────────────────────────────
+            // planPremium = whatever CustomizePlan last saved; valuables are additive
+            decimal planPremium  = quotation.Premium;
+            decimal totalPremium = Math.Round(planPremium + valuablesPremium, 2);
+            decimal monthly      = Math.Round(totalPremium / 12, 2);
+
+            quotation.Premium   = totalPremium;
+            quotation.UpdatedAt = now;
+
+            await _quotationRepository.ReplaceValuableItemsAsync(request.QuotationId, itemEntities);
+            await _quotationRepository.UpdateQuotationPlanAsync(quotation);
+            await _quotationRepository.SaveChangesAsync();
+
+            return new DeclareValuablesResponse
+            {
+                QuotationId        = quotation.QuotationId,
+                TotalDeclaredValue = totalDeclaredValue,
+                ValuablesPremium   = valuablesPremium,
+                PlanPremium        = planPremium,
+                TotalPremium       = totalPremium,
+                AnnualPremium      = totalPremium,
+                MonthlyPremium     = monthly,
+                Items = itemResponses.Select(x => new ValuableItemResponse
+                {
+                    ItemId      = x.Entity.ItemId,
+                    Category    = x.Entity.Category,
+                    Description = x.Entity.Description,
+                    Value       = x.Entity.Value,
+                    ItemPremium = x.Premium
+                }).ToList()
+            };
+        }
+
         // ── SubmitPolicy ──────────────────────────────────────────────────────
 
         public async Task<SubmitPolicyResponse> SubmitPolicyAsync(SubmitPolicyRequest request)
