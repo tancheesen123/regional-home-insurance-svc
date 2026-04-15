@@ -17,6 +17,7 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
         {
             return await _resolver.Resolve().Proposals
                 .Include(p => p.Quotation)
+                .Include(p => p.Policy)
                 .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
         }
 
@@ -48,6 +49,29 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             if (quotation != null)
             {
                 quotation.Status    = "LOCKED";
+                quotation.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        public async Task InforceProposalAsync(Proposal proposal, Policy policy)
+        {
+            var context = _resolver.Resolve();
+
+            // Inforce the proposal
+            proposal.Status    = "INFORCED";
+            proposal.UpdatedAt = DateTime.UtcNow;
+            context.Proposals.Update(proposal);
+
+            // Create the policy
+            await context.Policies.AddAsync(policy);
+
+            // Convert the quotation
+            var quotation = await context.Quotations
+                .FirstOrDefaultAsync(q => q.QuotationId == proposal.QuotationId);
+
+            if (quotation != null)
+            {
+                quotation.Status    = "CONVERTED";
                 quotation.UpdatedAt = DateTime.UtcNow;
             }
         }

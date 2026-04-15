@@ -1,0 +1,130 @@
+using ApplicationService.Core.Application.PaymentService.DTOs;
+using ApplicationService.Core.Application.PaymentService.Features.Payment.Command;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using ApplicationService.Core.Application.PaymentService.Settings;
+
+namespace ApplicationService.WebAPI.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PaymentController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+        private readonly StripeSettings _stripeSettings;
+
+        public PaymentController(IMediator mediator, IOptions<StripeSettings> stripeOptions)
+        {
+            _mediator = mediator;
+            _stripeSettings = stripeOptions.Value;
+        }
+
+        /// <summary>
+        /// Step 6 — Initiate a Stripe Checkout Session for a PENDING proposal.
+        /// Returns a CheckoutUrl — redirect the customer there to complete payment.
+        /// </summary>
+        [HttpPost("[action]")]
+        public async Task<IActionResult> InitiatePayment([FromBody] InitiatePaymentRequest request)
+        {
+            try
+            {
+                var command = new InitiatePaymentCommand { Request = request };
+                return Ok(await _mediator.Send(command));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Stripe.StripeException ex)
+            {
+                return BadRequest(new { message = $"Stripe error: {ex.StripeError?.Message ?? ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Step 7a — Backend redirect endpoint called by Stripe after successful payment.
+        /// Stripe appends ?session_id={CHECKOUT_SESSION_ID} to SuccessUrl automatically.
+        /// This endpoint verifies the session with Stripe, updates Payment → SUCCESS,
+        /// inforces the Proposal, creates the Policy, then redirects the browser to the
+        /// frontend success page (FrontendSuccessUrl).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("[action]")]
+        public async Task<IActionResult> ConfirmPayment([FromQuery] string session_id)
+        {
+            if (string.IsNullOrWhiteSpace(session_id))
+                return BadRequest(new { message = "Missing session_id query parameter." });
+
+            try
+            {
+                var command = new ConfirmPaymentCommand { SessionId = session_id };
+                var result  = await _mediator.Send(command);
+
+                // Redirect the customer's browser to the frontend success page
+                return Redirect(result.RedirectUrl);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                // Redirect to frontend with error so the user sees a friendly message
+                var errorUrl = $"{_stripeSettings.FrontendSuccessUrl}?error={Uri.EscapeDataString(ex.Message)}";
+                return Redirect(errorUrl);
+            }
+            catch (InvalidOperationException ex)
+            {
+                var errorUrl = $"{_stripeSettings.FrontendSuccessUrl}?error={Uri.EscapeDataString(ex.Message)}";
+                return Redirect(errorUrl);
+            }
+            catch (Exception ex)
+            {
+                var errorUrl = $"{_stripeSettings.FrontendSuccessUrl}?error={Uri.EscapeDataString("Payment confirmation failed. Please contact support.")}";
+                return Redirect(errorUrl);
+            }
+        }
+
+        /// <summary>
+        /// Step 7 — Stripe webhook callback.
+        /// Called by Stripe's servers after payment completes or expires.
+        /// Verifies the Stripe-Signature header, then updates payment + proposal + policy.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Callback()
+        {
+            // Read the raw body — must NOT use [FromBody].
+            // Stripe verifies the exact byte content; any deserialisation breaks the signature.
+            string json;
+            using (var reader = new StreamReader(HttpContext.Request.Body))
+                json = await reader.ReadToEndAsync();
+
+            var signature = Request.Headers["Stripe-Signature"].ToString();
+
+            if (string.IsNullOrEmpty(signature))
+                return BadRequest(new { message = "Missing Stripe-Signature header." });
+
+            try
+            {
+                var command = new PaymentCallbackCommand { Json = json, StripeSignature = signature };
+                return Ok(await _mediator.Send(command));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Return 500 so Stripe retries the event — do not swallow silently
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+    }
+}

@@ -119,3 +119,35 @@ dotnet ef migrations add AddValuableItemCategory --startup-project "..\Applicati
 dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
 dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
 dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
+
+
+
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
+
+dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+
+dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+
+dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
+
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
+
+
+1. Install NuGet package
+   cd ApplicationService.Core.Application
+   dotnet add package Stripe.net
+
+2. Get your keys from https://dashboard.stripe.com/apikeys
+   sk_test_...   → StripeSettings:SecretKey
+   pk_test_...   → StripeSettings:PublishableKey
+
+3. Create a webhook endpoint in Stripe Dashboard
+   URL: https://yourdomain.com/api/payment/Callback   (Step 7)
+   Events to listen for:
+     ✓ checkout.session.completed
+     ✓ checkout.session.expired
+   Copy the signing secret (whsec_...) → StripeSettings:WebhookSecret
+
+4. Update appsettings.json with the real values

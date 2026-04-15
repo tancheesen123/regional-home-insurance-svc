@@ -12,6 +12,10 @@ using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using ApplicationService.Core.Application.ProfileService.Mappings;
 using ApplicationService.Core.Application.ProfileService.Services;
 using ApplicationService.Core.Application.ProfileService.Settings;
+using ApplicationService.Core.Application.PaymentService.Features.Payment.Command;
+using ApplicationService.Core.Application.PaymentService.Interfaces.Services;
+using ApplicationService.Core.Application.PaymentService.Services;
+using ApplicationService.Core.Application.PaymentService.Settings;
 using ApplicationService.Core.Application.ProposalService.Features.Proposal.Command;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using ApplicationService.Core.Application.ProposalService.Services;
@@ -34,6 +38,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetQuoteCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateProposalCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InitiatePaymentCommand).Assembly));
 
             // Services
             services.AddScoped<ICustomerService, CustomerService>();
@@ -41,6 +46,11 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IQuotationService, QuotationService>();
             services.AddScoped<IProposalService, ProposalService>();
+            services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IStripeService, StripeService>();
+
+            // Settings
+            services.Configure<StripeSettings>(configuration.GetSection("StripeSettings"));
 
             // Settings
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));

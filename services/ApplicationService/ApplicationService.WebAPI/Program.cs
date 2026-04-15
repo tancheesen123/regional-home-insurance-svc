@@ -1,8 +1,13 @@
 using ApplicationService.Infrastructure.Shared.HttpClients;
 using ApplicationService.WebAPI.Extensions;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi.Models;
+
+// Load .env before the configuration system builds so all
+// environment variables are available to IConfiguration.
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
