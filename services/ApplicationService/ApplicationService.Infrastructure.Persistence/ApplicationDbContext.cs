@@ -121,11 +121,21 @@ namespace ApplicationService.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.QuotationId);
                 entity.Property(e => e.QuotationId).HasMaxLength(50);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.Premium).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.ExpiryDate).IsRequired();
                 entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
                 entity.Property(e => e.ProductId).HasMaxLength(50);
+                entity.Property(e => e.OwnershipType).HasMaxLength(10);
+                entity.Property(e => e.PropertyType).HasMaxLength(20);
+                entity.Property(e => e.PropertySubType).HasMaxLength(50);
+                entity.Property(e => e.ConstructionType).HasMaxLength(20);
+                entity.Property(e => e.Postcode).HasMaxLength(10);
+                entity.Property(e => e.IdType).HasMaxLength(20);
+                entity.Property(e => e.IdNumber).HasMaxLength(30);
+                entity.Property(e => e.Nationality).HasMaxLength(50);
+                entity.Property(e => e.DateOfBirth).HasMaxLength(20);
 
                 entity.HasOne(e => e.Customer)
                       .WithMany(c => c.Quotations)
@@ -133,7 +143,8 @@ namespace ApplicationService.Infrastructure.Persistence
 
                 entity.HasOne(e => e.Product)
                       .WithMany(p => p.Quotations)
-                      .HasForeignKey(e => e.ProductId);
+                      .HasForeignKey(e => e.ProductId)
+                      .IsRequired(false);
             });
 
             // ValuableItem
@@ -156,9 +167,31 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasKey(e => e.ProposalId);
                 entity.Property(e => e.ProposalId).HasMaxLength(50);
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.CreatedAt).IsRequired();
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
                 entity.Property(e => e.QuotationId).HasMaxLength(50);
+                entity.Property(e => e.Name).HasMaxLength(100);
+                entity.Property(e => e.IdType).HasMaxLength(20);
+                entity.Property(e => e.IdNumber).HasMaxLength(30);
+                entity.Property(e => e.Nationality).HasMaxLength(50);
+                entity.Property(e => e.Race).HasMaxLength(30);
+                entity.Property(e => e.Gender).HasMaxLength(10);
+                entity.Property(e => e.DateOfBirth).HasMaxLength(20);
+                entity.Property(e => e.MobileNumber).HasMaxLength(20);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.Property(e => e.PropAddressLine1).HasMaxLength(100);
+                entity.Property(e => e.PropAddressLine2).HasMaxLength(100);
+                entity.Property(e => e.PropCity).HasMaxLength(100);
+                entity.Property(e => e.PropPostcode).HasMaxLength(10);
+                entity.Property(e => e.PropState).HasMaxLength(100);
+                entity.Property(e => e.PropCountry).HasMaxLength(100);
+                entity.Property(e => e.MailAddressLine1).HasMaxLength(100);
+                entity.Property(e => e.MailAddressLine2).HasMaxLength(100);
+                entity.Property(e => e.MailCity).HasMaxLength(100);
+                entity.Property(e => e.MailPostcode).HasMaxLength(10);
+                entity.Property(e => e.MailState).HasMaxLength(100);
+                entity.Property(e => e.MailCountry).HasMaxLength(100);
+                entity.Property(e => e.BankName).HasMaxLength(50);
+                entity.Property(e => e.BankAccountNumber).HasMaxLength(30);
 
                 entity.HasOne(e => e.Customer)
                       .WithMany(c => c.Proposals)
