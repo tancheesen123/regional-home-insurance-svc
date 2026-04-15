@@ -48,6 +48,27 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             return Task.CompletedTask;
         }
 
+        public async Task<List<ValuableItem>> GetValuablesByQuotationIdAsync(string quotationId)
+        {
+            return await _resolver.Resolve().ValuableItems
+                .Where(v => v.QuotationId == quotationId)
+                .ToListAsync();
+        }
+
+        public async Task ReplaceValuableItemsAsync(string quotationId, List<ValuableItem> newItems)
+        {
+            var context  = _resolver.Resolve();
+            var existing = await context.ValuableItems
+                .Where(v => v.QuotationId == quotationId)
+                .ToListAsync();
+
+            if (existing.Any())
+                context.ValuableItems.RemoveRange(existing);
+
+            if (newItems.Any())
+                await context.ValuableItems.AddRangeAsync(newItems);
+        }
+
         public async Task SaveChangesAsync()
         {
             await _resolver.Resolve().SaveChangesAsync();

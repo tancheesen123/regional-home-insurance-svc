@@ -163,6 +163,7 @@ namespace ApplicationService.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.ItemId);
                 entity.Property(e => e.ItemId).HasMaxLength(50);
+                entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
                 entity.Property(e => e.Description).HasColumnType("TEXT");
                 entity.Property(e => e.Value).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.QuotationId).HasMaxLength(50);

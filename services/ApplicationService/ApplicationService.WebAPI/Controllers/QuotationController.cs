@@ -63,6 +63,28 @@ namespace ApplicationService.WebAPI.Controllers
         }
 
         [HttpPost("[action]")]
+        public async Task<IActionResult> DeclareValuables([FromBody] DeclareValuablesRequest request)
+        {
+            try
+            {
+                var command = new DeclareValuablesCommand { Request = request };
+                return Ok(await _mediator.Send(command));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("[action]")]
         public async Task<IActionResult> SubmitPolicy([FromBody] SubmitPolicyRequest request)
         {
             try
