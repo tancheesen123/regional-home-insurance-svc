@@ -93,9 +93,9 @@ namespace ApplicationService.Core.Application.ProfileService.Services
         {
             _logger.LogInformation("=== CustomerService.UpdateCustomerAsync ===");
 
-            var customer = await _customerRepository.GetByUserIdAsync(request.CustomerId);
+            var customer = await _customerRepository.GetByUserIdAsync(request.UserId);
             if (customer == null)
-                throw new KeyNotFoundException($"Customer '{request.CustomerId}' not found.");
+                throw new KeyNotFoundException($"No customer found for UserId '{request.UserId}'.");
 
             customer.FirstName   = request.Request.FirstName;
             customer.LastName    = request.Request.LastName;
