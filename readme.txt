@@ -81,5 +81,15 @@ dotnet ef database update --context IDApplicationDbContext --startup-project "..
 dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
 
 
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
 
+dotnet ef migrations add RemoveProfilePicturePath --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef migrations add RemoveProfilePicturePath --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef migrations add RemoveProfilePicturePath --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+
+dotnet ef database update --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef database update --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+
+s
 

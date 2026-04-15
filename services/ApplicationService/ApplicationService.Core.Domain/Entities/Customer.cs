@@ -17,7 +17,6 @@ namespace ApplicationService.Core.Domain.Entities
         public string Email { get; set; }
         public string Region { get; set; }          // "KH", "PH", "ID"
         public string UserId { get; set; }
-        public string? ProfilePicturePath { get; set; }
 
         // Navigation
         public UserAccount UserAccount { get; set; }
