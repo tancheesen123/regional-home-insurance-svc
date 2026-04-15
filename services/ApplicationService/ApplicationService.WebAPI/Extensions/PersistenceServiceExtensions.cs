@@ -1,6 +1,7 @@
 using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 using ApplicationService.Core.Application.Common.Interfaces;
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
+using ApplicationService.Core.Application.ProposalService.Interfaces.Repositories;
 using ApplicationService.Core.Application.QuotationService.Interfaces.Repositories;
 using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Persistence.Repositories;
@@ -31,6 +32,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IQuotationRepository, QuotationRepository>();
+            services.AddScoped<IProposalRepository, ProposalRepository>();
 
             return services;
         }
