@@ -5,6 +5,7 @@ namespace ApplicationService.Core.Application.QuotationService.Interfaces.Servic
     public interface IQuotationService
     {
         Task<GetQuoteResponse> GetQuoteAsync(GetQuoteRequest request, string region);
+        Task<CustomizePlanResponse> CustomizePlanAsync(CustomizePlanRequest request);
         Task<SubmitPolicyResponse> SubmitPolicyAsync(SubmitPolicyRequest request);
     }
 }

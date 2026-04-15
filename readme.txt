@@ -91,5 +91,19 @@ dotnet ef database update --context PHApplicationDbContext --startup-project "..
 dotnet ef database update --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
 dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
 
-s
+
+
+# From the Persistence project folder
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
+
+dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+
+dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+
+dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
+
+# Then update all three DBs
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
+dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
 
