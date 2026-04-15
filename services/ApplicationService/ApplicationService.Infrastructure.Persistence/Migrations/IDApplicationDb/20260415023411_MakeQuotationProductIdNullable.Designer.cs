@@ -4,6 +4,7 @@ using ApplicationService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
 {
     [DbContext(typeof(IDApplicationDbContext))]
-    partial class IDApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260415023411_MakeQuotationProductIdNullable")]
+    partial class MakeQuotationProductIdNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

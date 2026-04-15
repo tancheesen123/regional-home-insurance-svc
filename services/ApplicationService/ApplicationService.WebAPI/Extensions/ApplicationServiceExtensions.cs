@@ -12,6 +12,9 @@ using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using ApplicationService.Core.Application.ProfileService.Mappings;
 using ApplicationService.Core.Application.ProfileService.Services;
 using ApplicationService.Core.Application.ProfileService.Settings;
+using ApplicationService.Core.Application.QuotationService.Features.Quotation.Command;
+using ApplicationService.Core.Application.QuotationService.Interfaces.Services;
+using ApplicationService.Core.Application.QuotationService.Services;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -26,11 +29,13 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CustomerGetAllQuery).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AuthGetAllQuery).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetQuoteCommand).Assembly));
 
             // Services
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IQuotationService, QuotationService>();
 
             // Settings
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
