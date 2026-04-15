@@ -8,7 +8,7 @@ namespace ApplicationService.Core.Application.ProfileService.Features.Customer.C
 {
     public class UpdateCustomerCommand : IRequest<Response<UpdateCustomerResponse>>
     {
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
         public UpdateCustomerRequest Request { get; set; }
 
         public class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerCommand, Response<UpdateCustomerResponse>>

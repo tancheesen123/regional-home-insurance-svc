@@ -41,14 +41,9 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(await _mediator.Send(query));
         }
 
-        [HttpPost("[action]/{customerId}")]
-        public async Task<IActionResult> UpdateCustomerData(string customerId, [FromBody] UpdateCustomerRequest request)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> UpdateCustomerData([FromBody] UpdateCustomerCommand command)
         {
-            var command = new UpdateCustomerCommand
-            {
-                CustomerId = customerId,
-                Request    = request
-            };
             return Ok(await _mediator.Send(command));
         }
 
