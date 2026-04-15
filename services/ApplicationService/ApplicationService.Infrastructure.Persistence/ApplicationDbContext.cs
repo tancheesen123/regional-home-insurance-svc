@@ -137,6 +137,17 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.Nationality).HasMaxLength(50);
                 entity.Property(e => e.DateOfBirth).HasMaxLength(20);
 
+                // Plan & Sums Insured
+                entity.Property(e => e.PlanType).HasMaxLength(20);
+                entity.Property(e => e.BuildingSum).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ContentsSum).HasColumnType("decimal(15,2)");
+
+                // Add-on flags stored as bit columns (EF Core default for bool)
+                entity.Property(e => e.HasRiotStrike).HasDefaultValue(false);
+                entity.Property(e => e.HasExtendedTheft).HasDefaultValue(false);
+                entity.Property(e => e.HasAlternativeAccommodation).HasDefaultValue(false);
+                entity.Property(e => e.HasPublicLiability).HasDefaultValue(false);
+
                 entity.HasOne(e => e.Customer)
                       .WithMany(c => c.Quotations)
                       .HasForeignKey(e => e.CustomerId);

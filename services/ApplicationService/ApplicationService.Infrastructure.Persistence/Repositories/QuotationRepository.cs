@@ -42,6 +42,12 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 quotation.Status = status;
         }
 
+        public Task UpdateQuotationPlanAsync(Quotation quotation)
+        {
+            _resolver.Resolve().Quotations.Update(quotation);
+            return Task.CompletedTask;
+        }
+
         public async Task SaveChangesAsync()
         {
             await _resolver.Resolve().SaveChangesAsync();

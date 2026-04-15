@@ -30,6 +30,17 @@ namespace ApplicationService.Core.Domain.Entities
         public string? Nationality { get; set; }
         public string? DateOfBirth { get; set; }
 
+        // Plan & Sums Insured (populated by CustomizePlan)
+        public string? PlanType { get; set; }            // "building" | "contents" | "building-contents"
+        public decimal? BuildingSum { get; set; }
+        public decimal? ContentsSum { get; set; }
+
+        // Add-ons
+        public bool HasRiotStrike { get; set; }
+        public bool HasExtendedTheft { get; set; }
+        public bool HasAlternativeAccommodation { get; set; }
+        public bool HasPublicLiability { get; set; }
+
         // Navigation
         public Customer Customer { get; set; }
         public Product Product { get; set; }

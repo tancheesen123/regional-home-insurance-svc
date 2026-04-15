@@ -1,6 +1,7 @@
 using ApplicationService.Core.Application.QuotationService.DTOs;
 using ApplicationService.Core.Application.QuotationService.Features.Quotation.Command;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApplicationService.WebAPI.Controllers
@@ -34,6 +35,28 @@ namespace ApplicationService.WebAPI.Controllers
                 return NotFound(new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> CustomizePlan([FromBody] CustomizePlanRequest request)
+        {
+            try
+            {
+                var command = new CustomizePlanCommand { Request = request };
+                return Ok(await _mediator.Send(command));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
