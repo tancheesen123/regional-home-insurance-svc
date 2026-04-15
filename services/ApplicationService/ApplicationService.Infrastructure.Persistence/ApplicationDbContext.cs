@@ -18,6 +18,7 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AddressEntity> Addresses { get; set; }
+        public DbSet<CustomerPaymentMethod> CustomerPaymentMethods { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
         public DbSet<ValuableItem> ValuableItems { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -49,6 +50,7 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.City).HasMaxLength(100);
                 entity.Property(e => e.Postcode).HasMaxLength(10);
                 entity.Property(e => e.State).HasMaxLength(100);
+                entity.Property(e => e.Country).HasMaxLength(100);
                 entity.Property(e => e.CreatedBy).HasMaxLength(50);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
             });
@@ -58,13 +60,20 @@ namespace ApplicationService.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.CustomerId);
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.IcNumber).HasMaxLength(30);
+                entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.DateOfBirth).HasMaxLength(20);
+                entity.Property(e => e.Gender).HasMaxLength(10);
+                entity.Property(e => e.Nationality).HasMaxLength(100);
+                entity.Property(e => e.IdType).HasMaxLength(20);
+                entity.Property(e => e.IdNumber).HasMaxLength(30);
                 entity.Property(e => e.AddressId).HasMaxLength(50);
                 entity.Property(e => e.Contact).HasMaxLength(20);
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
                 entity.Property(e => e.UserId).HasMaxLength(50);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
                 entity.HasOne(e => e.UserAccount)
                       .WithOne(u => u.Customer)
@@ -74,6 +83,26 @@ namespace ApplicationService.Infrastructure.Persistence
                       .WithOne(a => a.Customer)
                       .HasForeignKey<Customer>(e => e.AddressId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // CustomerPaymentMethod
+            modelBuilder.Entity<CustomerPaymentMethod>(entity =>
+            {
+                entity.HasKey(e => e.PaymentMethodId);
+                entity.Property(e => e.PaymentMethodId).HasMaxLength(50);
+                entity.Property(e => e.CustomerId).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.CardType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.LastFourDigits).IsRequired().HasMaxLength(4);
+                entity.Property(e => e.ExpiryMonth).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.ExpiryYear).IsRequired().HasMaxLength(4);
+                entity.Property(e => e.CardHolderName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.IsPrimary).IsRequired();
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasOne(e => e.Customer)
+                      .WithMany(c => c.PaymentMethods)
+                      .HasForeignKey(e => e.CustomerId);
             });
 
             // Product

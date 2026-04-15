@@ -68,3 +68,18 @@ public async Task<IActionResult> Register(...) { }
 
 dotnet ef migrations add AddProfilePictureToCustomer --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
 dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+
+
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
+
+dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+
+dotnet ef database update --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef database update --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
+
+
+
+
