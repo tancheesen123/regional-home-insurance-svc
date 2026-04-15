@@ -263,13 +263,18 @@ namespace ApplicationService.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.PaymentId);
                 entity.Property(e => e.PaymentId).HasMaxLength(50);
+                entity.Property(e => e.ReferenceNumber).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Amount).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Currency).HasMaxLength(10);
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.PaymentMethod).HasMaxLength(30);
                 entity.Property(e => e.GatewayName).HasMaxLength(50);
                 entity.Property(e => e.TransactionId).HasMaxLength(100);
+                entity.Property(e => e.PaymentUrl).HasColumnType("TEXT");
                 entity.Property(e => e.PaymentDate).IsRequired();
                 entity.Property(e => e.ProposalId).HasMaxLength(50);
+
+                entity.HasIndex(e => e.ReferenceNumber).IsUnique();
 
                 entity.HasOne(e => e.Proposal)
                       .WithMany(p => p.Payments)
@@ -277,7 +282,8 @@ namespace ApplicationService.Infrastructure.Persistence
 
                 entity.HasOne(e => e.PaymentGateway)
                       .WithMany(g => g.Payments)
-                      .HasForeignKey(e => e.GatewayName);
+                      .HasForeignKey(e => e.GatewayName)
+                      .IsRequired(false);
             });
         }
     }

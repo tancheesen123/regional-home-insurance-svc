@@ -20,6 +20,12 @@ namespace ApplicationService.Core.Application.ProposalService.Interfaces.Reposit
         /// </summary>
         Task CreateProposalAndLockQuotationAsync(Proposal proposal);
 
+        /// <summary>
+        /// Sets proposal status to "INFORCED", creates the Policy record,
+        /// and sets the linked quotation status to "CONVERTED" — all in one unit-of-work.
+        /// </summary>
+        Task InforceProposalAsync(Proposal proposal, Policy policy);
+
         Task SaveChangesAsync();
     }
 }
