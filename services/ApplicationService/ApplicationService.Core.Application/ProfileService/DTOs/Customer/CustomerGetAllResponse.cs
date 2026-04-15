@@ -42,7 +42,6 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
         public string Email { get; set; }
         public string Region { get; set; }
         public string UserId { get; set; }
-        public string? ProfilePictureUrl { get; set; }
         public AddressDto? Address { get; set; }
     }
 
@@ -57,13 +56,6 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
         public string IdNumber { get; set; }
         public string Contact { get; set; }
         public AddressDto? Address { get; set; }
-    }
-
-    public class UploadProfilePictureResponse
-    {
-        public string CustomerId { get; set; }
-        public string ProfilePictureUrl { get; set; }
-        public string Message { get; set; }
     }
 
     public class UpdateCustomerResponse

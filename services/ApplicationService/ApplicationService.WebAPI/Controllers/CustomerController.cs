@@ -47,23 +47,5 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(await _mediator.Send(command));
         }
 
-        [HttpPost("[action]/{customerId}")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadProfilePicture(string customerId, IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest(new { message = "No file was uploaded." });
-
-            var command = new UploadProfilePictureCommand
-            {
-                CustomerId  = customerId,
-                FileStream  = file.OpenReadStream(),
-                FileName    = file.FileName,
-                ContentType = file.ContentType,
-                FileSize    = file.Length
-            };
-
-            return Ok(await _mediator.Send(command));
-        }
     }
 }
