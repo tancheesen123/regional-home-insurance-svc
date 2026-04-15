@@ -15,6 +15,8 @@ namespace ApplicationService.Core.Domain.Entities
         public string? Postcode { get; set; }
         [MaxLength(100)]
         public string? State { get; set; }
+        [MaxLength(100)]
+        public string? Country { get; set; }
 
         // Navigation
         public Customer? Customer { get; set; }

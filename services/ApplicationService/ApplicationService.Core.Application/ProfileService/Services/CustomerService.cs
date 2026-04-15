@@ -63,8 +63,13 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             return new GetCustomerByUserIdResponse
             {
                 CustomerId        = customer.CustomerId,
-                Name              = customer.Name,
-                IcNumber          = customer.IcNumber,
+                FirstName         = customer.FirstName,
+                LastName          = customer.LastName,
+                DateOfBirth       = customer.DateOfBirth,
+                Gender            = customer.Gender,
+                Nationality       = customer.Nationality,
+                IdType            = customer.IdType,
+                IdNumber          = customer.IdNumber,
                 Contact           = customer.Contact,
                 Email             = customer.Email,
                 Region            = customer.Region,
@@ -76,7 +81,8 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                     AddressLine2 = customer.Address.AddressLine2,
                     City         = customer.Address.City,
                     Postcode     = customer.Address.Postcode,
-                    State        = customer.Address.State
+                    State        = customer.Address.State,
+                    Country      = customer.Address.Country
                 }
             };
         }
@@ -91,9 +97,15 @@ namespace ApplicationService.Core.Application.ProfileService.Services
             if (customer == null)
                 throw new KeyNotFoundException($"Customer '{request.CustomerId}' not found.");
 
-            customer.Name     = request.Request.Name;
-            customer.IcNumber = request.Request.IcNumber;
-            customer.Contact  = request.Request.Contact;
+            customer.FirstName   = request.Request.FirstName;
+            customer.LastName    = request.Request.LastName;
+            customer.DateOfBirth = request.Request.DateOfBirth;
+            customer.Gender      = request.Request.Gender;
+            customer.Nationality = request.Request.Nationality;
+            customer.IdType      = request.Request.IdType;
+            customer.IdNumber    = request.Request.IdNumber;
+            customer.Contact     = request.Request.Contact;
+            customer.UpdatedAt   = DateTime.UtcNow;
 
             // Update or create address
             if (request.Request.Address != null)
@@ -105,6 +117,7 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                     customer.Address.City         = request.Request.Address.City;
                     customer.Address.Postcode     = request.Request.Address.Postcode;
                     customer.Address.State        = request.Request.Address.State;
+                    customer.Address.Country      = request.Request.Address.Country;
                     customer.Address.UpdatedAt    = DateTime.UtcNow;
                 }
                 else
@@ -116,7 +129,8 @@ namespace ApplicationService.Core.Application.ProfileService.Services
                         AddressLine2 = request.Request.Address.AddressLine2,
                         City         = request.Request.Address.City,
                         Postcode     = request.Request.Address.Postcode,
-                        State        = request.Request.Address.State
+                        State        = request.Request.Address.State,
+                        Country      = request.Request.Address.Country
                     };
                 }
             }
@@ -126,11 +140,16 @@ namespace ApplicationService.Core.Application.ProfileService.Services
 
             return new UpdateCustomerResponse
             {
-                CustomerId = customer.CustomerId,
-                Name       = customer.Name,
-                IcNumber   = customer.IcNumber,
-                Contact    = customer.Contact,
-                Address    = customer.Address == null ? null : new AddressDto
+                CustomerId  = customer.CustomerId,
+                FirstName   = customer.FirstName,
+                LastName    = customer.LastName,
+                DateOfBirth = customer.DateOfBirth,
+                Gender      = customer.Gender,
+                Nationality = customer.Nationality,
+                IdType      = customer.IdType,
+                IdNumber    = customer.IdNumber,
+                Contact     = customer.Contact,
+                Address     = customer.Address == null ? null : new AddressDto
                 {
                     AddressLine1 = customer.Address.AddressLine1,
                     AddressLine2 = customer.Address.AddressLine2,

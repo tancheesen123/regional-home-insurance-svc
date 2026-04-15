@@ -7,6 +7,7 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
         public string? City { get; set; }
         public string? Postcode { get; set; }
         public string? State { get; set; }
+        public string? Country { get; set; }
     }
 
     public class CustomerGetAllResponse
@@ -17,8 +18,9 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
     public class CustomerDetail
     {
         public string CustomerId { get; set; }
-        public string Name { get; set; }
-        public string IcNumber { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string IdNumber { get; set; }
         public string? AddressId { get; set; }
         public string Contact { get; set; }
         public string Email { get; set; }
@@ -29,8 +31,13 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
     public class GetCustomerByUserIdResponse
     {
         public string CustomerId { get; set; }
-        public string Name { get; set; }
-        public string IcNumber { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? Nationality { get; set; }
+        public string? IdType { get; set; }
+        public string IdNumber { get; set; }
         public string Contact { get; set; }
         public string Email { get; set; }
         public string Region { get; set; }
@@ -41,10 +48,15 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
 
     public class UpdateCustomerRequest
     {
-        public string Name { get; set; }
-        public string IcNumber { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? Nationality { get; set; }
+        public string? IdType { get; set; }
+        public string IdNumber { get; set; }
         public string Contact { get; set; }
-        public AddressDto Address { get; set; }
+        public AddressDto? Address { get; set; }
     }
 
     public class UploadProfilePictureResponse
@@ -57,8 +69,13 @@ namespace ApplicationService.Core.Application.ProfileService.DTOs.Customer
     public class UpdateCustomerResponse
     {
         public string CustomerId { get; set; }
-        public string Name { get; set; }
-        public string IcNumber { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? Nationality { get; set; }
+        public string? IdType { get; set; }
+        public string IdNumber { get; set; }
         public string Contact { get; set; }
         public AddressDto? Address { get; set; }
         public string Message { get; set; }

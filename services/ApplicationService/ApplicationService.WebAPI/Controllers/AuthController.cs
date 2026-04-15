@@ -70,13 +70,18 @@ namespace ApplicationService.WebAPI.Controllers
             {
                 var result = await _mediator.Send(new RegisterCommand
                 {
-                    Name     = request.Name,
-                    Email    = request.Email,
-                    Password = request.Password,
-                    IcNumber = request.IcNumber,
-                    Address  = request.Address,
-                    Contact  = request.Contact,
-                    Region   = request.Region
+                    FirstName   = request.FirstName,
+                    LastName    = request.LastName,
+                    Email       = request.Email,
+                    Password    = request.Password,
+                    DateOfBirth = request.DateOfBirth,
+                    Gender      = request.Gender,
+                    Nationality = request.Nationality,
+                    IdType      = request.IdType,
+                    IdNumber    = request.IdNumber,
+                    Contact     = request.Contact,
+                    Region      = request.Region,
+                    Address     = request.Address
                 });
                 return Ok(result);
             }

@@ -36,7 +36,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             _jwtSettings = jwtSettings.Value;
         }
 
-        // ── GetAll ────────────────────────────────────────────────────────────
 
         public async Task<AuthGetAllResponse> GetAllCustomerAsync()
         {
@@ -72,8 +71,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             };
         }
 
-        // ── Register ──────────────────────────────────────────────────────────
-
         public async Task<RegisterResponse> RegisterAsync(RegisterCommand request)
         {
             _logger.LogInformation("=== AuthService.RegisterAsync ===");
@@ -96,21 +93,27 @@ namespace ApplicationService.Core.Application.AuthService.Services
             // Create Customer linked to UserAccount
             var customer = new Customer
             {
-                CustomerId = Guid.NewGuid().ToString(),
-                Name       = request.Name,
-                Email      = request.Email,
-                IcNumber   = request.IcNumber,
-                Contact    = request.Contact,
-                Region     = request.Region.ToUpper(),
-                UserId     = userId,
-                Address    = request.Address == null ? null : new AddressEntity
+                CustomerId  = Guid.NewGuid().ToString(),
+                FirstName   = request.FirstName,
+                LastName    = request.LastName,
+                Email       = request.Email,
+                DateOfBirth = request.DateOfBirth,
+                Gender      = request.Gender,
+                Nationality = request.Nationality,
+                IdType      = request.IdType,
+                IdNumber    = request.IdNumber,
+                Contact     = request.Contact,
+                Region      = request.Region.ToUpper(),
+                UserId      = userId,
+                Address     = request.Address == null ? null : new AddressEntity
                 {
                     Id           = Guid.NewGuid().ToString(),
                     AddressLine1 = request.Address.AddressLine1,
                     AddressLine2 = request.Address.AddressLine2,
                     City         = request.Address.City,
                     Postcode     = request.Address.Postcode,
-                    State        = request.Address.State
+                    State        = request.Address.State,
+                    Country      = request.Address.Country
                 }
             };
 
@@ -121,7 +124,7 @@ namespace ApplicationService.Core.Application.AuthService.Services
             var verificationToken = GenerateJwtToken(userId, request.Email, "email-verification", expiresAt);
             var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}&countryCode={request.Region.ToUpper()}";
 
-            await _emailService.SendVerificationEmailAsync(request.Email, request.Name, verificationLink);
+            await _emailService.SendVerificationEmailAsync(request.Email, $"{request.FirstName} {request.LastName}", verificationLink);
 
             return new RegisterResponse
             {
@@ -131,7 +134,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             };
         }
 
-        // ── VerifyEmail ───────────────────────────────────────────────────────
 
         public async Task<bool> VerifyEmailAsync(string token, string email)
         {
@@ -169,7 +171,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             return true;
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private string GenerateJwtToken(string userId, string email, string purpose, DateTime expiresAt)
         {
