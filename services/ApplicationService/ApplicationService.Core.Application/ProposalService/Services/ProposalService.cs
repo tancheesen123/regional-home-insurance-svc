@@ -23,6 +23,117 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             _quotationRepository = quotationRepository;
         }
 
+        // ── GetProposal ───────────────────────────────────────────────────────
+
+        public async Task<GetProposalResponse> GetProposalAsync(GetProposalRequest request)
+        {
+            _logger.LogInformation("=== ProposalService.GetProposalAsync ===");
+
+            var proposal = await _proposalRepository.GetByIdWithDetailsAsync(request.ProposalId);
+            if (proposal == null)
+                throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
+
+            var q = proposal.Quotation;
+
+            return new GetProposalResponse
+            {
+                ProposalId  = proposal.ProposalId,
+                Status      = proposal.Status,
+                CustomerId  = proposal.CustomerId,
+
+                PersonalDetails = new ProposalPersonalDetailsDto
+                {
+                    Name         = proposal.Name,
+                    IdType       = proposal.IdType,
+                    IdNumber     = proposal.IdNumber,
+                    Nationality  = proposal.Nationality,
+                    Race         = proposal.Race,
+                    Gender       = proposal.Gender,
+                    DateOfBirth  = proposal.DateOfBirth,
+                    MobileNumber = proposal.MobileNumber,
+                    Email        = proposal.Email
+                },
+
+                PropertyAddress = new ProposalAddressDto
+                {
+                    AddressLine1 = proposal.PropAddressLine1,
+                    AddressLine2 = proposal.PropAddressLine2,
+                    City         = proposal.PropCity,
+                    Postcode     = proposal.PropPostcode,
+                    State        = proposal.PropState,
+                    Country      = proposal.PropCountry
+                },
+
+                MailingAddress = new ProposalMailingAddressDto
+                {
+                    SameAsPropertyAddress = proposal.MailingSameAsProperty,
+                    AddressLine1          = proposal.MailAddressLine1,
+                    AddressLine2          = proposal.MailAddressLine2,
+                    City                  = proposal.MailCity,
+                    Postcode              = proposal.MailPostcode,
+                    State                 = proposal.MailState,
+                    Country               = proposal.MailCountry
+                },
+
+                BankDetails = new ProposalBankDetailsDto
+                {
+                    BankName      = proposal.BankName,
+                    AccountNumber = proposal.BankAccountNumber
+                },
+
+                Quotation = q == null ? null : new QuotationSnapshotDto
+                {
+                    QuotationId     = q.QuotationId,
+                    QuotationStatus = q.Status,
+                    Region          = q.Region,
+
+                    // Property & risk
+                    OwnershipType      = q.OwnershipType,
+                    PropertyType       = q.PropertyType,
+                    PropertySubType    = q.PropertySubType,
+                    NumberOfStorey     = q.NumberOfStorey,
+                    ConstructionType   = q.ConstructionType,
+                    Postcode           = q.Postcode,
+                    CurrentFlooding    = q.CurrentFlooding,
+                    UnoccupiedProperty = q.UnoccupiedProperty,
+                    PreviousLoss       = q.PreviousLoss,
+
+                    // Plan
+                    PlanType    = q.PlanType,
+                    BuildingSum = q.BuildingSum,
+                    ContentsSum = q.ContentsSum,
+
+                    // Add-ons
+                    AddOns = new AddOnSelectionDto
+                    {
+                        RiotStrike              = q.HasRiotStrike,
+                        ExtendedTheft           = q.HasExtendedTheft,
+                        AlternativeAccommodation = q.HasAlternativeAccommodation,
+                        PublicLiability         = q.HasPublicLiability
+                    },
+
+                    // Premium
+                    TotalPremium  = q.Premium,
+                    AnnualPremium = q.Premium,
+                    MonthlyPremium = Math.Round(q.Premium / 12, 2),
+
+                    // Dates
+                    CoverageStartDate = q.CoverageStartDate.ToString("dd/MM/yyyy"),
+                    ExpiryDate        = q.ExpiryDate.ToString("dd/MM/yyyy"),
+
+                    // Valuables
+                    ValuableItems = q.ValuableItems?
+                        .Select(v => new ValuableItemSnapshotDto
+                        {
+                            ItemId      = v.ItemId,
+                            Category    = v.Category,
+                            Description = v.Description,
+                            Value       = v.Value
+                        }).ToList() ?? new()
+                }
+            };
+        }
+
         // ── CreateProposal ────────────────────────────────────────────────────
 
         public async Task<CreateProposalResponse> CreateProposalAsync(CreateProposalRequest request)

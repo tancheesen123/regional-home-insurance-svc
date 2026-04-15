@@ -20,6 +20,14 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
         }
 
+        public async Task<Proposal?> GetByIdWithDetailsAsync(string proposalId)
+        {
+            return await _resolver.Resolve().Proposals
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q.ValuableItems)
+                .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
+        }
+
         public async Task<Proposal?> GetByQuotationIdAsync(string quotationId)
         {
             return await _resolver.Resolve().Proposals

@@ -5,6 +5,13 @@ namespace ApplicationService.Core.Application.ProposalService.Interfaces.Reposit
     public interface IProposalRepository
     {
         Task<Proposal?> GetByIdAsync(string proposalId);
+
+        /// <summary>
+        /// Returns the proposal with all related data eagerly loaded:
+        /// Quotation (including ValuableItems).
+        /// </summary>
+        Task<Proposal?> GetByIdWithDetailsAsync(string proposalId);
+
         Task<Proposal?> GetByQuotationIdAsync(string quotationId);
 
         /// <summary>
