@@ -5,5 +5,6 @@ namespace ApplicationService.Core.Application.ProposalService.Interfaces.Service
     public interface IProposalService
     {
         Task<CreateProposalResponse> CreateProposalAsync(CreateProposalRequest request);
+        Task<GetProposalResponse> GetProposalAsync(GetProposalRequest request);
     }
 }

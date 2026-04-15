@@ -1,5 +1,6 @@
 using ApplicationService.Core.Application.ProposalService.DTOs;
 using ApplicationService.Core.Application.ProposalService.Features.Proposal.Command;
+using ApplicationService.Core.Application.ProposalService.Features.Proposal.Query;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,25 @@ namespace ApplicationService.WebAPI.Controllers
         public ProposalController(IMediator mediator)
         {
             _mediator = mediator;
+        }
+
+        /// <summary>
+        /// Step 5 — Retrieve full proposal details (personal info, addresses,
+        /// quotation snapshot, plan, valuables and premium breakdown) for review
+        /// before proceeding to payment.
+        /// </summary>
+        [HttpPost("[action]")]
+        public async Task<IActionResult> GetProposal([FromBody] GetProposalRequest request)
+        {
+            try
+            {
+                var query = new GetProposalQuery { Request = request };
+                return Ok(await _mediator.Send(query));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         /// <summary>
