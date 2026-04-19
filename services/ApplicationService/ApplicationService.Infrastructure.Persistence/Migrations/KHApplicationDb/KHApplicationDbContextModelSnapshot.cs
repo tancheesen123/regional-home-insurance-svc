@@ -22,6 +22,108 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOn", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EligiblePlanTypes")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SumInsuredBasis")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AddOns");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AddOnCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddOnCode", "Region")
+                        .IsUnique();
+
+                    b.ToTable("AddOnRates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddressEntity", b =>
                 {
                     b.Property<string>("Id")
@@ -37,6 +139,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Country")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -86,28 +192,47 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DateOfBirth")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("IcNumber")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("ProfilePicturePath")
+                    b.Property<string>("Gender")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Id")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("IdType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Nationality")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Region")
                         .IsRequired()
@@ -118,7 +243,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -137,6 +263,69 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.CustomerPaymentMethod", b =>
+                {
+                    b.Property<string>("PaymentMethodId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CardHolderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CardType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExpiryMonth")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("ExpiryYear")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastFourDigits")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("PaymentMethodId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("CustomerPaymentMethods");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
                 {
                     b.Property<string>("PaymentId")
@@ -144,7 +333,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -157,8 +346,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("GatewayName")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -168,7 +359,19 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("PaymentUrl")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ProposalId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReferenceNumber")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -179,7 +382,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("TransactionId")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -194,6 +396,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.HasIndex("GatewayName");
 
                     b.HasIndex("ProposalId");
+
+                    b.HasIndex("ReferenceNumber")
+                        .IsUnique();
 
                     b.ToTable("Payments");
                 });
@@ -239,7 +444,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("CoverageAmount")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -380,9 +585,72 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ProductPremiumRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("BuildingRate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<decimal>("ContentRate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal?>("MaxBuildingSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MaxContentSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinBuildingSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinContentSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "IsActive");
+
+                    b.ToTable("ProductPremiumRates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
                 {
                     b.Property<string>("ProposalId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BankAccountNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("BankName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -397,13 +665,101 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("DateOfBirth")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("IdType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("MailAddressLine1")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MailAddressLine2")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MailCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MailCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MailPostcode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("MailState")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("MailingSameAsProperty")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MobileNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Nationality")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PropAddressLine1")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PropAddressLine2")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PropCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PropCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PropPostcode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("PropState")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("QuotationId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Race")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -432,35 +788,124 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<decimal?>("BuildingSum")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.Property<string>("ConstructionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("ContentsSum")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.Property<DateTime>("CoverageStartDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("CurrentFlooding")
+                        .HasColumnType("bit");
+
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("DateOfBirth")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("HasAlternativeAccommodation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("HasExtendedTheft")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("HasPublicLiability")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("HasRiotStrike")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("Premium")
-                        .HasColumnType("decimal(10,2)");
+                    b.Property<string>("IdNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("ProductId")
-                        .IsRequired()
+                    b.Property<string>("IdType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Nationality")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("NumberOfStorey")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OwnershipType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("PlanType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Postcode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("Premium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("PreviousLoss")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProductId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PropertySubType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PropertyType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Region")
                         .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("UnoccupiedProperty")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -475,6 +920,52 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.HasIndex("ProductId");
 
                     b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.TaxConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<decimal>("ServiceTaxRate")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("StampDutyAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StampDutyWaiverEligiblePremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "IsActive");
+
+                    b.ToTable("TaxConfigs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
@@ -521,6 +1012,11 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -546,13 +1042,25 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Value")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ItemId");
 
                     b.HasIndex("QuotationId");
 
                     b.ToTable("ValuableItems");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.AddOn", "AddOn")
+                        .WithMany("Rates")
+                        .HasForeignKey("AddOnCode")
+                        .HasPrincipalKey("Code")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddOn");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
@@ -573,13 +1081,22 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Navigation("UserAccount");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.CustomerPaymentMethod", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Customer", "Customer")
+                        .WithMany("PaymentMethods")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
                 {
                     b.HasOne("ApplicationService.Core.Domain.Entities.PaymentGateway", "PaymentGateway")
                         .WithMany("Payments")
-                        .HasForeignKey("GatewayName")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GatewayName");
 
                     b.HasOne("ApplicationService.Core.Domain.Entities.Proposal", "Proposal")
                         .WithMany("Payments")
@@ -643,9 +1160,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
                     b.HasOne("ApplicationService.Core.Domain.Entities.Product", "Product")
                         .WithMany("Quotations")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProductId");
 
                     b.Navigation("Customer");
 
@@ -663,6 +1178,11 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Navigation("Quotation");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOn", b =>
+                {
+                    b.Navigation("Rates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddressEntity", b =>
                 {
                     b.Navigation("Customer");
@@ -670,6 +1190,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
                 {
+                    b.Navigation("PaymentMethods");
+
                     b.Navigation("Proposals");
 
                     b.Navigation("Quotations");

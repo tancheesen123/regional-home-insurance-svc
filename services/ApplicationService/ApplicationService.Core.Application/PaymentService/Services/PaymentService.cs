@@ -379,8 +379,8 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
 
             // ── Atomic: inforce proposal + create policy + convert quotation ──
-            await _proposalRepository.InforceProposalAsync(proposal, policy);
-            await _proposalRepository.SaveChangesAsync();
+            //await _proposalRepository.InforceProposalAsync(proposal, policy);
+            //await _proposalRepository.SaveChangesAsync();
 
             var frontendUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber, policy.PolicyNumber);
 
