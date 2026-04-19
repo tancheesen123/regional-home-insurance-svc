@@ -4,7 +4,8 @@ namespace ApplicationService.Core.Application.PaymentService.Interfaces.Services
 {
     public interface IPaymentService
     {
-        Task<InitiatePaymentResponse> InitiatePaymentAsync(InitiatePaymentRequest request);
+        /// <param name="region">Country code from X-Country-Code header: PH | ID | KH</param>
+        Task<InitiatePaymentResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string region);
 
         /// <summary>
         /// Verifies the Stripe webhook signature, then processes

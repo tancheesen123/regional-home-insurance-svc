@@ -166,43 +166,43 @@ namespace ApplicationService.Core.Application.ProductService.Services
             if (request.StartDate == default)
                 throw new ArgumentException("StartDate is required.");
 
-            if (request.PlanType is 1 or 3)
-            {
-                var bsi = request.BuildingSumInsured ?? 0m;
+            //if (request.PlanType is 1 or 3)
+            //{
+            //    var bsi = request.BuildingSumInsured ?? 0m;
 
-                if (bsi <= 0)
-                    throw new ArgumentException("BuildingSumInsured is required for PlanType Building or Both.");
+            //    if (bsi <= 0)
+            //        throw new ArgumentException("BuildingSumInsured is required for PlanType Building or Both.");
 
-                if (bsi % SumInsuredMultiple != 0)
-                    throw new ArgumentException("BuildingSumInsured must be a multiple of 1,000.");
+            //    if (bsi % SumInsuredMultiple != 0)
+            //        throw new ArgumentException("BuildingSumInsured must be a multiple of 1,000.");
 
-                if (bsi < rate.MinBuildingSum)
-                    throw new ArgumentException(
-                        $"BuildingSumInsured minimum for this region is {rate.MinBuildingSum:N0}.");
+            //    if (bsi < rate.MinBuildingSum)
+            //        throw new ArgumentException(
+            //            $"BuildingSumInsured minimum for this region is {rate.MinBuildingSum:N0}.");
 
-                if (rate.MaxBuildingSum.HasValue && bsi > rate.MaxBuildingSum.Value)
-                    throw new ArgumentException(
-                        $"BuildingSumInsured maximum for this region is {rate.MaxBuildingSum.Value:N0}.");
-            }
+            //    if (rate.MaxBuildingSum.HasValue && bsi > rate.MaxBuildingSum.Value)
+            //        throw new ArgumentException(
+            //            $"BuildingSumInsured maximum for this region is {rate.MaxBuildingSum.Value:N0}.");
+            //}
 
-            if (request.PlanType is 2 or 3)
-            {
-                var csi = request.ContentSumInsured ?? 0m;
+            //if (request.PlanType is 2 or 3)
+            //{
+            //    var csi = request.ContentSumInsured ?? 0m;
 
-                if (csi <= 0)
-                    throw new ArgumentException("ContentSumInsured is required for PlanType Content or Both.");
+            //    if (csi <= 0)
+            //        throw new ArgumentException("ContentSumInsured is required for PlanType Content or Both.");
 
-                if (csi % SumInsuredMultiple != 0)
-                    throw new ArgumentException("ContentSumInsured must be a multiple of 1,000.");
+            //    if (csi % SumInsuredMultiple != 0)
+            //        throw new ArgumentException("ContentSumInsured must be a multiple of 1,000.");
 
-                if (csi < rate.MinContentSum)
-                    throw new ArgumentException(
-                        $"ContentSumInsured minimum for this region is {rate.MinContentSum:N0}.");
+            //    if (csi < rate.MinContentSum)
+            //        throw new ArgumentException(
+            //            $"ContentSumInsured minimum for this region is {rate.MinContentSum:N0}.");
 
-                if (rate.MaxContentSum.HasValue && csi > rate.MaxContentSum.Value)
-                    throw new ArgumentException(
-                        $"ContentSumInsured maximum for this region is {rate.MaxContentSum.Value:N0}.");
-            }
+            //    if (rate.MaxContentSum.HasValue && csi > rate.MaxContentSum.Value)
+            //        throw new ArgumentException(
+            //            $"ContentSumInsured maximum for this region is {rate.MaxContentSum.Value:N0}.");
+            //}
 
             if (request.DiscountAmount < 0)
                 throw new ArgumentException("DiscountAmount cannot be negative.");

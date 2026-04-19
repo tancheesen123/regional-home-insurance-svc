@@ -9,6 +9,7 @@ namespace ApplicationService.Core.Application.PaymentService.Features.Payment.Co
     public class InitiatePaymentCommand : IRequest<Response<InitiatePaymentResponse>>
     {
         public InitiatePaymentRequest Request { get; set; }
+        public string Region { get; set; } = string.Empty;
 
         public class InitiatePaymentCommandHandler : IRequestHandler<InitiatePaymentCommand, Response<InitiatePaymentResponse>>
         {
@@ -23,11 +24,12 @@ namespace ApplicationService.Core.Application.PaymentService.Features.Payment.Co
                 _paymentService = paymentService;
             }
 
-            public async Task<Response<InitiatePaymentResponse>> Handle(InitiatePaymentCommand request, CancellationToken cancellationToken)
+            public async Task<Response<InitiatePaymentResponse>> Handle(InitiatePaymentCommand command, CancellationToken cancellationToken)
             {
-                _logger.LogInformation("=== Start InitiatePaymentCommandHandler ===");
+                _logger.LogInformation("=== Start InitiatePaymentCommandHandler | Region={Region} ===",
+                    command.Region);
 
-                var result = await _paymentService.InitiatePaymentAsync(request.Request);
+                var result = await _paymentService.InitiatePaymentAsync(command.Request, command.Region);
 
                 return new Response<InitiatePaymentResponse>(result);
             }
