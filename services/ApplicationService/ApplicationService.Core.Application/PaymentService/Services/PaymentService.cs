@@ -19,13 +19,12 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         private readonly IStripeService _stripeService;
         private readonly StripeSettings _stripeSettings;
 
-        // Currency mapping per region
         private static readonly Dictionary<string, string> RegionCurrency =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                ["PH"] = "PHP",
-                ["ID"] = "IDR",
-                ["KH"] = "USD"
+                ["PH"] = "PHP",   // Philippine Peso
+                ["ID"] = "IDR",   // Indonesian Rupiah
+                ["KH"] = "USD",   // Cambodia transacts in USD
             };
 
         // Stripe minimum charge amounts per currency (in the currency's standard unit)
@@ -36,10 +35,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 ["USD"] = 0.50m,
                 ["PHP"] = 20.00m,
                 ["IDR"] = 1999m,
-                ["MYR"] = 2.00m,
-                ["SGD"] = 0.50m,
-                ["EUR"] = 0.50m,
-                ["GBP"] = 0.30m,
             };
 
         // Stripe checkout session lasts 24 h; we mirror that locally
@@ -61,14 +56,27 @@ namespace ApplicationService.Core.Application.PaymentService.Services
 
         // ── InitiatePayment ───────────────────────────────────────────────────
 
-        public async Task<InitiatePaymentResponse> InitiatePaymentAsync(InitiatePaymentRequest request)
+        public async Task<InitiatePaymentResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string region)
         {
-            _logger.LogInformation("=== PaymentService.InitiatePaymentAsync ===");
+            _logger.LogInformation("=== PaymentService.InitiatePaymentAsync | Region={Region} ===", region);
+
+            // ── Validate region ───────────────────────────────────────────────
+            region = region.ToUpper();
+            if (!RegionCurrency.ContainsKey(region))
+                throw new InvalidOperationException(
+                    $"Unsupported region '{region}'. Valid values: {string.Join(", ", RegionCurrency.Keys)}.");
 
             // ── Validate proposal ─────────────────────────────────────────────
             var proposal = await _proposalRepository.GetByIdAsync(request.ProposalId);
             if (proposal == null)
                 throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
+
+            // Ensure the header region matches the proposal's stored region
+            var proposalRegion = proposal.Quotation?.Region?.ToUpper() ?? region;
+            if (!string.Equals(proposalRegion, region, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    $"Region mismatch: header says '{region}' but proposal belongs to region '{proposalRegion}'. " +
+                    "Send the correct X-Country-Code header.");
 
             if (proposal.Status != "PENDING")
                 throw new InvalidOperationException(
@@ -80,9 +88,8 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 throw new InvalidOperationException(
                     "A pending payment already exists for this proposal. Complete or cancel it first.");
 
-            // ── Resolve currency ──────────────────────────────────────────────
-            var region   = proposal.Quotation?.Region ?? "PH";
-            var currency = RegionCurrency.GetValueOrDefault(region.ToUpper(), "USD");
+            // ── Resolve currency from region ──────────────────────────────────
+            var currency = RegionCurrency[region];
             var amount   = proposal.Quotation?.Premium ?? 0m;
 
             // ── Validate Stripe minimum charge ────────────────────────────────

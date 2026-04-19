@@ -23,14 +23,23 @@ namespace ApplicationService.WebAPI.Controllers
 
         /// <summary>
         /// Step 6 — Initiate a Stripe Checkout Session for a PENDING proposal.
+        /// The currency is automatically resolved from the X-Country-Code header:
+        ///   PH → PHP (Philippine Peso)
+        ///   ID → IDR (Indonesian Rupiah)
+        ///   KH → USD (Cambodia uses USD)
         /// Returns a CheckoutUrl — redirect the customer there to complete payment.
         /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> InitiatePayment([FromBody] InitiatePaymentRequest request)
         {
+            var region = Request.Headers["X-Country-Code"].ToString().ToUpper();
+
+            if (string.IsNullOrWhiteSpace(region))
+                return BadRequest(new { message = "Missing X-Country-Code header. Valid values: PH, ID, KH." });
+
             try
             {
-                var command = new InitiatePaymentCommand { Request = request };
+                var command = new InitiatePaymentCommand { Request = request, Region = region };
                 return Ok(await _mediator.Send(command));
             }
             catch (KeyNotFoundException ex)
