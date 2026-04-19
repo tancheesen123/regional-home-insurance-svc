@@ -12,6 +12,14 @@ namespace ApplicationService.Core.Application.QuotationService.Interfaces.Reposi
         Task UpdateQuotationPlanAsync(Quotation quotation);
         Task<List<ValuableItem>> GetValuablesByQuotationIdAsync(string quotationId);
         Task ReplaceValuableItemsAsync(string quotationId, List<ValuableItem> newItems);
+
+        /// <summary>
+        /// Insert or replace the premium breakdown row for a quotation.
+        /// If a row already exists for the quotation it is deleted first,
+        /// then the new record is inserted (upsert via delete+insert).
+        /// </summary>
+        Task UpsertQuotationPremiumAsync(QuotationPremium premium);
+
         Task SaveChangesAsync();
     }
 }

@@ -26,6 +26,8 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             return await _resolver.Resolve().Proposals
                 .Include(p => p.Quotation)
                     .ThenInclude(q => q.ValuableItems)
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q.QuotationPremium)
                 .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
         }
 

@@ -922,6 +922,69 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.ToTable("Quotations");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.QuotationPremium", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("AddOnPremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("GrossPremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NetPremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PlanPremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("QuotationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("StampDuty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TaxRate")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("TotalBeforeDiscount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalPremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId")
+                        .IsUnique();
+
+                    b.ToTable("QuotationPremiums");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.TaxConfig", b =>
                 {
                     b.Property<string>("Id")
@@ -1167,6 +1230,17 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.QuotationPremium", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
+                        .WithOne("QuotationPremium")
+                        .HasForeignKey("ApplicationService.Core.Domain.Entities.QuotationPremium", "QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
                 {
                     b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
@@ -1224,6 +1298,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 {
                     b.Navigation("Proposal")
                         .IsRequired();
+
+                    b.Navigation("QuotationPremium");
 
                     b.Navigation("ValuableItems");
                 });

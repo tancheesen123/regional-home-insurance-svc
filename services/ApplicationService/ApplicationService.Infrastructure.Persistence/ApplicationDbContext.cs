@@ -34,6 +34,9 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<AddOnRate> AddOnRates { get; set; }
         public DbSet<TaxConfig> TaxConfigs { get; set; }
 
+        // ── Quotation premium breakdown ───────────────────────────────────────
+        public DbSet<QuotationPremium> QuotationPremiums { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // UserAccount
@@ -335,6 +338,34 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
                 entity.HasIndex(e => new { e.Region, e.IsActive });
+            });
+
+            // QuotationPremium
+            modelBuilder.Entity<QuotationPremium>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.QuotationId).IsRequired().HasMaxLength(50);
+
+                entity.Property(e => e.PlanPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.AddOnPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.GrossPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.NetPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TaxRate).HasColumnType("decimal(5,2)");
+                entity.Property(e => e.TaxAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.StampDuty).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalBeforeDiscount).HasColumnType("decimal(18,2)");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasOne(e => e.Quotation)
+                      .WithOne(q => q.QuotationPremium)
+                      .HasForeignKey<QuotationPremium>(e => e.QuotationId)
+                      .HasPrincipalKey<Quotation>(q => q.QuotationId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Payment

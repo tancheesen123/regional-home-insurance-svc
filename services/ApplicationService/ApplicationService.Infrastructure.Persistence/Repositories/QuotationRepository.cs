@@ -69,6 +69,18 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 await context.ValuableItems.AddRangeAsync(newItems);
         }
 
+        public async Task UpsertQuotationPremiumAsync(QuotationPremium premium)
+        {
+            var context  = _resolver.Resolve();
+            var existing = await context.QuotationPremiums
+                .FirstOrDefaultAsync(p => p.QuotationId == premium.QuotationId);
+
+            if (existing != null)
+                context.QuotationPremiums.Remove(existing);
+
+            await context.QuotationPremiums.AddAsync(premium);
+        }
+
         public async Task SaveChangesAsync()
         {
             await _resolver.Resolve().SaveChangesAsync();
