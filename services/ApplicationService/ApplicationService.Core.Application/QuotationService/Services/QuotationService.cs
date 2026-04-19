@@ -1,3 +1,5 @@
+using ApplicationService.Core.Application.Common.Constants;
+using ApplicationService.Core.Application.Common.Enums;
 using ApplicationService.Core.Application.ProductService.DTOs;
 using ApplicationService.Core.Application.ProductService.Interfaces.Services;
 using ApplicationService.Core.Application.QuotationService.DTOs;
@@ -15,24 +17,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
         private readonly IProductService _productService;
 
         private const decimal BasePremium = 500m;
-
-        // Maps string PlanType (frontend) → int PlanType (ProductService)
-        private static readonly Dictionary<string, int> PlanTypeMap =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                ["building"]          = 1,
-                ["contents"]          = 2,
-                ["building-contents"] = 3,
-            };
-
-        // Maps AddOnsDto boolean flags → add-on codes
-        private static readonly Dictionary<string, string> AddOnCodeMap = new()
-        {
-            ["RiotStrike"]              = "E008",
-            ["ExtendedTheft"]           = "E005",
-            ["AlternativeAccommodation"] = "E006",
-            ["PublicLiability"]         = "E007",
-        };
 
         public QuotationService(
             ILogger<QuotationService> logger,
@@ -113,19 +97,21 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             if (quotation.Status != "QUOTED")
                 throw new InvalidOperationException($"Quotation is in '{quotation.Status}' status and cannot be customised.");
 
-            // ── Map string PlanType → int ─────────────────────────────────────
-            if (!PlanTypeMap.TryGetValue(request.PlanType ?? "", out var planTypeInt))
-                throw new ArgumentException($"Unknown PlanType '{request.PlanType}'. Valid values: building, contents, building-contents.");
+            if (!PlanTypeParser.TryParse(request.PlanType, out var planTypeEnum))
+                throw new ArgumentException(
+                    $"Unknown PlanType '{request.PlanType}'. " +
+                    $"Valid values: {string.Join(", ", PlanTypeParser.ValidValues)}.");
 
-            // ── Map boolean add-on flags → add-on codes ───────────────────────
+            var planTypeInt = (int)planTypeEnum;
+
             var addOns     = request.AddOns ?? new AddOnsDto();
             var addOnCodes = new List<string>();
-            if (addOns.RiotStrike)               addOnCodes.Add(AddOnCodeMap["RiotStrike"]);
-            if (addOns.ExtendedTheft)            addOnCodes.Add(AddOnCodeMap["ExtendedTheft"]);
-            if (addOns.AlternativeAccommodation) addOnCodes.Add(AddOnCodeMap["AlternativeAccommodation"]);
-            if (addOns.PublicLiability)          addOnCodes.Add(AddOnCodeMap["PublicLiability"]);
+            if (addOns.RiotStrike)               addOnCodes.Add(AddonCode.Map["RiotStrike"]);
+            if (addOns.ExtendedTheft)            addOnCodes.Add(AddonCode.Map["ExtendedTheft"]);
+            if (addOns.AlternativeAccommodation) addOnCodes.Add(AddonCode.Map["AlternativeAccommodation"]);
+            if (addOns.PublicLiability)          addOnCodes.Add(AddonCode.Map["PublicLiability"]);
 
-            // ── Calculate premium via ProductService (DB-driven rates) ─────────
+
             var calcRequest = new CalculatePremiumRequest
             {
                 PlanType           = planTypeInt,
@@ -206,17 +192,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
 
         // ── DeclareValuables ──────────────────────────────────────────────────
 
-        // Category rules: (maxPerItem, maxTotalPerCategory, premiumRate)
-        private static readonly Dictionary<string, (decimal MaxPerItem, decimal MaxTotal, decimal Rate)> CategoryLimits =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                ["jewellery"]        = (10_000m, 30_000m, 0.020m),  // 2.0 %
-                ["electronics"]      = ( 8_000m, 20_000m, 0.015m),  // 1.5 %
-                ["artwork"]          = (15_000m, 30_000m, 0.018m),  // 1.8 %
-                ["sports-equipment"] = ( 5_000m, 15_000m, 0.015m),  // 1.5 %
-                ["other"]            = ( 5_000m, 20_000m, 0.015m),  // 1.5 %
-            };
-
         public async Task<DeclareValuablesResponse> DeclareValuablesAsync(DeclareValuablesRequest request)
         {
             _logger.LogInformation("=== QuotationService.DeclareValuablesAsync ===");
@@ -232,12 +207,16 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 throw new InvalidOperationException("Plan has not been customised yet. Call CustomizePlan before declaring valuables.");
 
             // ── Validate each item ────────────────────────────────────────────
-            var categoryTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            var categoryTotals = new Dictionary<ValuableCategory, decimal>();
 
             foreach (var item in request.Items)
             {
-                if (!CategoryLimits.TryGetValue(item.Category, out var limits))
-                    throw new ArgumentException($"Unknown category '{item.Category}'. Valid categories: {string.Join(", ", CategoryLimits.Keys)}.");
+                if (!ValuableCategoryLimits.TryResolve(item.Category, out var category))
+                    throw new ArgumentException(
+                        $"Unknown category '{item.Category}'. " +
+                        $"Valid categories: {string.Join(", ", ValuableCategoryLimits.Map.Keys.Select(k => k.ToString().ToLower()))}.");
+
+                var limits = ValuableCategoryLimits.Map[category];
 
                 if (item.Value <= 0)
                     throw new ArgumentException($"Item '{item.Description}' must have a value greater than zero.");
@@ -246,13 +225,13 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                     throw new ArgumentException(
                         $"'{item.Description}' ({item.Category}) declared value {item.Value:C} exceeds the per-item limit of {limits.MaxPerItem:C}.");
 
-                categoryTotals[item.Category] = categoryTotals.GetValueOrDefault(item.Category) + item.Value;
+                categoryTotals[category] = categoryTotals.GetValueOrDefault(category) + item.Value;
             }
 
             // Validate category totals
             foreach (var (cat, total) in categoryTotals)
             {
-                var limits = CategoryLimits[cat];
+                var limits = ValuableCategoryLimits.Map[cat];
                 if (total > limits.MaxTotal)
                     throw new ArgumentException(
                         $"Total declared value for '{cat}' ({total:C}) exceeds the category limit of {limits.MaxTotal:C}.");
@@ -260,22 +239,27 @@ namespace ApplicationService.Core.Application.QuotationService.Services
 
             // ── Build ValuableItem entities ───────────────────────────────────
             var now          = DateTime.UtcNow;
-            var itemEntities = request.Items.Select(i => new ValuableItem
+            var itemEntities = request.Items.Select(i =>
             {
-                ItemId      = Guid.NewGuid().ToString(),
-                Category    = i.Category.ToLower(),
-                Description = i.Description,
-                Value       = i.Value,
-                QuotationId = request.QuotationId,
-                CreatedAt   = now
+                ValuableCategoryLimits.TryResolve(i.Category, out var category);
+                return new ValuableItem
+                {
+                    ItemId      = Guid.NewGuid().ToString(),
+                    Category    = i.Category.ToLower(),
+                    Description = i.Description,
+                    Value       = i.Value,
+                    QuotationId = request.QuotationId,
+                    CreatedAt   = now
+                };
             }).ToList();
 
             // ── Calculate valuables premium ───────────────────────────────────
-            var itemResponses = itemEntities.Select(e =>
+            var itemResponses = request.Items.Zip(itemEntities, (req, entity) =>
             {
-                var rate    = CategoryLimits[e.Category].Rate;
-                var premium = Math.Round(e.Value * rate, 2);
-                return (Entity: e, Premium: premium);
+                ValuableCategoryLimits.TryResolve(req.Category, out var category);
+                var rate    = ValuableCategoryLimits.Map[category].Rate;
+                var premium = Math.Round(entity.Value * rate, 2);
+                return (Entity: entity, Premium: premium);
             }).ToList();
 
             decimal totalDeclaredValue = itemResponses.Sum(x => x.Entity.Value);
