@@ -150,6 +150,25 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             quotation.UpdatedAt                   = DateTime.UtcNow;
 
             await _quotationRepository.UpdateQuotationPlanAsync(quotation);
+
+            // ── Persist full premium breakdown ────────────────────────────────
+            var quotationPremium = new QuotationPremium
+            {
+                QuotationId        = quotation.QuotationId,
+                PlanPremium        = calc.PlanPremium,
+                AddOnPremium       = calc.TotalAddOnPremium,
+                GrossPremium       = calc.GrossPremium,
+                DiscountAmount     = calc.DiscountAmount,
+                NetPremium         = calc.NetPremium,
+                TaxRate            = calc.ServiceTaxRate,
+                TaxAmount          = calc.ServiceTaxAmount,
+                StampDuty          = calc.StampDutyAmount,
+                TotalPremium       = calc.TotalPremium,
+                TotalBeforeDiscount = calc.TotalBeforeDiscount,
+                CreatedAt          = DateTime.UtcNow
+            };
+
+            await _quotationRepository.UpsertQuotationPremiumAsync(quotationPremium);
             await _quotationRepository.SaveChangesAsync();
 
             return new CustomizePlanResponse

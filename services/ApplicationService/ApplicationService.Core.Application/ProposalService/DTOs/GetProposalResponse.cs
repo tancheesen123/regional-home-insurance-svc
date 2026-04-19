@@ -46,10 +46,13 @@ namespace ApplicationService.Core.Application.ProposalService.DTOs
         // Add-ons
         public AddOnSelectionDto AddOns { get; set; }
 
-        // Premium
+        // Premium summary
         public decimal TotalPremium { get; set; }
         public decimal AnnualPremium { get; set; }
         public decimal MonthlyPremium { get; set; }
+
+        // Full premium breakdown (null if CustomizePlan was never called)
+        public PremiumBreakdownDto? PremiumBreakdown { get; set; }
 
         // Coverage dates
         public string CoverageStartDate { get; set; }
@@ -57,6 +60,20 @@ namespace ApplicationService.Core.Application.ProposalService.DTOs
 
         // Valuables
         public List<ValuableItemSnapshotDto> ValuableItems { get; set; } = new();
+    }
+
+    public class PremiumBreakdownDto
+    {
+        public decimal PlanPremium { get; set; }
+        public decimal AddOnPremium { get; set; }
+        public decimal GrossPremium { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal NetPremium { get; set; }
+        public decimal TaxRate { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal StampDuty { get; set; }
+        public decimal TotalPremium { get; set; }
+        public decimal TotalBeforeDiscount { get; set; }
     }
 
     public class AddOnSelectionDto

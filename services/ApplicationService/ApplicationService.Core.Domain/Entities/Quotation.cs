@@ -46,5 +46,6 @@ namespace ApplicationService.Core.Domain.Entities
         public Product Product { get; set; }
         public ICollection<ValuableItem> ValuableItems { get; set; }
         public Proposal Proposal { get; set; }
+        public QuotationPremium? QuotationPremium { get; set; }
     }
 }

@@ -112,10 +112,25 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         PublicLiability         = q.HasPublicLiability
                     },
 
-                    // Premium
-                    TotalPremium  = q.Premium,
-                    AnnualPremium = q.Premium,
+                    // Premium summary
+                    TotalPremium   = q.Premium,
+                    AnnualPremium  = q.Premium,
                     MonthlyPremium = Math.Round(q.Premium / 12, 2),
+
+                    // Full premium breakdown
+                    PremiumBreakdown = q.QuotationPremium == null ? null : new PremiumBreakdownDto
+                    {
+                        PlanPremium        = q.QuotationPremium.PlanPremium,
+                        AddOnPremium       = q.QuotationPremium.AddOnPremium,
+                        GrossPremium       = q.QuotationPremium.GrossPremium,
+                        DiscountAmount     = q.QuotationPremium.DiscountAmount,
+                        NetPremium         = q.QuotationPremium.NetPremium,
+                        TaxRate            = q.QuotationPremium.TaxRate,
+                        TaxAmount          = q.QuotationPremium.TaxAmount,
+                        StampDuty          = q.QuotationPremium.StampDuty,
+                        TotalPremium       = q.QuotationPremium.TotalPremium,
+                        TotalBeforeDiscount = q.QuotationPremium.TotalBeforeDiscount
+                    },
 
                     // Dates
                     CoverageStartDate = q.CoverageStartDate.ToString("dd/MM/yyyy"),
