@@ -213,9 +213,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("IdNumber")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -301,9 +298,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .HasMaxLength(4)
                         .HasColumnType("nvarchar(4)");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("bit");
 
@@ -352,9 +346,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<string>("GatewayName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
@@ -419,9 +410,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SupportedRegions")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -454,9 +442,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("IssuedAt")
                         .HasColumnType("datetime2");
@@ -519,9 +504,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("PolicyId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -558,9 +540,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -676,9 +655,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<string>("Gender")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IdNumber")
                         .HasMaxLength(30)
@@ -842,9 +818,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IdNumber")
                         .HasMaxLength(30)
@@ -1052,9 +1025,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
 
@@ -1089,9 +1059,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("QuotationId")
                         .IsRequired()

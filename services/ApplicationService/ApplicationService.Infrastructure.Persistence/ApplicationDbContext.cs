@@ -43,6 +43,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<UserAccount>(entity =>
             {
                 entity.HasKey(e => e.UserId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.UserId).HasMaxLength(50);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.HashedPassword).IsRequired().HasColumnType("TEXT");
@@ -68,6 +69,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Customer>(entity =>
             {
                 entity.HasKey(e => e.CustomerId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
                 entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
@@ -98,6 +100,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<CustomerPaymentMethod>(entity =>
             {
                 entity.HasKey(e => e.PaymentMethodId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.PaymentMethodId).HasMaxLength(50);
                 entity.Property(e => e.CustomerId).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.CardType).IsRequired().HasMaxLength(20);
@@ -118,6 +121,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Product>(entity =>
             {
                 entity.HasKey(e => e.ProductId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.ProductId).HasMaxLength(50);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.RegionalRate).HasColumnType("TEXT");
@@ -129,6 +133,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Quotation>(entity =>
             {
                 entity.HasKey(e => e.QuotationId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.QuotationId).HasMaxLength(50);
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.Premium).HasColumnType("decimal(18,2)");
@@ -171,6 +176,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<ValuableItem>(entity =>
             {
                 entity.HasKey(e => e.ItemId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.ItemId).HasMaxLength(50);
                 entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
                 entity.Property(e => e.Description).HasColumnType("TEXT");
@@ -186,6 +192,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Proposal>(entity =>
             {
                 entity.HasKey(e => e.ProposalId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.ProposalId).HasMaxLength(50);
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
@@ -228,6 +235,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Policy>(entity =>
             {
                 entity.HasKey(e => e.PolicyId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.PolicyId).HasMaxLength(50);
                 entity.Property(e => e.PolicyNumber).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.StartDate).IsRequired();
@@ -246,6 +254,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<PolicyDocument>(entity =>
             {
                 entity.HasKey(e => e.DocumentId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.DocumentId).HasMaxLength(50);
                 entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.FileUrl).IsRequired().HasColumnType("TEXT");
@@ -262,6 +271,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<PaymentGateway>(entity =>
             {
                 entity.HasKey(e => e.Name);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.Name).HasMaxLength(50);
                 entity.Property(e => e.ApiKey).IsRequired().HasColumnType("TEXT");
                 entity.Property(e => e.SupportedRegions).HasColumnType("TEXT");
@@ -372,6 +382,7 @@ namespace ApplicationService.Infrastructure.Persistence
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.PaymentId);
+                entity.Ignore(e => e.Id);
                 entity.Property(e => e.PaymentId).HasMaxLength(50);
                 entity.Property(e => e.ReferenceNumber).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
