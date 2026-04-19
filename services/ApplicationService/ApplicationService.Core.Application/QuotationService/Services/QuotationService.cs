@@ -1,3 +1,5 @@
+using ApplicationService.Core.Application.ProductService.DTOs;
+using ApplicationService.Core.Application.ProductService.Interfaces.Services;
 using ApplicationService.Core.Application.QuotationService.DTOs;
 using ApplicationService.Core.Application.QuotationService.Interfaces.Repositories;
 using ApplicationService.Core.Application.QuotationService.Interfaces.Services;
@@ -10,15 +12,36 @@ namespace ApplicationService.Core.Application.QuotationService.Services
     {
         private readonly ILogger<QuotationService> _logger;
         private readonly IQuotationRepository _quotationRepository;
+        private readonly IProductService _productService;
 
         private const decimal BasePremium = 500m;
 
+        // Maps string PlanType (frontend) → int PlanType (ProductService)
+        private static readonly Dictionary<string, int> PlanTypeMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["building"]          = 1,
+                ["contents"]          = 2,
+                ["building-contents"] = 3,
+            };
+
+        // Maps AddOnsDto boolean flags → add-on codes
+        private static readonly Dictionary<string, string> AddOnCodeMap = new()
+        {
+            ["RiotStrike"]              = "E008",
+            ["ExtendedTheft"]           = "E005",
+            ["AlternativeAccommodation"] = "E006",
+            ["PublicLiability"]         = "E007",
+        };
+
         public QuotationService(
             ILogger<QuotationService> logger,
-            IQuotationRepository quotationRepository)
+            IQuotationRepository quotationRepository,
+            IProductService productService)
         {
-            _logger = logger;
+            _logger              = logger;
             _quotationRepository = quotationRepository;
+            _productService      = productService;
         }
 
         // ── GetQuote ──────────────────────────────────────────────────────────
@@ -90,68 +113,75 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             if (quotation.Status != "QUOTED")
                 throw new InvalidOperationException($"Quotation is in '{quotation.Status}' status and cannot be customised.");
 
-            // ── Validate plan type vs supplied sums ──────────────────────────
-            var plan = request.PlanType.ToLower();
-            if ((plan == "building" || plan == "building-contents") && (request.BuildingSum is null or <= 0))
-                throw new ArgumentException("BuildingSum is required for plan type 'building' or 'building-contents'.");
-            if ((plan == "contents" || plan == "building-contents") && (request.ContentsSum is null or <= 0))
-                throw new ArgumentException("ContentsSum is required for plan type 'contents' or 'building-contents'.");
+            // ── Map string PlanType → int ─────────────────────────────────────
+            if (!PlanTypeMap.TryGetValue(request.PlanType ?? "", out var planTypeInt))
+                throw new ArgumentException($"Unknown PlanType '{request.PlanType}'. Valid values: building, contents, building-contents.");
 
-            // ── Base premium from sums insured ───────────────────────────────
-            //   Building rate : 0.10 % of building sum
-            //   Contents rate : 0.15 % of contents sum
-            decimal basePremium = 0m;
-            if (plan == "building" || plan == "building-contents")
-                basePremium += (request.BuildingSum ?? 0) * 0.001m;   // 0.10 %
-            if (plan == "contents" || plan == "building-contents")
-                basePremium += (request.ContentsSum ?? 0) * 0.0015m;  // 0.15 %
+            // ── Map boolean add-on flags → add-on codes ───────────────────────
+            var addOns     = request.AddOns ?? new AddOnsDto();
+            var addOnCodes = new List<string>();
+            if (addOns.RiotStrike)               addOnCodes.Add(AddOnCodeMap["RiotStrike"]);
+            if (addOns.ExtendedTheft)            addOnCodes.Add(AddOnCodeMap["ExtendedTheft"]);
+            if (addOns.AlternativeAccommodation) addOnCodes.Add(AddOnCodeMap["AlternativeAccommodation"]);
+            if (addOns.PublicLiability)          addOnCodes.Add(AddOnCodeMap["PublicLiability"]);
 
-            basePremium = Math.Round(basePremium, 2);
+            // ── Calculate premium via ProductService (DB-driven rates) ─────────
+            var calcRequest = new CalculatePremiumRequest
+            {
+                PlanType           = planTypeInt,
+                BuildingSumInsured = request.BuildingSum,
+                ContentSumInsured  = request.ContentsSum,
+                AddOnCodes         = addOnCodes,
+                StartDate          = quotation.CoverageStartDate,
+                DiscountAmount     = request.DiscountAmount
+            };
 
-            // ── Add-on premiums (% of base premium) ──────────────────────────
-            var addOns = request.AddOns ?? new AddOnsDto();
-
-            decimal riotStrikePremium              = addOns.RiotStrike              ? Math.Round(basePremium * 0.05m, 2) : 0m;
-            decimal extendedTheftPremium           = addOns.ExtendedTheft           ? Math.Round(basePremium * 0.08m, 2) : 0m;
-            decimal altAccommodationPremium        = addOns.AlternativeAccommodation ? Math.Round(basePremium * 0.03m, 2) : 0m;
-            decimal publicLiabilityPremium         = addOns.PublicLiability         ? Math.Round(basePremium * 0.04m, 2) : 0m;
-
-            decimal addOnsPremium = riotStrikePremium + extendedTheftPremium + altAccommodationPremium + publicLiabilityPremium;
-            decimal totalPremium  = Math.Round(basePremium + addOnsPremium, 2);
-            decimal monthly       = Math.Round(totalPremium / 12, 2);
+            var calc = await _productService.CalculatePremiumAsync(calcRequest, quotation.Region);
 
             // ── Persist plan details onto the quotation ───────────────────────
-            quotation.PlanType                      = request.PlanType;
-            quotation.BuildingSum                   = request.BuildingSum;
-            quotation.ContentsSum                   = request.ContentsSum;
-            quotation.HasRiotStrike                 = addOns.RiotStrike;
-            quotation.HasExtendedTheft              = addOns.ExtendedTheft;
-            quotation.HasAlternativeAccommodation   = addOns.AlternativeAccommodation;
-            quotation.HasPublicLiability            = addOns.PublicLiability;
-            quotation.Premium                       = totalPremium;
-            quotation.UpdatedAt                     = DateTime.UtcNow;
+            quotation.PlanType                    = request.PlanType;
+            quotation.BuildingSum                 = request.BuildingSum;
+            quotation.ContentsSum                 = request.ContentsSum;
+            quotation.HasRiotStrike               = addOns.RiotStrike;
+            quotation.HasExtendedTheft            = addOns.ExtendedTheft;
+            quotation.HasAlternativeAccommodation = addOns.AlternativeAccommodation;
+            quotation.HasPublicLiability          = addOns.PublicLiability;
+            quotation.Premium                     = calc.TotalPremium;   // tax-inclusive payable amount
+            quotation.UpdatedAt                   = DateTime.UtcNow;
 
             await _quotationRepository.UpdateQuotationPlanAsync(quotation);
             await _quotationRepository.SaveChangesAsync();
 
             return new CustomizePlanResponse
             {
-                QuotationId   = quotation.QuotationId,
-                PlanType      = quotation.PlanType,
-                BuildingSum   = quotation.BuildingSum,
-                ContentsSum   = quotation.ContentsSum,
-                BasePremium   = basePremium,
-                AddOnsPremium = addOnsPremium,
-                TotalPremium  = totalPremium,
-                AnnualPremium = totalPremium,
-                MonthlyPremium = monthly,
-                AddOnBreakdown = new AddOnBreakdownDto
+                QuotationId          = quotation.QuotationId,
+                PlanType             = quotation.PlanType,
+                BuildingSum          = quotation.BuildingSum,
+                ContentsSum          = quotation.ContentsSum,
+
+                BuildingPremium      = calc.BuildingPremium,
+                ContentPremium       = calc.ContentPremium,
+                PlanPremium          = calc.PlanPremium,
+                AddOnsPremium        = calc.TotalAddOnPremium,
+                GrossPremium         = calc.GrossPremium,
+                DiscountAmount       = calc.DiscountAmount,
+                NetPremium           = calc.NetPremium,
+                ServiceTaxRate       = calc.ServiceTaxRate,
+                ServiceTaxAmount     = calc.ServiceTaxAmount,
+                StampDutyAmount      = calc.StampDutyAmount,
+                TotalPremium         = calc.TotalPremium,
+                TotalBeforeDiscount  = calc.TotalBeforeDiscount,
+                AnnualPremium        = calc.TotalPremium,
+                MonthlyPremium       = Math.Round(calc.TotalPremium / 12, 2),
+                StartDate            = calc.StartDate,
+                EndDate              = calc.EndDate,
+
+                AddOnBreakdown = calc.AddOnBreakdowns.Select(a => new AddOnBreakdownDto
                 {
-                    RiotStrike              = riotStrikePremium,
-                    ExtendedTheft           = extendedTheftPremium,
-                    AlternativeAccommodation = altAccommodationPremium,
-                    PublicLiability         = publicLiabilityPremium
-                }
+                    Code    = a.Code,
+                    Name    = a.Name,
+                    Premium = a.Premium
+                }).ToList()
             };
         }
 

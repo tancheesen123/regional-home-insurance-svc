@@ -4,16 +4,19 @@ using ApplicationService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
+namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
 {
-    [DbContext(typeof(PHApplicationDbContext))]
-    partial class PHApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(IDApplicationDbContext))]
+    [Migration("20260419013842_AddProductRateTables")]
+    partial class AddProductRateTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,6 +55,11 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsLppsaExempt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -333,7 +341,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -444,7 +452,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("CoverageAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -608,18 +616,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<decimal?>("MaxBuildingSum")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("MaxContentSum")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MinBuildingSum")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MinContentSum")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Region")
                         .IsRequired()
@@ -876,7 +872,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<decimal>("Premium")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<bool>("PreviousLoss")
                         .HasColumnType("bit");
@@ -949,10 +945,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("decimal(5,2)");
 
                     b.Property<decimal>("StampDutyAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal>("StampDutyWaiverEligiblePremium")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1042,7 +1038,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Value")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.HasKey("ItemId");
 

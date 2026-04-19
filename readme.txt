@@ -151,3 +151,7 @@ dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --con
    Copy the signing secret (whsec_...) → StripeSettings:WebhookSecret
 
 4. Update appsettings.json with the real values
+
+
+cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.WebAPI
+dotnet add package DotNetEnv

@@ -22,6 +22,10 @@ using ApplicationService.Core.Application.ProposalService.Services;
 using ApplicationService.Core.Application.QuotationService.Features.Quotation.Command;
 using ApplicationService.Core.Application.QuotationService.Interfaces.Services;
 using ApplicationService.Core.Application.QuotationService.Services;
+using ApplicationService.Core.Application.ProductService.Features.Product.Command;
+using ApplicationService.Core.Application.ProductService.Interfaces.Repositories;
+using ApplicationService.Core.Application.ProductService.Interfaces.Services;
+using ApplicationService.Infrastructure.Persistence.Repositories;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -39,6 +43,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetQuoteCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateProposalCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InitiatePaymentCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CalculatePremiumCommand).Assembly));
 
             // Services
             services.AddScoped<ICustomerService, CustomerService>();
@@ -48,6 +53,8 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IProposalService, ProposalService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IStripeService, StripeService>();
+            services.AddScoped<IProductService, ApplicationService.Core.Application.ProductService.Services.ProductService>();
+            services.AddScoped<IProductRepository, ProductRepository>();
 
             // Settings
             services.Configure<StripeSettings>(configuration.GetSection("StripeSettings"));

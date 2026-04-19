@@ -22,6 +22,108 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOn", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EligiblePlanTypes")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SumInsuredBasis")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AddOns");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AddOnCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddOnCode", "Region")
+                        .IsUnique();
+
+                    b.ToTable("AddOnRates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddressEntity", b =>
                 {
                     b.Property<string>("Id")
@@ -231,7 +333,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -342,7 +444,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("CoverageAmount")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -481,6 +583,61 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.HasKey("ProductId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ProductPremiumRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("BuildingRate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<decimal>("ContentRate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal?>("MaxBuildingSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MaxContentSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinBuildingSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinContentSum")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "IsActive");
+
+                    b.ToTable("ProductPremiumRates");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
@@ -719,7 +876,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<decimal>("Premium")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("PreviousLoss")
                         .HasColumnType("bit");
@@ -763,6 +920,52 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.HasIndex("ProductId");
 
                     b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.TaxConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<decimal>("ServiceTaxRate")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("StampDutyAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StampDutyWaiverEligiblePremium")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "IsActive");
+
+                    b.ToTable("TaxConfigs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
@@ -839,13 +1042,25 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Value")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ItemId");
 
                     b.HasIndex("QuotationId");
 
                     b.ToTable("ValuableItems");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.AddOn", "AddOn")
+                        .WithMany("Rates")
+                        .HasForeignKey("AddOnCode")
+                        .HasPrincipalKey("Code")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddOn");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
@@ -961,6 +1176,11 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsRequired();
 
                     b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOn", b =>
+                {
+                    b.Navigation("Rates");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddressEntity", b =>
