@@ -1,0 +1,1 @@
+RM0 Kata laluan untuk sijil HOHH Takaful anda yang bernombor <last 4 digit of certificate number> adalah kombinasi DDMMYYYY(Tarikh Lahir) dan 4 digit terakhir dari nombor kad pengenalan atau ID anda.
