@@ -25,7 +25,11 @@ using ApplicationService.Core.Application.QuotationService.Services;
 using ApplicationService.Core.Application.ProductService.Features.Product.Command;
 using ApplicationService.Core.Application.ProductService.Interfaces.Repositories;
 using ApplicationService.Core.Application.ProductService.Interfaces.Services;
+using ApplicationService.Core.Application.InforcePolicyService.Features.InforcePolicy.Command;
+using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
+using ApplicationService.Core.Application.InforcePolicyService.Services;
 using ApplicationService.Infrastructure.Persistence.Repositories;
+using ApplicationService.Infrastructure.Shared.Services;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -44,6 +48,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateProposalCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InitiatePaymentCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CalculatePremiumCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InforcePolicyCommand).Assembly));
 
             // Services
             services.AddScoped<ICustomerService, CustomerService>();
@@ -55,6 +60,9 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IStripeService, StripeService>();
             services.AddScoped<IProductService, ApplicationService.Core.Application.ProductService.Services.ProductService>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IInforcePolicyService, InforcePolicyService>();
+            services.AddScoped<IInforceService, InforceService>();
+            services.AddScoped<IProposalErrorService, ProposalErrorService>();
 
             // Settings
             services.Configure<StripeSettings>(configuration.GetSection("StripeSettings"));

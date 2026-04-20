@@ -187,74 +187,46 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         }
 
         // ── checkout.session.completed ────────────────────────────────────────
+        // Only updates the payment record to SUCCESS.
+        // Policy creation / proposal inforce is handled by the dedicated InforcePolicy API.
 
         private async Task<PaymentCallbackResponse> HandleSessionCompletedAsync(Session? session)
         {
             if (session == null)
                 throw new InvalidOperationException("Stripe session payload is null.");
 
-            // Find Payment by the Stripe session ID stored in TransactionId
             var payment = await _paymentRepository.GetByTransactionIdAsync(session.Id);
             if (payment == null)
                 throw new KeyNotFoundException($"No payment found for Stripe session '{session.Id}'.");
 
-            // Update payment
+            if (payment.Status == "SUCCESS")
+            {
+                // Idempotency — Stripe may retry
+                return new PaymentCallbackResponse
+                {
+                    PaymentId       = payment.PaymentId,
+                    ReferenceNumber = payment.ReferenceNumber,
+                    PaymentStatus   = payment.Status,
+                    ProposalId      = payment.ProposalId,
+                    Message         = "Payment already marked as SUCCESS."
+                };
+            }
+
             payment.Status        = "SUCCESS";
             payment.TransactionId = session.PaymentIntentId ?? session.Id;
             payment.UpdatedAt     = DateTime.UtcNow;
             _paymentRepository.UpdatePayment(payment);
+            await _paymentRepository.SaveChangesAsync();
 
-            // Find and inforce the proposal
-            var proposal = await _proposalRepository.GetByIdAsync(payment.ProposalId);
-            if (proposal == null)
-                throw new KeyNotFoundException($"Proposal '{payment.ProposalId}' not found.");
-
-            if (proposal.Status == "INFORCED")
-            {
-                // Idempotency — Stripe may retry; return existing policy info
-                await _paymentRepository.SaveChangesAsync();
-                return new PaymentCallbackResponse
-                {
-                    PaymentId     = payment.PaymentId,
-                    ReferenceNumber = payment.ReferenceNumber,
-                    PaymentStatus = payment.Status,
-                    ProposalId    = proposal.ProposalId,
-                    ProposalStatus = proposal.Status,
-                    Message       = "Payment already processed."
-                };
-            }
-
-            // Build Policy
-            var quotation  = proposal.Quotation;
-            var policy     = new Policy
-            {
-                PolicyId       = Guid.NewGuid().ToString(),
-                PolicyNumber   = GeneratePolicyNumber(quotation?.Region ?? "XX"),
-                StartDate      = quotation?.CoverageStartDate ?? DateTime.UtcNow.Date,
-                EndDate        = quotation?.ExpiryDate        ?? DateTime.UtcNow.Date.AddYears(1),
-                CoverageAmount = quotation?.Premium * 100     ?? 0m,
-                IssuedAt       = DateTime.UtcNow,
-                IssuedBy       = "SYSTEM",
-                ProposalId     = proposal.ProposalId,
-                CreatedAt      = DateTime.UtcNow
-            };
-
-            // Atomic: inforce proposal + create policy + convert quotation
-            await _proposalRepository.InforceProposalAsync(proposal, policy);
-            await _proposalRepository.SaveChangesAsync();
+            _logger.LogInformation("Webhook: Payment {PaymentId} marked SUCCESS.", payment.PaymentId);
 
             return new PaymentCallbackResponse
             {
-                PaymentId      = payment.PaymentId,
+                PaymentId       = payment.PaymentId,
                 ReferenceNumber = payment.ReferenceNumber,
-                PaymentStatus  = payment.Status,
-                ProposalId     = proposal.ProposalId,
-                ProposalStatus = "INFORCED",
-                PolicyId       = policy.PolicyId,
-                PolicyNumber   = policy.PolicyNumber,
-                PolicyStartDate = policy.StartDate.ToString("dd/MM/yyyy"),
-                PolicyEndDate   = policy.EndDate.ToString("dd/MM/yyyy"),
-                Message        = "Payment successful. Policy has been inforced."
+                PaymentStatus   = "SUCCESS",
+                ProposalId      = payment.ProposalId,
+                Message         = "Payment marked SUCCESS. Call InforcePolicy API to issue the policy."
             };
         }
 
@@ -285,12 +257,14 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         }
 
         // ── ConfirmPayment ────────────────────────────────────────────────────
+        // Verifies the Stripe session was paid, then updates Payment → SUCCESS.
+        // Policy creation and proposal inforce is handled by the InforcePolicy API.
 
         public async Task<ConfirmPaymentResponse> ConfirmPaymentAsync(string sessionId)
         {
-            _logger.LogInformation("=== PaymentService.ConfirmPaymentAsync | sessionId={SessionId} ===", sessionId);
+            _logger.LogInformation("=== PaymentService.ConfirmPaymentAsync | SessionId={SessionId} ===", sessionId);
 
-            // ── Retrieve the Stripe session and verify it was actually paid ──
+            // ── Verify with Stripe that the session was actually paid ─────────
             Stripe.Checkout.Session stripeSession;
             try
             {
@@ -306,13 +280,12 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 throw new InvalidOperationException(
                     $"Stripe session payment_status is '{stripeSession.PaymentStatus}'. Payment not yet completed.");
 
-            // ── Find our local Payment record ─────────────────────────────────
+            // ── Find local Payment record ─────────────────────────────────────
             var payment = await _paymentRepository.GetByTransactionIdAsync(sessionId);
             if (payment == null)
                 throw new KeyNotFoundException($"No payment found for Stripe session '{sessionId}'.");
 
-            // ── Update Payment → SUCCESS immediately after Stripe confirms paid ─
-            var alreadyProcessed  = payment.Status == "SUCCESS";
+            // ── Update Payment → SUCCESS (idempotent) ─────────────────────────
             payment.Status        = "SUCCESS";
             payment.TransactionId = stripeSession.PaymentIntentId ?? sessionId;
             payment.UpdatedAt     = DateTime.UtcNow;
@@ -321,99 +294,23 @@ namespace ApplicationService.Core.Application.PaymentService.Services
 
             _logger.LogInformation("Payment {PaymentId} marked SUCCESS.", payment.PaymentId);
 
-            // ── Idempotency — proposal already inforced on a previous redirect ─
-            if (alreadyProcessed)
-            {
-                var proposal2    = await _proposalRepository.GetByIdAsync(payment.ProposalId);
-                var policy2      = proposal2?.Policy;
-                var frontendUrl2 = BuildFrontendSuccessUrl(payment.ReferenceNumber, policy2?.PolicyNumber);
-
-                return new ConfirmPaymentResponse
-                {
-                    PaymentId       = payment.PaymentId,
-                    ReferenceNumber = payment.ReferenceNumber,
-                    PaymentStatus   = "SUCCESS",
-                    ProposalId      = payment.ProposalId,
-                    ProposalStatus  = proposal2?.Status ?? "INFORCED",
-                    PolicyId        = policy2?.PolicyId,
-                    PolicyNumber    = policy2?.PolicyNumber,
-                    PolicyStartDate = policy2?.StartDate.ToString("dd/MM/yyyy"),
-                    PolicyEndDate   = policy2?.EndDate.ToString("dd/MM/yyyy"),
-                    RedirectUrl     = frontendUrl2,
-                    Message         = "Payment already confirmed."
-                };
-            }
-
-            // ── Load Proposal ─────────────────────────────────────────────────
-            var proposal = await _proposalRepository.GetByIdAsync(payment.ProposalId);
-            if (proposal == null)
-                throw new KeyNotFoundException($"Proposal '{payment.ProposalId}' not found.");
-
-            // Guard: proposal was already inforced by the webhook before the redirect arrived
-            if (proposal.Status == "INFORCED")
-            {
-                var existingPolicy = proposal.Policy;
-                var frontendUrl3   = BuildFrontendSuccessUrl(payment.ReferenceNumber, existingPolicy?.PolicyNumber);
-                return new ConfirmPaymentResponse
-                {
-                    PaymentId       = payment.PaymentId,
-                    ReferenceNumber = payment.ReferenceNumber,
-                    PaymentStatus   = "SUCCESS",
-                    ProposalId      = proposal.ProposalId,
-                    ProposalStatus  = "INFORCED",
-                    PolicyId        = existingPolicy?.PolicyId,
-                    PolicyNumber    = existingPolicy?.PolicyNumber,
-                    PolicyStartDate = existingPolicy?.StartDate.ToString("dd/MM/yyyy"),
-                    PolicyEndDate   = existingPolicy?.EndDate.ToString("dd/MM/yyyy"),
-                    RedirectUrl     = frontendUrl3,
-                    Message         = "Payment confirmed. Policy already inforced."
-                };
-            }
-
-            // ── Build Policy ──────────────────────────────────────────────────
-            var quotation = proposal.Quotation;
-            var policy    = new Policy
-            {
-                PolicyId       = Guid.NewGuid().ToString(),
-                PolicyNumber   = GeneratePolicyNumber(quotation?.Region ?? "XX"),
-                StartDate      = quotation?.CoverageStartDate ?? DateTime.UtcNow.Date,
-                EndDate        = quotation?.ExpiryDate        ?? DateTime.UtcNow.Date.AddYears(1),
-                CoverageAmount = quotation?.Premium * 100     ?? 0m,
-                IssuedAt       = DateTime.UtcNow,
-                IssuedBy       = "SYSTEM",
-                ProposalId     = proposal.ProposalId,
-                CreatedAt      = DateTime.UtcNow
-            };
-
-            // ── Atomic: inforce proposal + create policy + convert quotation ──
-            await _proposalRepository.InforceProposalAsync(proposal, policy);
-            await _proposalRepository.SaveChangesAsync();
-
-            var frontendUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber, policy.PolicyNumber);
+            var redirectUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber);
 
             return new ConfirmPaymentResponse
             {
                 PaymentId       = payment.PaymentId,
                 ReferenceNumber = payment.ReferenceNumber,
                 PaymentStatus   = "SUCCESS",
-                ProposalId      = proposal.ProposalId,
-                ProposalStatus  = "INFORCED",
-                PolicyId        = policy.PolicyId,
-                PolicyNumber    = policy.PolicyNumber,
-                PolicyStartDate = policy.StartDate.ToString("dd/MM/yyyy"),
-                PolicyEndDate   = policy.EndDate.ToString("dd/MM/yyyy"),
-                RedirectUrl     = frontendUrl,
-                Message         = "Payment confirmed. Policy has been inforced."
+                ProposalId      = payment.ProposalId,
+                RedirectUrl     = redirectUrl,
+                Message         = "Payment confirmed. Call InforcePolicy API to issue the policy."
             };
         }
 
-        private string BuildFrontendSuccessUrl(string referenceNumber, string? policyNumber)
+        private string BuildFrontendSuccessUrl(string referenceNumber)
         {
             var baseUrl = _stripeSettings.FrontendSuccessUrl;
-            var url     = $"{baseUrl}?ref={Uri.EscapeDataString(referenceNumber)}";
-            if (!string.IsNullOrEmpty(policyNumber))
-                url += $"&policy={Uri.EscapeDataString(policyNumber)}";
-            return url;
+            return $"{baseUrl}?ref={Uri.EscapeDataString(referenceNumber)}&status=paid";
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -425,11 +322,5 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             return $"PAY-{region.ToUpper()}-{year}-{sequence}";
         }
 
-        private static string GeneratePolicyNumber(string region)
-        {
-            var year     = DateTime.UtcNow.Year;
-            var sequence = new Random().Next(100000, 999999);
-            return $"HI-{region.ToUpper()}-{year}-{sequence}";
-        }
     }
 }

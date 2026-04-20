@@ -75,7 +75,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("AddOns");
+                    b.ToTable("AddOns", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
@@ -121,7 +121,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("AddOnCode", "Region")
                         .IsUnique();
 
-                    b.ToTable("AddOnRates");
+                    b.ToTable("AddOnRates", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddressEntity", b =>
@@ -170,7 +170,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasKey("Id");
 
-                    b.ToTable("Addresses");
+                    b.ToTable("Addresses", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
@@ -257,7 +257,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.CustomerPaymentMethod", b =>
@@ -317,7 +317,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("CustomerPaymentMethods");
+                    b.ToTable("CustomerPaymentMethods", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
@@ -391,7 +391,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("ReferenceNumber")
                         .IsUnique();
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PaymentGateway", b =>
@@ -422,7 +422,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasKey("Name");
 
-                    b.ToTable("PaymentGateways");
+                    b.ToTable("PaymentGateways", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>
@@ -475,7 +475,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("ProposalId")
                         .IsUnique();
 
-                    b.ToTable("Policies");
+                    b.ToTable("Policies", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PolicyDocument", b =>
@@ -522,7 +522,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("PolicyId");
 
-                    b.ToTable("PolicyDocuments");
+                    b.ToTable("PolicyDocuments", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Product", b =>
@@ -561,7 +561,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasKey("ProductId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ProductPremiumRate", b =>
@@ -616,7 +616,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("Region", "IsActive");
 
-                    b.ToTable("ProductPremiumRates");
+                    b.ToTable("ProductPremiumRates", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Proposal", b =>
@@ -755,7 +755,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("QuotationId")
                         .IsUnique();
 
-                    b.ToTable("Proposals");
+                    b.ToTable("Proposals", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Quotation", b =>
@@ -892,7 +892,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Quotations");
+                    b.ToTable("Quotations", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.QuotationPremium", b =>
@@ -955,7 +955,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.HasIndex("QuotationId")
                         .IsUnique();
 
-                    b.ToTable("QuotationPremiums");
+                    b.ToTable("QuotationPremiums", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.TaxConfig", b =>
@@ -1001,7 +1001,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("Region", "IsActive");
 
-                    b.ToTable("TaxConfigs");
+                    b.ToTable("TaxConfigs", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
@@ -1036,7 +1036,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserAccounts");
+                    b.ToTable("UserAccounts", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableCategoryRate", b =>
@@ -1087,7 +1087,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("Region", "Category", "IsActive");
 
-                    b.ToTable("ValuableCategoryRates");
+                    b.ToTable("ValuableCategoryRates", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
@@ -1129,7 +1129,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("QuotationId");
 
-                    b.ToTable("ValuableItems");
+                    b.ToTable("ValuableItems", (string)null);
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOnRate", b =>
