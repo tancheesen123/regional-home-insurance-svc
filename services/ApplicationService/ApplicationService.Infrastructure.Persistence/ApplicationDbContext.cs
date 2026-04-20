@@ -37,6 +37,9 @@ namespace ApplicationService.Infrastructure.Persistence
         // ── Quotation premium breakdown ───────────────────────────────────────
         public DbSet<QuotationPremium> QuotationPremiums { get; set; }
 
+        // ── Valuable item category rates (per region) ─────────────────────────
+        public DbSet<ValuableCategoryRate> ValuableCategoryRates { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // UserAccount
@@ -348,6 +351,23 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
                 entity.HasIndex(e => new { e.Region, e.IsActive });
+            });
+
+            // ValuableCategoryRate
+            modelBuilder.Entity<ValuableCategoryRate>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
+                entity.Property(e => e.MaxPerItem).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.MaxTotal).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Rate).HasColumnType("decimal(10,6)");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.Category, e.IsActive });
             });
 
             // QuotationPremium

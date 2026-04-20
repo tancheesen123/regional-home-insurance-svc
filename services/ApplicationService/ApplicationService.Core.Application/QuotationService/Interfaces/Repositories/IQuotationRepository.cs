@@ -20,6 +20,12 @@ namespace ApplicationService.Core.Application.QuotationService.Interfaces.Reposi
         /// </summary>
         Task UpsertQuotationPremiumAsync(QuotationPremium premium);
 
+        /// <summary>
+        /// Returns all active valuable category rate rows for the given region,
+        /// keyed by the lowercase category string.
+        /// </summary>
+        Task<Dictionary<string, ValuableCategoryRate>> GetValuableCategoryRatesAsync(string region);
+
         Task SaveChangesAsync();
     }
 }
