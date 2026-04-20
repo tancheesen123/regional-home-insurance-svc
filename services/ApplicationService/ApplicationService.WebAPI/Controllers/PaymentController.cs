@@ -1,5 +1,6 @@
 using ApplicationService.Core.Application.PaymentService.DTOs;
 using ApplicationService.Core.Application.PaymentService.Features.Payment.Command;
+using ApplicationService.Core.Application.PaymentService.Features.Payment.Query;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,14 +22,6 @@ namespace ApplicationService.WebAPI.Controllers
             _stripeSettings = stripeOptions.Value;
         }
 
-        /// <summary>
-        /// Step 6 — Initiate a Stripe Checkout Session for a PENDING proposal.
-        /// The currency is automatically resolved from the X-Country-Code header:
-        ///   PH → PHP (Philippine Peso)
-        ///   ID → IDR (Indonesian Rupiah)
-        ///   KH → USD (Cambodia uses USD)
-        /// Returns a CheckoutUrl — redirect the customer there to complete payment.
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> InitiatePayment([FromBody] InitiatePaymentRequest request)
         {
@@ -56,13 +49,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Step 7a — Backend redirect endpoint called by Stripe after successful payment.
-        /// Stripe appends ?session_id={CHECKOUT_SESSION_ID} to SuccessUrl automatically.
-        /// This endpoint verifies the session with Stripe, updates Payment → SUCCESS,
-        /// inforces the Proposal, creates the Policy, then redirects the browser to the
-        /// frontend success page (FrontendSuccessUrl).
-        /// </summary>
         [AllowAnonymous]
         [HttpGet("[action]")]
         public async Task<IActionResult> ConfirmPayment([FromQuery] string session_id)
@@ -96,17 +82,11 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Step 7 — Stripe webhook callback.
-        /// Called by Stripe's servers after payment completes or expires.
-        /// Verifies the Stripe-Signature header, then updates payment + proposal + policy.
-        /// </summary>
         [AllowAnonymous]
         [HttpPost("[action]")]
         public async Task<IActionResult> Callback()
         {
-            // Read the raw body — must NOT use [FromBody].
-            // Stripe verifies the exact byte content; any deserialisation breaks the signature.
+           
             string json;
             using (var reader = new StreamReader(HttpContext.Request.Body))
                 json = await reader.ReadToEndAsync();
@@ -133,6 +113,23 @@ namespace ApplicationService.WebAPI.Controllers
             {
                 // Return 500 so Stripe retries the event — do not swallow silently
                 return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> GetPaymentsByProposal([FromBody] GetPaymentsByProposalRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ProposalId))
+                return BadRequest(new { message = "proposalId is required." });
+
+            try
+            {
+                var query = new GetPaymentsByProposalQuery { Request = request };
+                return Ok(await _mediator.Send(query));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
         }
     }
