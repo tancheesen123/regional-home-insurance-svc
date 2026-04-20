@@ -1039,6 +1039,57 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.ToTable("UserAccounts");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableCategoryRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("MaxPerItem")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MaxTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(10,6)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "Category", "IsActive");
+
+                    b.ToTable("ValuableCategoryRates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
                 {
                     b.Property<string>("ItemId")
