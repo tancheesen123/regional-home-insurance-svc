@@ -24,6 +24,7 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
         public async Task<Proposal?> GetByIdWithDetailsAsync(string proposalId)
         {
             return await _resolver.Resolve().Proposals
+                .Include(p => p.Policy)
                 .Include(p => p.Quotation)
                     .ThenInclude(q => q.ValuableItems)
                 .Include(p => p.Quotation)
@@ -35,6 +36,7 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
         public async Task<Proposal?> GetByIdWithDetailsAsync(string proposalId, string region)
         {
             return await _resolver.Resolve(region).Proposals
+                .Include(p => p.Policy)
                 .Include(p => p.Quotation)
                     .ThenInclude(q => q.ValuableItems)
                 .Include(p => p.Quotation)

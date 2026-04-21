@@ -243,19 +243,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             };
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── Backend Invoke (mirrors CommercialService.ExecuteCallInBackend) ──
-        // ═════════════════════════════════════════════════════════════════════
-
-        /// <inheritdoc />
         public void ExecuteCallInBackend(BackendInvokeRequest request)
         {
             _logger.LogInformation(
                 "=== ProposalService.ExecuteCallInBackend | ProposalId={ProposalId} PolicyNumber={PolicyNumber} ===",
                 request.ProposalId, request.PolicyNumber);
 
-            // ── Fire-and-forget: create a brand-new DI scope so the background ──
-            // task gets fresh DbContext instances (request scope is already gone). ─
             _ = Task.Run(async () =>
             {
                 using var scope = _scopeFactory.CreateScope();
@@ -263,7 +256,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 try
                 {
-                    // Fetch proposal with the scoped repo (region-aware overload avoids HttpContext)
+
                     var proposal = await repo.GetByIdWithDetailsAsync(request.ProposalId, request.Region);
 
                     if (proposal == null)
@@ -283,8 +276,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 }
             });
         }
-
-        // ── Orchestrator ─────────────────────────────────────────────────────
 
         private async Task GeneratePdfEmailSmsAsync(
             BackendInvokeRequest request, Proposal proposal, IProposalRepository repo)
@@ -309,9 +300,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             _logger.LogInformation("GeneratePdfEmailSms COMPLETE | ProposalId={ProposalId}", request.ProposalId);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── ExecutePdfAsync (mirrors HomeService.ExecutePDF) ─────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task<bool> ExecutePdfAsync(
             BackendInvokeRequest request, Proposal proposal, IProposalRepository repo)
@@ -335,31 +323,31 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     savedDocuments.Add(pdsDoc);
             }
 
-            // ── 2. ePolicy Form ───────────────────────────────────────────────
-            if (status)
-            {
-                var (pdfPolicyForm, policyDoc) = await HomeEPolicyFormAsync(request, proposal);
-                if (!pdfPolicyForm.status)
-                {
-                    status  = false;
-                    message = $"PDF Generate Fail - {pdfPolicyForm.ReferenceId}, {pdfPolicyForm.Token}";
-                }
-                else if (policyDoc != null)
-                    savedDocuments.Add(policyDoc);
-            }
+            //// ── 2. ePolicy Form ───────────────────────────────────────────────
+            //if (status)
+            //{
+            //    var (pdfPolicyForm, policyDoc) = await HomeEPolicyFormAsync(request, proposal);
+            //    if (!pdfPolicyForm.status)
+            //    {
+            //        status  = false;
+            //        message = $"PDF Generate Fail - {pdfPolicyForm.ReferenceId}, {pdfPolicyForm.Token}";
+            //    }
+            //    else if (policyDoc != null)
+            //        savedDocuments.Add(policyDoc);
+            //}
 
-            // ── 3. Tax Invoice Form ───────────────────────────────────────────
-            if (status)
-            {
-                var (pdfTaxInvoiceForm, taxDoc) = await HomeTaxInvoiceFormAsync(request, proposal);
-                if (!pdfTaxInvoiceForm.status)
-                {
-                    status  = false;
-                    message = $"PDF Generate Fail - {pdfTaxInvoiceForm.ReferenceId}, {pdfTaxInvoiceForm.Token}";
-                }
-                else if (taxDoc != null)
-                    savedDocuments.Add(taxDoc);
-            }
+            //// ── 3. Tax Invoice Form ───────────────────────────────────────────
+            //if (status)
+            //{
+            //    var (pdfTaxInvoiceForm, taxDoc) = await HomeTaxInvoiceFormAsync(request, proposal);
+            //    if (!pdfTaxInvoiceForm.status)
+            //    {
+            //        status  = false;
+            //        message = $"PDF Generate Fail - {pdfTaxInvoiceForm.ReferenceId}, {pdfTaxInvoiceForm.Token}";
+            //    }
+            //    else if (taxDoc != null)
+            //        savedDocuments.Add(taxDoc);
+            //}
 
             if (!status)
             {
@@ -371,7 +359,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 return false;
             }
 
-            // ── Persist all document records + set HasFullDocument = true ─────
             await repo.AddPolicyDocumentsAsync(savedDocuments, request.PolicyId, true, request.Region);
             await repo.SaveChangesAsync(request.Region);
 
@@ -379,9 +366,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return true;
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── HomePDSFormAsync  (HOHH_PDS_EGIB_EN.xsl) ─────────────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomePDSFormAsync(
             BackendInvokeRequest request, Proposal proposal)
@@ -486,9 +470,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return (response, policyDoc);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── HomeEPolicyFormAsync  (EpolicyForm_INS_EV.xsl) ───────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeEPolicyFormAsync(
             BackendInvokeRequest request, Proposal proposal)
@@ -592,9 +573,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return (response, policyDoc);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── HomeTaxInvoiceFormAsync  (TaxInvoice_INS_EV.xsl) ─────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeTaxInvoiceFormAsync(
             BackendInvokeRequest request, Proposal proposal)
@@ -698,9 +676,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return (response, policyDoc);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── SendEmail (mirrors CommercialService.SendEmail) ──────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task<bool> SendEmailAsync(BackendInvokeRequest request, Proposal proposal)
         {
@@ -714,7 +689,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
             try
             {
-                // ── 1. Generate email HTML from XSL template ──────────────────
+
                 var region   = request.Region.ToUpper();
                 var entity   = _docSettings.Entity.ToLower();                     // egib / egtb
                 var docLang  = "en";                                               // en / bm
@@ -749,7 +724,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     });
                 }
 
-                // ── 3. Send email ─────────────────────────────────────────────
                 var subject   = $"Home Insurance : Your ePolicy is ready ({request.PolicyNumber})";
                 var refId     = $"HOMESDK-Email-{DateTime.UtcNow.Ticks}";
                 _logger.LogInformation("Sending policy email | Ref={RefId} To={Email}", refId, proposal.Email);
@@ -774,10 +748,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 return false;
             }
         }
-
-        // ═════════════════════════════════════════════════════════════════════
-        // ── SendSms (mirrors CommercialService.SendSMS) ───────────────────────
-        // ═════════════════════════════════════════════════════════════════════
 
         private async Task SendSmsAsync(BackendInvokeRequest request, Proposal proposal)
         {
@@ -844,21 +814,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             }
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // ── Helpers ──────────────────────────────────────────────────────────
-        // ═════════════════════════════════════════════════════════════════════
-
-        /// <summary>
-        /// Builds the proposal XML then immediately applies the XSL transform,
-        /// returning the rendered HTML string — mirroring HTMLPDSForm exactly.
-        ///
-        /// Adaption notes vs. commercial service:
-        ///   • No ProductTempleteData lookup — xslPath is passed directly by each form function.
-        ///   • IsLppsa check is omitted (always PDS for regional service).
-        ///   • policyContractTemplate != null  →  File.Exists(xslPath).
-        ///
-        /// Returns null when the XSL file is missing or any exception occurs.
-        /// </summary>
         private string? BuildProposalXml(Proposal proposal, string policyNumber, string xslPath)
         {
             try
@@ -868,7 +823,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var docsPath = _docSettings.DocsPath;
                 var entity   = _docSettings.Entity; // "EGIB" or "EGTB"
 
-                // ── Financial values (mirrors HTMLPDSForm variable declarations) ──────
                 var coverageAmount   = Math.Round((q?.BuildingSum ?? 0) + (q?.ContentsSum ?? 0), 2).ToString("N2");
                 var planPremium      = (qp?.PlanPremium    ?? 0).ToString("N2");
                 var discountRate     = string.Empty;              // no DiscountRate% in regional model — null
@@ -881,13 +835,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var stampDuty        = (qp?.StampDuty      ?? 0).ToString("N2");
                 var totalPremium     = (qp?.TotalPremium   ?? 0).ToString("N2");
 
-                // ── Agent/channel flags (no agent-type in regional model) ─────────────
                 bool isBanca             = false;
                 bool isAgency            = false;
                 bool isCommissionAgency  = false;
                 bool isCommissionBanca   = false;
 
-                // ── Add-ons (mirrors addOnList — boolean flags → named list) ──────────
                 var addOnList = new List<(string Name, string Premium)>();
                 if (q?.HasRiotStrike              == true) addOnList.Add(("Riot & Strike",             "0.00"));
                 if (q?.HasExtendedTheft           == true) addOnList.Add(("Extended Theft",            "0.00"));
@@ -895,40 +847,46 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 if (q?.HasPublicLiability         == true) addOnList.Add(("Public Liability",          "0.00"));
                 bool hasAddOn = addOnList.Count > 0;
 
-                // ── Images — load from Docs folder, embed as base64 data URI ─────────
-                // Returns "data:image/png;base64,..." or "" when file is absent.
-                string LoadImage(string relativePath)
-                {
-                    var fullPath = Path.Combine(docsPath, relativePath);
-                    if (!File.Exists(fullPath))
-                    {
-                        _logger.LogWarning("Image not found for PDF: {Path}", fullPath);
-                        return string.Empty;
-                    }
-                    return "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes(fullPath));
-                }
+                var buildDir = Directory.GetCurrentDirectory();
 
-                // Four header variants — XSL picks the right one based on entity & language
-                var egibHeaderEnImage = LoadImage(Path.Combine("Home", "Images", "EGIB_Header_EN.png"));
-                var egtbHeaderEnImage = LoadImage(Path.Combine("Home", "Images", "EGTB_Header_EN.png"));
-                var egibHeaderBmImage = LoadImage(Path.Combine("Home", "Images", "EGIB_Header_BM.png"));
-                var egtbHeaderBmImage = LoadImage(Path.Combine("Home", "Images", "EGTB_Header_BM.png"));
+                // Four header variants — XSL selects based on entity & language
+                byte[] egibHeaderEnByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/EGIB-ENG.png");
+                var egibHeaderEnImage   = "data:image/png;base64," + Convert.ToBase64String(egibHeaderEnByte);
+
+                byte[] egibHeaderBmByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/EGIB-BM.png");
+                var egibHeaderBmImage   = "data:image/png;base64," + Convert.ToBase64String(egibHeaderBmByte);
+
 
                 // Active logo for the current entity (EN only — regional service is English)
-                var logoImageBase64 = entity.ToUpper() == "EGTB" ? egtbHeaderEnImage : egibHeaderEnImage;
+                var logoImageBase64 = egibHeaderEnImage;
 
-                // Numbered step icons
-                var blackCircledNumber1 = LoadImage(Path.Combine("Home", "Images", "Black_Circled_Number_1.png"));
-                var blackCircledNumber2 = LoadImage(Path.Combine("Home", "Images", "Black_Circled_Number_2.png"));
-                var blackCircledNumber3 = LoadImage(Path.Combine("Home", "Images", "Black_Circled_Number_3.png"));
-                var blackCircledNumber4 = LoadImage(Path.Combine("Home", "Images", "Black_Circled_Number_4.png"));
+                byte[] blackCircledNumber1Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_1.png");
+                var blackCircledNumber1        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber1Byte);
 
-                // Contact / social icons
-                var phoneImageBase64    = LoadImage(Path.Combine("Home", "Images", "Contact_Us.png"));
-                var websiteImageBase64  = LoadImage(Path.Combine("Home", "Images", "Visit_Us.png"));
-                var emailImageBase64    = LoadImage(Path.Combine("Home", "Images", "Email_To_Us.png"));
-                var qrCodeImageBase64   = LoadImage(Path.Combine("Home", "Images", "Etiqa_EN_QR.png"));
-                var questionMarkBase64  = LoadImage(Path.Combine("Home", "Images", "Question_Mark.png"));
+                byte[] blackCircledNumber2Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_2.png");
+                var blackCircledNumber2        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber2Byte);
+
+                byte[] blackCircledNumber3Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_3.png");
+                var blackCircledNumber3        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber3Byte);
+
+                byte[] blackCircledNumber4Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_4.png");
+                var blackCircledNumber4        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber4Byte);
+
+
+                byte[] phoneImageByte   = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Contact_Us.png");
+                var phoneImageBase64    = "data:image/png;base64," + Convert.ToBase64String(phoneImageByte);
+
+                byte[] websiteImageByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Visit_Us.png");
+                var websiteImageBase64  = "data:image/png;base64," + Convert.ToBase64String(websiteImageByte);
+
+                byte[] emailImageByte   = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Email_To_Us.png");
+                var emailImageBase64    = "data:image/png;base64," + Convert.ToBase64String(emailImageByte);
+
+                byte[] qrCodeImageByte  = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Etiqa_QR_EN.png");
+                var qrCodeImageBase64   = "data:image/png;base64," + Convert.ToBase64String(qrCodeImageByte);
+
+                byte[] questionMarkByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Question_Mark.png");
+                var questionMarkBase64  = "data:image/png;base64," + Convert.ToBase64String(questionMarkByte);
 
                 // PerlindunganTenang is MyRumah-specific — empty for regional service
                 var perlindunganTenang = string.Empty;
@@ -936,24 +894,19 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 // WebsiteUrl — not configured in regional model
                 var websiteUrl = string.Empty;
 
-                // ── Build XDocument exactly as HTMLPDSForm does ───────────────────────
+
                 var xmlTree = new XDocument(
                     new XElement("root",
 
-                        // Header image variants (XSL selects based on entity/language)
                         new XElement("ImageEgibEnHeader",   egibHeaderEnImage),
-                        new XElement("ImageEgtbEnHeader",   egtbHeaderEnImage),
                         new XElement("ImageEgibBmHeader",   egibHeaderBmImage),
-                        new XElement("ImageEgtbBmHeader",   egtbHeaderBmImage),
 
-                        // Date & channel flags
                         new XElement("P_Date",                DateTime.Now.ToString("dd/MM/yyyy")),
                         new XElement("P_IsBanca",             isBanca),
                         new XElement("P_IsAgency",            isAgency),
                         new XElement("P_IsCommissionAgency",  isCommissionAgency),
                         new XElement("P_IsCommissionBanca",   isCommissionBanca),
 
-                        // Dynamic PDS fields
                         new XElement("P_PaymentDate",         (string?)null),   // not tracked in regional model
                         new XElement("P_CoverageAmount",      coverageAmount),
                         new XElement("P_PlanPremium",         planPremium),
@@ -965,7 +918,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                             )
                         ),
 
-                        // Premium breakdown
                         new XElement("P_DiscountRate",        discountRate),
                         new XElement("P_DiscountAmount",      discountAmount),
                         new XElement("P_CommissionRate",      commissionRate),
@@ -976,7 +928,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_StampDuty",           stampDuty),
                         new XElement("P_TotalPremium",        totalPremium),
 
-                        // Images
                         new XElement("P_PerlindunganTenang",  perlindunganTenang),
                         new XElement("P_LogoImage",           logoImageBase64),
                         new XElement("P_Number1Image",        blackCircledNumber1),
@@ -992,9 +943,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     )
                 );
 
-                // ── Apply XSL transform (mirrors HTMLPDSForm template selection block) ──
-                // Commercial: policyContractTemplate = homeData.ProductTempleteData.FirstOrDefault(...)
-                // Regional  : xslPath is passed directly by the calling form function.
                 if (!string.IsNullOrEmpty(xslPath) && File.Exists(xslPath))
                 {
                     var xslt    = new XslCompiledTransform();
@@ -1043,14 +991,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
         private static string BuildPdfPassword(Proposal proposal)
         {
-            // {DOB without separators}{last 4 chars of IdNumber}
             var dob      = (proposal.DateOfBirth ?? string.Empty).Replace("/", "").Replace("-", "");
             var idNumber = proposal.IdNumber ?? string.Empty;
             var last4    = idNumber.Length >= 4 ? idNumber[^4..] : idNumber;
             return $"{dob}{last4}";
         }
 
-        /// <summary>Zips all PDFs in the policy document directory.</summary>
         private static byte[]? ZipPolicyDocuments(string storeDir, string policyNumber)
         {
             if (!Directory.Exists(storeDir))

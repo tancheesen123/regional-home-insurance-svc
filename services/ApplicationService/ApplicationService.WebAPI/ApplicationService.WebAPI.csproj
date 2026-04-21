@@ -45,17 +45,27 @@
   <ItemGroup>
     <!--
       DinkToPdf native library — copy to output alongside the executable.
-      HOW TO GET THE FILE:
-        1. Download wkhtmltopdf installer from https://wkhtmltopdf.org/downloads.html
-           (Windows 64-bit: wkhtmltox-0.12.6-1.msvc2015-win64.exe)
-        2. Install / extract it.
-        3. Copy  C:\Program Files\wkhtmltopdf\bin\libwkhtmltox.dll
+      HOW TO GET THE FILE (Windows):
+        1. Download: https://wkhtmltopdf.org/downloads.html
+           → wkhtmltox-0.12.6-1.msvc2015-win64.exe
+        2. Install it (default: C:\Program Files\wkhtmltopdf\)
+        3. Copy  C:\Program Files\wkhtmltopdf\bin\wkhtmltox.dll
            into this project directory (same folder as this .csproj).
-        4. The entry below will copy it to the output directory on every build.
+           NOTE: the installer ships it as "wkhtmltox.dll" (no lib prefix) — that is fine.
+               Program.cs uses NativeLibrary.SetDllImportResolver to map
+               "libwkhtmltox" → "wkhtmltox.dll" automatically.
+      LINUX:
+        apt-get install libwkhtmltox  — ships as libwkhtmltox.so
     -->
+    <!-- Windows installer name (no lib prefix) -->
+    <Content Include="wkhtmltox.dll" Condition="Exists('wkhtmltox.dll')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <!-- Alternative: manually renamed to lib prefix -->
     <Content Include="libwkhtmltox.dll" Condition="Exists('libwkhtmltox.dll')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <!-- Linux -->
     <Content Include="libwkhtmltox.so" Condition="Exists('libwkhtmltox.so')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

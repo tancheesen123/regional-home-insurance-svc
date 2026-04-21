@@ -1,28 +1,56 @@
 using ApplicationService.Infrastructure.Shared.HttpClients;
 using ApplicationService.WebAPI.Extensions;
-using ApplicationService.WebAPI.Infrastructure;
 using DotNetEnv;
+using DinkToPdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi.Models;
+using System.Runtime.InteropServices;
 
 // Load .env before the configuration system builds so all
 // environment variables are available to IConfiguration.
 Env.TraversePath().Load();
 
 // ── DinkToPdf native library bootstrap ───────────────────────────────────────
-// libwkhtmltox.dll (Windows) / libwkhtmltox.so (Linux) must exist next to
-// the executable.  Place the file in the project root and set:
-//   Build Action  = Content
-//   Copy to Output Directory = Copy always
-// Download from: https://github.com/wkhtmltopdf/wkhtmltopdf/releases
-//   → wkhtmltox-0.12.6-1.msvc2015-win64.exe (extract libwkhtmltox.dll)
-var nativeLibName = OperatingSystem.IsWindows() ? "libwkhtmltox.dll" : "libwkhtmltox.so";
-var nativeLibPath = Path.Combine(AppContext.BaseDirectory, nativeLibName);
-if (File.Exists(nativeLibPath))
-    new CustomAssemblyLoadContext().LoadUnmanagedLibrary(nativeLibPath);
+// DinkToPdf's P/Invoke looks for "libwkhtmltox", but the Windows installer
+// ships the file as "wkhtmltox.dll" (no lib prefix).
+// NativeLibrary.SetDllImportResolver is the correct .NET 5+ way to intercept
+// and redirect P/Invoke calls — CustomAssemblyLoadContext does NOT work for this.
+//
+// File setup:
+//   Windows : place wkhtmltox.dll  OR  libwkhtmltox.dll next to the executable
+//   Linux   : place libwkhtmltox.so next to the executable
+//   Download: https://wkhtmltopdf.org/downloads.html
+//             → wkhtmltox-0.12.6-1.msvc2015-win64.exe  (extract wkhtmltox.dll)
+var baseDir = AppContext.BaseDirectory;
+
+// Accept either naming convention so the installer DLL works without renaming
+var wkCandidates = OperatingSystem.IsWindows()
+    ? new[] { "libwkhtmltox.dll", "wkhtmltox.dll" }
+    : new[] { "libwkhtmltox.so" };
+
+var wkDllPath = wkCandidates
+    .Select(f => Path.Combine(baseDir, f))
+    .FirstOrDefault(File.Exists);
+
+if (wkDllPath != null)
+{
+    // Redirect every P/Invoke for "libwkhtmltox" to the actual file on disk
+    NativeLibrary.SetDllImportResolver(
+        typeof(PdfTools).Assembly,
+        (libraryName, _, _) =>
+            libraryName == "libwkhtmltox"
+                ? NativeLibrary.Load(wkDllPath)
+                : IntPtr.Zero);
+
+    Console.WriteLine($"[DinkToPdf] Native library loaded from: {wkDllPath}");
+}
 else
-    Console.WriteLine($"[WARNING] DinkToPdf native library not found at: {nativeLibPath}. PDF generation will fail.");
+{
+    Console.WriteLine($"[DinkToPdf] WARNING — native library not found in: {baseDir}");
+    Console.WriteLine($"[DinkToPdf]   Searched: {string.Join(", ", wkCandidates)}");
+    Console.WriteLine($"[DinkToPdf]   PDF generation will fail until the file is placed there.");
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
