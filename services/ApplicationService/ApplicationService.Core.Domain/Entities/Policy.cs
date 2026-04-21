@@ -13,6 +13,9 @@ namespace ApplicationService.Core.Domain.Entities
         public string IssuedBy { get; set; }
         public string ProposalId { get; set; }
 
+        /// <summary>True once all policy PDF documents (ePolicy, Tax Invoice, PDS) have been generated.</summary>
+        public bool HasFullDocument { get; set; } = false;
+
         // Navigation
         public Proposal Proposal { get; set; }
         public ICollection<PolicyDocument> PolicyDocuments { get; set; }

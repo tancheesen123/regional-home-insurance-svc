@@ -28,8 +28,12 @@ using ApplicationService.Core.Application.ProductService.Interfaces.Services;
 using ApplicationService.Core.Application.InforcePolicyService.Features.InforcePolicy.Command;
 using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
 using ApplicationService.Core.Application.InforcePolicyService.Services;
+using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
+using ApplicationService.Core.Application.ProposalService.Settings;
 using ApplicationService.Infrastructure.Persistence.Repositories;
 using ApplicationService.Infrastructure.Shared.Services;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 
 namespace ApplicationService.WebAPI.Extensions
 {
@@ -63,6 +67,16 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IInforcePolicyService, InforcePolicyService>();
             services.AddScoped<IInforceService, InforceService>();
             services.AddScoped<IProposalErrorService, ProposalErrorService>();
+            // DinkToPdf: IConverter MUST be Singleton — wraps a non-reentrant native library.
+            // PdfService is also Singleton because it holds the Singleton IConverter.
+            services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+            services.AddSingleton<IPdfService, PdfService>();
+            services.AddScoped<INotificationEmailService, NotificationEmailService>();
+            services.AddScoped<ISmsService, SmsService>();
+
+            // Settings
+            services.Configure<DocumentSettings>(configuration.GetSection("DocumentSettings"));
+            services.Configure<NotificationEmailSettings>(configuration.GetSection("EmailSettings"));
 
             // Settings
             services.Configure<StripeSettings>(configuration.GetSection("StripeSettings"));

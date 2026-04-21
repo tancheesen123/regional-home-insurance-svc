@@ -1,5 +1,6 @@
 using ApplicationService.Infrastructure.Shared.HttpClients;
 using ApplicationService.WebAPI.Extensions;
+using ApplicationService.WebAPI.Infrastructure;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -8,6 +9,20 @@ using Microsoft.OpenApi.Models;
 // Load .env before the configuration system builds so all
 // environment variables are available to IConfiguration.
 Env.TraversePath().Load();
+
+// ── DinkToPdf native library bootstrap ───────────────────────────────────────
+// libwkhtmltox.dll (Windows) / libwkhtmltox.so (Linux) must exist next to
+// the executable.  Place the file in the project root and set:
+//   Build Action  = Content
+//   Copy to Output Directory = Copy always
+// Download from: https://github.com/wkhtmltopdf/wkhtmltopdf/releases
+//   → wkhtmltox-0.12.6-1.msvc2015-win64.exe (extract libwkhtmltox.dll)
+var nativeLibName = OperatingSystem.IsWindows() ? "libwkhtmltox.dll" : "libwkhtmltox.so";
+var nativeLibPath = Path.Combine(AppContext.BaseDirectory, nativeLibName);
+if (File.Exists(nativeLibPath))
+    new CustomAssemblyLoadContext().LoadUnmanagedLibrary(nativeLibPath);
+else
+    Console.WriteLine($"[WARNING] DinkToPdf native library not found at: {nativeLibPath}. PDF generation will fail.");
 
 var builder = WebApplication.CreateBuilder(args);
 
