@@ -43,18 +43,15 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
 
             try
             {
-                // ── Step 1: Validate ProposalId ───────────────────────────────
                 if (string.IsNullOrWhiteSpace(request.ProposalId))
                     throw new ArgumentException("ProposalId is required.");
 
-                // ── Step 2: Fetch Proposal ────────────────────────────────────
                 var proposal = await _proposalRepository.GetByIdWithDetailsAsync(request.ProposalId);
                 if (proposal == null)
                     throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
 
                 var region = proposal.Quotation?.Region?.ToUpper() ?? "XX";
 
-                // ── Step 3: Already Inforced Check ────────────────────────────
                 if (proposal.Status == "INFORCED")
                 {
                     _logger.LogInformation("Proposal {ProposalId} already INFORCED.", proposal.ProposalId);
@@ -77,7 +74,6 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
 
                 bool checkPayment = request.CheckPayment ?? true;
 
-                // ── Step 5: Payment Verification ─────────────────────────────
                 if (checkPayment)
                 {
                     var payments = await _paymentRepository.GetByProposalIdAsync(request.ProposalId);
@@ -88,7 +84,6 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
                             "Complete payment before inforcing the policy.");
                 }
 
-                // ── Step 6: Generate Policy Number & Inforce ─────────────────
                 var quotation = proposal.Quotation;
                 var policy    = new Policy
                 {
@@ -103,14 +98,13 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
                     CreatedAt      = DateTime.UtcNow
                 };
 
-                //await _proposalRepository.InforceProposalAsync(proposal, policy);
-                //await _proposalRepository.SaveChangesAsync();
+                await _proposalRepository.InforceProposalAsync(proposal, policy);
+                await _proposalRepository.SaveChangesAsync();
 
                 _logger.LogInformation(
                     "Proposal {ProposalId} inforced. PolicyNumber={PolicyNumber}",
                     proposal.ProposalId, policy.PolicyNumber);
 
-                // ── Step 8: Backend Invocation (fire-and-forget) ──────────────
                 bool sendSms = request.SendSms ?? SmsDefaultOnRegions.Contains(region);
 
                 _ = Task.Run(async () =>
@@ -150,13 +144,11 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
             catch (Exception ex) when (ex is not ArgumentException
                                            and not UnauthorizedAccessException)
             {
-                // ── Step 9: Error Handling ────────────────────────────────────
                 await _errorService.LogErrorAsync(request.ProposalId, "InforcePolicy", ex);
                 throw;
             }
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private static string GeneratePolicyNumber(string region)
         {
