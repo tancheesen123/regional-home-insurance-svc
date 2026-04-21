@@ -31,6 +31,17 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
         }
 
+        /// <inheritdoc />
+        public async Task<Proposal?> GetByIdWithDetailsAsync(string proposalId, string region)
+        {
+            return await _resolver.Resolve(region).Proposals
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q.ValuableItems)
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q.QuotationPremium)
+                .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
+        }
+
         public async Task<Proposal?> GetByQuotationIdAsync(string quotationId)
         {
             return await _resolver.Resolve().Proposals
@@ -78,9 +89,38 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task AddPolicyDocumentsAsync(List<PolicyDocument> documents, string policyId, bool hasFullDocument)
+        {
+            var context = _resolver.Resolve();
+
+            await context.PolicyDocuments.AddRangeAsync(documents);
+
+            var policy = await context.Policies.FirstOrDefaultAsync(p => p.PolicyId == policyId);
+            if (policy != null)
+                policy.HasFullDocument = hasFullDocument;
+        }
+
+        /// <inheritdoc />
+        public async Task AddPolicyDocumentsAsync(List<PolicyDocument> documents, string policyId, bool hasFullDocument, string region)
+        {
+            var context = _resolver.Resolve(region);
+
+            await context.PolicyDocuments.AddRangeAsync(documents);
+
+            var policy = await context.Policies.FirstOrDefaultAsync(p => p.PolicyId == policyId);
+            if (policy != null)
+                policy.HasFullDocument = hasFullDocument;
+        }
+
         public async Task SaveChangesAsync()
         {
             await _resolver.Resolve().SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task SaveChangesAsync(string region)
+        {
+            await _resolver.Resolve(region).SaveChangesAsync();
         }
     }
 }

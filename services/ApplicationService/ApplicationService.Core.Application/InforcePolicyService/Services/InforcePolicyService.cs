@@ -77,19 +77,6 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
 
                 bool checkPayment = request.CheckPayment ?? true;
 
-                // ── Step 4: Payment Bypass Authorization ──────────────────────
-                if (!checkPayment)
-                {
-                    bool isAgent = user.IsInRole("Agent") || user.IsInRole("Admin");
-                    if (!isAgent)
-                        throw new UnauthorizedAccessException(
-                            "Only agents or admins are authorised to bypass the payment check.");
-
-                    _logger.LogWarning(
-                        "Payment check bypassed for ProposalId={ProposalId} by user {User}.",
-                        proposal.ProposalId, user.Identity?.Name);
-                }
-
                 // ── Step 5: Payment Verification ─────────────────────────────
                 if (checkPayment)
                 {
@@ -116,8 +103,8 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
                     CreatedAt      = DateTime.UtcNow
                 };
 
-                await _proposalRepository.InforceProposalAsync(proposal, policy);
-                await _proposalRepository.SaveChangesAsync();
+                //await _proposalRepository.InforceProposalAsync(proposal, policy);
+                //await _proposalRepository.SaveChangesAsync();
 
                 _logger.LogInformation(
                     "Proposal {ProposalId} inforced. PolicyNumber={PolicyNumber}",

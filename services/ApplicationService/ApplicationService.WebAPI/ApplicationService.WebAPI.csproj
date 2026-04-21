@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="MediatR" Version="14.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
@@ -32,7 +33,32 @@
     <Folder Include="Controllers\IDN\" />
     <Folder Include="Controllers\KHM\" />
     <Folder Include="Controllers\PHL\" />
-    <Folder Include="Docs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy all XSL, email, SMS templates and images to output so the app can read them at runtime -->
+    <Content Include="Docs\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      DinkToPdf native library — copy to output alongside the executable.
+      HOW TO GET THE FILE:
+        1. Download wkhtmltopdf installer from https://wkhtmltopdf.org/downloads.html
+           (Windows 64-bit: wkhtmltox-0.12.6-1.msvc2015-win64.exe)
+        2. Install / extract it.
+        3. Copy  C:\Program Files\wkhtmltopdf\bin\libwkhtmltox.dll
+           into this project directory (same folder as this .csproj).
+        4. The entry below will copy it to the output directory on every build.
+    -->
+    <Content Include="libwkhtmltox.dll" Condition="Exists('libwkhtmltox.dll')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libwkhtmltox.so" Condition="Exists('libwkhtmltox.so')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

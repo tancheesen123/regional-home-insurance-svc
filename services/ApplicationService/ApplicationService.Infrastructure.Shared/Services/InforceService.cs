@@ -1,30 +1,40 @@
+using ApplicationService.Core.Application.InforcePolicyService.DTOs;
 using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
+using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
     /// <summary>
-    /// Stub implementation of IInforceService.
-    /// Replace with actual PDF generation / notification dispatching logic.
+    /// Bridges InforcePolicyService → ProposalService background processing pipeline.
+    /// Receives the BackendInvokeRequest after a policy is inforced and hands it off
+    /// to ProposalService.ExecuteCallInBackend (PDF generation, email, SMS).
     /// </summary>
     public class InforceService : IInforceService
     {
         private readonly ILogger<InforceService> _logger;
+        private readonly IProposalService        _proposalService;
 
-        public InforceService(ILogger<InforceService> logger)
+        public InforceService(
+            ILogger<InforceService> logger,
+            IProposalService        proposalService)
         {
-            _logger = logger;
+            _logger          = logger;
+            _proposalService = proposalService;
         }
 
         public Task BackendInvokeAsync(BackendInvokeRequest request)
         {
             _logger.LogInformation(
-                "BackendInvokeAsync | ProposalId={ProposalId} PolicyNumber={PolicyNumber} Region={Region} " +
-                "SendEmail={SendEmail} SendSms={SendSms}",
+                "InforceService.BackendInvokeAsync | ProposalId={ProposalId} PolicyNumber={PolicyNumber} " +
+                "Region={Region} SendEmail={SendEmail} SendSms={SendSms}",
                 request.ProposalId, request.PolicyNumber, request.Region,
                 request.SendEmail, request.SendSms);
 
-            // TODO: Trigger PDF generation, email/SMS dispatch, downstream system calls.
+            // ExecuteCallInBackend is async void (fire-and-forget) — internally kicks off
+            // a Task.Run for GeneratePdfEmailSms so this returns immediately.
+            _proposalService.ExecuteCallInBackend(request);
+
             return Task.CompletedTask;
         }
     }
