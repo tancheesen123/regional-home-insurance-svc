@@ -22,31 +22,39 @@ namespace ApplicationService.WebAPI.Controllers
         /// Step 5 — Retrieve full proposal details (personal info, addresses,
         /// quotation snapshot, plan, valuables and premium breakdown) for review
         /// before proceeding to payment.
+        /// Only returns data belonging to the authenticated customer.
         /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> GetProposal([FromBody] GetProposalRequest request)
         {
             try
             {
-                var query = new GetProposalQuery { Request = request };
+                var query = new GetProposalQuery { Request = request, User = User };
                 return Ok(await _mediator.Send(query));
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (UnauthorizedAccessException)
+            {
+                // Return 403 without leaking the reason — avoids confirming whether
+                // the resource exists for a different customer (IDOR oracle).
+                return Forbid();
+            }
         }
 
         /// <summary>
         /// Step 4 — Create a formal proposal from a quoted/customised quotation.
         /// Locks the quotation so no further plan changes are allowed.
+        /// Only allows creating a proposal for a quotation owned by the authenticated customer.
         /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> CreateProposal([FromBody] CreateProposalRequest request)
         {
             try
             {
-                var command = new CreateProposalCommand { Request = request };
+                var command = new CreateProposalCommand { Request = request, User = User };
                 return Ok(await _mediator.Send(command));
             }
             catch (KeyNotFoundException ex)
@@ -56,6 +64,10 @@ namespace ApplicationService.WebAPI.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
             }
         }
     }

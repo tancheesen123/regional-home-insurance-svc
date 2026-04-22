@@ -3,12 +3,14 @@ using ApplicationService.Core.Application.ProposalService.DTOs;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.Command
 {
     public class CreateProposalCommand : IRequest<Response<CreateProposalResponse>>
     {
         public CreateProposalRequest Request { get; set; }
+        public ClaimsPrincipal       User    { get; set; }
 
         public class CreateProposalCommandHandler : IRequestHandler<CreateProposalCommand, Response<CreateProposalResponse>>
         {
@@ -27,7 +29,7 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
             {
                 _logger.LogInformation("=== Start CreateProposalCommandHandler ===");
 
-                var result = await _proposalService.CreateProposalAsync(request.Request);
+                var result = await _proposalService.CreateProposalAsync(request.Request, request.User);
 
                 return new Response<CreateProposalResponse>(result);
             }

@@ -31,8 +31,6 @@ namespace ApplicationService.Infrastructure.Shared.Services
                 request.ProposalId, request.PolicyNumber, request.Region,
                 request.SendEmail, request.SendSms);
 
-            // ExecuteCallInBackend is async void (fire-and-forget) — internally kicks off
-            // a Task.Run for GeneratePdfEmailSms so this returns immediately.
             _proposalService.ExecuteCallInBackend(request);
 
             return Task.CompletedTask;
