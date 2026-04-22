@@ -1,7 +1,9 @@
 using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using DinkToPdf;
 using DinkToPdf.Contracts;
+using iText.Kernel.Pdf;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
@@ -66,6 +68,39 @@ namespace ApplicationService.Infrastructure.Shared.Services
 
             var pdfBytes = _converter.Convert(doc);
             return Task.FromResult(pdfBytes);
+        }
+
+        /// <inheritdoc />
+        public byte[] EncryptPdf(byte[] pdfBytes, string password)
+        {
+            try
+            {
+                var userPwd  = Encoding.UTF8.GetBytes(password);
+                // Owner password is randomised — prevents the document being modified without iText
+                var ownerPwd = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString("N"));
+
+                var writerProps = new WriterProperties()
+                    .SetStandardEncryption(
+                        userPwd,
+                        ownerPwd,
+                        EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                        EncryptionConstants.ENCRYPTION_AES_128);
+
+                using var input  = new MemoryStream(pdfBytes);
+                using var output = new MemoryStream();
+                using var reader = new PdfReader(input);
+                using var writer = new PdfWriter(output, writerProps);
+                using var pdf    = new PdfDocument(reader, writer);
+                pdf.Close();
+
+                _logger.LogInformation("PdfService.EncryptPdf | EncryptedSize={Size}", output.Length);
+                return output.ToArray();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PdfService.EncryptPdf failed — returning unencrypted PDF.");
+                return pdfBytes;
+            }
         }
     }
 }

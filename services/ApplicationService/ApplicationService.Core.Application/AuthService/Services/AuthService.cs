@@ -3,6 +3,7 @@ using ApplicationService.Core.Application.AuthService.Features.Auth.Command;
 using ApplicationService.Core.Application.AuthService.Interfaces.Repositories;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
 using ApplicationService.Core.Application.AuthService.Settings;
+using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 using ApplicationService.Core.Domain.Entities;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
@@ -16,24 +17,27 @@ namespace ApplicationService.Core.Application.AuthService.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly ILogger<AuthService> _logger;
-        private readonly IMapper _mapper;
-        private readonly IAuthRepository _authRepository;
-        private readonly IEmailService _emailService;
-        private readonly JwtSettings _jwtSettings;
+        private readonly ILogger<AuthService>    _logger;
+        private readonly IMapper                  _mapper;
+        private readonly IAuthRepository          _authRepository;
+        private readonly ICustomerRepository      _customerRepository;
+        private readonly IEmailService            _emailService;
+        private readonly JwtSettings              _jwtSettings;
 
         public AuthService(
-            ILogger<AuthService> logger,
-            IMapper mapper,
-            IAuthRepository authRepository,
-            IEmailService emailService,
-            IOptions<JwtSettings> jwtSettings)
+            ILogger<AuthService>       logger,
+            IMapper                    mapper,
+            IAuthRepository            authRepository,
+            ICustomerRepository        customerRepository,
+            IEmailService              emailService,
+            IOptions<JwtSettings>      jwtSettings)
         {
-            _logger = logger;
-            _mapper = mapper;
-            _authRepository = authRepository;
-            _emailService = emailService;
-            _jwtSettings = jwtSettings.Value;
+            _logger             = logger;
+            _mapper             = mapper;
+            _authRepository     = authRepository;
+            _customerRepository = customerRepository;
+            _emailService       = emailService;
+            _jwtSettings        = jwtSettings.Value;
         }
 
 
@@ -59,8 +63,13 @@ namespace ApplicationService.Core.Application.AuthService.Services
             if (!user.IsVerified)
                 throw new UnauthorizedAccessException("Please verify your email before logging in.");
 
+            // Fetch the customer record linked to this user account so we can include
+            // the CustomerId in the JWT — used for ownership checks in Proposal/Quotation APIs.
+            var customer   = await _customerRepository.GetByUserIdAsync(user.UserId);
+            var customerId = customer?.CustomerId ?? string.Empty;
+
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.ExpiryHours);
-            var token = GenerateJwtToken(user.UserId, user.Email, "auth", expiresAt);
+            var token = GenerateJwtToken(user.UserId, user.Email, customerId, "auth", expiresAt);
 
             return new LoginResponse
             {
@@ -119,9 +128,9 @@ namespace ApplicationService.Core.Application.AuthService.Services
 
             await _authRepository.RegisterAsync(userAccount, customer);
 
-            // Generate verification JWT token (short-lived)
+            // Generate verification JWT token (short-lived) — no customerId needed for verification flow
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.VerificationExpiryHours);
-            var verificationToken = GenerateJwtToken(userId, request.Email, "email-verification", expiresAt);
+            var verificationToken = GenerateJwtToken(userId, request.Email, string.Empty, "email-verification", expiresAt);
             var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}&countryCode={request.Region.ToUpper()}";
 
             await _emailService.SendVerificationEmailAsync(request.Email, $"{request.FirstName} {request.LastName}", verificationLink);
@@ -172,18 +181,23 @@ namespace ApplicationService.Core.Application.AuthService.Services
         }
 
 
-        private string GenerateJwtToken(string userId, string email, string purpose, DateTime expiresAt)
+        private string GenerateJwtToken(
+            string userId, string email, string customerId, string purpose, DateTime expiresAt)
         {
             var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub,   userId),
                 new Claim(JwtRegisteredClaimNames.Email, email),
                 new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
                 new Claim("purpose",                     purpose)
             };
+
+            // Include customerId claim only for auth tokens — verification tokens don't need it
+            if (!string.IsNullOrEmpty(customerId))
+                claims.Add(new Claim("customerId", customerId));
 
             var token = new JwtSecurityToken(
                 issuer:             _jwtSettings.Issuer,

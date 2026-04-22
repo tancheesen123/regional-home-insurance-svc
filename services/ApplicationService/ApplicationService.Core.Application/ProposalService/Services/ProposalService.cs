@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Polly;
 using PollyPolicy = Polly.Policy;
 using System.IO.Compression;
+using System.Security.Claims;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -35,6 +36,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         private const string ProductType = "INS";
         // Language variant: EV = English Version, BV = Bahasa Version
         private const string LangVariant = "EV";
+
+        // ── Security: allowlist of valid region codes ─────────────────────────
+        // FIX #3 — Path traversal: region is used directly in file paths;
+        // validate it against a strict allowlist before any file I/O.
+        private static readonly HashSet<string> AllowedRegions =
+            new(StringComparer.OrdinalIgnoreCase) { "PH", "ID", "KH" };
 
         public ProposalService(
             ILogger<ProposalService>          logger,
@@ -60,13 +67,20 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
         // ── GetProposal ───────────────────────────────────────────────────────
 
-        public async Task<GetProposalResponse> GetProposalAsync(GetProposalRequest request)
+        public async Task<GetProposalResponse> GetProposalAsync(GetProposalRequest request, ClaimsPrincipal user)
         {
             _logger.LogInformation("=== ProposalService.GetProposalAsync ===");
+
+            // FIX #1 — IDOR: verify the caller owns this proposal before returning any data.
+            var callerId = user.FindFirst("customerId")?.Value
+                ?? throw new UnauthorizedAccessException("Missing identity claim. Please log in again.");
 
             var proposal = await _proposalRepository.GetByIdWithDetailsAsync(request.ProposalId);
             if (proposal == null)
                 throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
+
+            if (proposal.CustomerId != callerId)
+                throw new UnauthorizedAccessException("You do not have access to this proposal.");
 
             var q = proposal.Quotation;
 
@@ -172,13 +186,20 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
         // ── CreateProposal ────────────────────────────────────────────────────
 
-        public async Task<CreateProposalResponse> CreateProposalAsync(CreateProposalRequest request)
+        public async Task<CreateProposalResponse> CreateProposalAsync(CreateProposalRequest request, ClaimsPrincipal user)
         {
             _logger.LogInformation("=== ProposalService.CreateProposalAsync ===");
+
+            // FIX #1 — IDOR: verify the caller owns this quotation before creating a proposal.
+            var callerId = user.FindFirst("customerId")?.Value
+                ?? throw new UnauthorizedAccessException("Missing identity claim. Please log in again.");
 
             var quotation = await _quotationRepository.GetByIdAsync(request.QuotationId);
             if (quotation == null)
                 throw new KeyNotFoundException($"Quotation '{request.QuotationId}' not found.");
+
+            if (quotation.CustomerId != callerId)
+                throw new UnauthorizedAccessException("You do not have access to this quotation.");
 
             if (quotation.Status == "LOCKED")
                 throw new InvalidOperationException("A proposal has already been created for this quotation.");
@@ -249,6 +270,16 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 "=== ProposalService.ExecuteCallInBackend | ProposalId={ProposalId} PolicyNumber={PolicyNumber} ===",
                 request.ProposalId, request.PolicyNumber);
 
+            // FIX #3 — Path traversal: validate region against the allowlist before it is
+            // used in any file path construction inside the background task.
+            if (!AllowedRegions.Contains(request.Region))
+            {
+                _logger.LogError(
+                    "ExecuteCallInBackend rejected: invalid region '{Region}' for ProposalId={ProposalId}.",
+                    request.Region, request.ProposalId);
+                return;
+            }
+
             _ = Task.Run(async () =>
             {
                 using var scope = _scopeFactory.CreateScope();
@@ -256,7 +287,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 try
                 {
-
                     var proposal = await repo.GetByIdWithDetailsAsync(request.ProposalId, request.Region);
 
                     if (proposal == null)
@@ -375,7 +405,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
-            var entity   = _docSettings.Entity;                          // EGIB
+            var entity   = _docSettings.Entity;
             var xslPath  = Path.Combine(_docSettings.DocsPath, region, "Home", "XSL", $"HOHH_PDS_{entity}_EN.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
             var filePath = Path.Combine(storeDir, file);
@@ -383,14 +413,17 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
+            // FIX #11 — Polly: exclude fatal CLR exceptions from the retry predicate.
             var retryPolicy = PollyPolicy
-                .Handle<Exception>()
+                .Handle<Exception>(ex => ex is not OutOfMemoryException
+                                      and not StackOverflowException
+                                      and not AccessViolationException)
                 .WaitAndRetryAsync(
                     retryCount: retryCount,
                     sleepDurationProvider: retryAttempt =>
                     {
                         var timeToWait = TimeSpan.FromSeconds(waitTime);
-                        _logger.LogInformation($"HomePDSForm retry — waiting {timeToWait.TotalSeconds}s");
+                        _logger.LogInformation("HomePDSForm retry — waiting {Seconds}s", timeToWait.TotalSeconds);
                         return timeToWait;
                     },
                     onRetry: (ex, timeSpan, context) =>
@@ -408,7 +441,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     {
                         var status = false;
 
-                        var pdsFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath);
+                        var pdsFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath, region);
                         if (pdsFormHTML != null)
                         {
                             var sourceReferenceId = $"HOMESDKPDFPDSFORM{DateTime.Now.Ticks}";
@@ -423,8 +456,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
+                                // FIX #2 — Encrypt PDF before writing to disk (via IPdfService.EncryptPdf)
                                 var password  = BuildPdfPassword(proposal);
-                                var encrypted = EncryptPdf(pdfBytes, password);
+                                var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
                                 Directory.CreateDirectory(storeDir);
                                 if (File.Exists(filePath)) File.Delete(filePath);
@@ -486,14 +520,17 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
+            // FIX #11 — exclude fatal CLR exceptions from retry
             var retryPolicy = PollyPolicy
-                .Handle<Exception>()
+                .Handle<Exception>(ex => ex is not OutOfMemoryException
+                                      and not StackOverflowException
+                                      and not AccessViolationException)
                 .WaitAndRetryAsync(
                     retryCount: retryCount,
                     sleepDurationProvider: retryAttempt =>
                     {
                         var timeToWait = TimeSpan.FromSeconds(waitTime);
-                        _logger.LogInformation($"HomeEPolicyForm retry — waiting {timeToWait.TotalSeconds}s");
+                        _logger.LogInformation("HomeEPolicyForm retry — waiting {Seconds}s", timeToWait.TotalSeconds);
                         return timeToWait;
                     },
                     onRetry: (ex, timeSpan, context) =>
@@ -511,7 +548,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     {
                         var status = false;
 
-                        var policyFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath);
+                        var policyFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath, region);
                         if (policyFormHTML != null)
                         {
                             var sourceReferenceId = $"HOMESDKPDFEPOLICYFORM{DateTime.Now.Ticks}";
@@ -526,8 +563,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
+                                // FIX #2 — Encrypt PDF before writing to disk
                                 var password  = BuildPdfPassword(proposal);
-                                var encrypted = EncryptPdf(pdfBytes, password);
+                                var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
                                 Directory.CreateDirectory(storeDir);
                                 if (File.Exists(filePath)) File.Delete(filePath);
@@ -589,14 +627,17 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
+            // FIX #11 — exclude fatal CLR exceptions from retry
             var retryPolicy = PollyPolicy
-                .Handle<Exception>()
+                .Handle<Exception>(ex => ex is not OutOfMemoryException
+                                      and not StackOverflowException
+                                      and not AccessViolationException)
                 .WaitAndRetryAsync(
                     retryCount: retryCount,
                     sleepDurationProvider: retryAttempt =>
                     {
                         var timeToWait = TimeSpan.FromSeconds(waitTime);
-                        _logger.LogInformation($"HomeTaxInvoiceForm retry — waiting {timeToWait.TotalSeconds}s");
+                        _logger.LogInformation("HomeTaxInvoiceForm retry — waiting {Seconds}s", timeToWait.TotalSeconds);
                         return timeToWait;
                     },
                     onRetry: (ex, timeSpan, context) =>
@@ -614,7 +655,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     {
                         var status = false;
 
-                        var taxFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath);
+                        var taxFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath, region);
                         if (taxFormHTML != null)
                         {
                             var sourceReferenceId = $"HOMESDKPDFTAXINVOICE{DateTime.Now.Ticks}";
@@ -629,8 +670,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
+                                // FIX #2 — Encrypt PDF before writing to disk
                                 var password  = BuildPdfPassword(proposal);
-                                var encrypted = EncryptPdf(pdfBytes, password);
+                                var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
                                 Directory.CreateDirectory(storeDir);
                                 if (File.Exists(filePath)) File.Delete(filePath);
@@ -689,16 +731,15 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
             try
             {
-
                 var region   = request.Region.ToUpper();
-                var entity   = _docSettings.Entity.ToLower();                     // egib / egtb
-                var docLang  = "en";                                               // en / bm
+                var entity   = _docSettings.Entity.ToLower();
+                var docLang  = "en";
                 var emailXsl = Path.Combine(
                     _docSettings.DocsPath, region, "Home", "Email",
                     $"{entity}_hohh_success_{docLang}.xsl");
 
                 string htmlBody;
-                var emailHtml = BuildProposalXml(proposal, request.PolicyNumber, emailXsl);
+                var emailHtml = BuildProposalXml(proposal, request.PolicyNumber, emailXsl, region);
                 if (emailHtml != null)
                 {
                     htmlBody = emailHtml;
@@ -724,9 +765,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     });
                 }
 
-                var subject   = $"Home Insurance : Your ePolicy is ready ({request.PolicyNumber})";
-                var refId     = $"HOMESDK-Email-{DateTime.UtcNow.Ticks}";
-                _logger.LogInformation("Sending policy email | Ref={RefId} To={Email}", refId, proposal.Email);
+                var subject = $"Home Insurance : Your ePolicy is ready ({request.PolicyNumber})";
+                var refId   = $"HOMESDK-Email-{DateTime.UtcNow.Ticks}";
+
+                // FIX #4 — PII logging: mask email address before writing to log.
+                _logger.LogInformation("Sending policy email | Ref={RefId} To={Email}",
+                    refId, MaskEmail(proposal.Email));
 
                 var sent = await _emailService.SendPolicyEmailAsync(
                     toEmail:     proposal.Email,
@@ -762,9 +806,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             try
             {
                 // ── 1. Load SMS template ──────────────────────────────────────
-                var region    = request.Region.ToUpper();
-                var entity    = _docSettings.Entity.ToLower();
-                var smsFile   = Path.Combine(
+                var region  = request.Region.ToUpper();
+                var entity  = _docSettings.Entity.ToLower();
+                var smsFile = Path.Combine(
                     _docSettings.DocsPath, region, "Home", "SMS",
                     $"{entity}_en_sms.txt");
 
@@ -773,13 +817,10 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 {
                     smsText = await File.ReadAllTextAsync(smsFile);
 
-                    // ── 2. Replace placeholders (same pattern as commercial service) ──
-                    // Extract last 3 characters of policy number as suffix
                     var policySuffix = request.PolicyNumber.Length >= 3
                         ? request.PolicyNumber[^3..]
                         : request.PolicyNumber;
 
-                    // Replace content between < > markers with policy number suffix
                     smsText = ReplaceSmsPlaceholders(smsText, new Dictionary<string, string>
                     {
                         ["<PolicyNo>"]     = request.PolicyNumber,
@@ -793,15 +834,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     smsText = $"Your Home Insurance policy {request.PolicyNumber} has been issued. Thank you.";
                 }
 
-                // ── 3. Send SMS ───────────────────────────────────────────────
+                // ── 2. Send SMS ───────────────────────────────────────────────
                 var refId = $"HOMESDK-SMS-{DateTime.UtcNow.Ticks}";
-                _logger.LogInformation("Sending SMS | Ref={RefId} To={Mobile}", refId, proposal.MobileNumber);
+
+                // FIX #4 — PII logging: mask mobile number before writing to log.
+                _logger.LogInformation("Sending SMS | Ref={RefId} To={Mobile}",
+                    refId, MaskMobile(proposal.MobileNumber));
 
                 var sent = await _smsService.SendSmsAsync(
-                    mobileNumber:  proposal.MobileNumber,
-                    countryCode:   region,
-                    message:       smsText,
-                    sourceRefId:   refId);
+                    mobileNumber: proposal.MobileNumber,
+                    countryCode:  region,
+                    message:      smsText,
+                    sourceRefId:  refId);
 
                 if (sent)
                     _logger.LogInformation("SendSms SUCCESS | Ref={RefId}", refId);
@@ -814,86 +858,79 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             }
         }
 
-        private string? BuildProposalXml(Proposal proposal, string policyNumber, string xslPath)
+        /// <summary>
+        /// Builds the XML data tree for a proposal, applies the XSL transform, and returns the resulting HTML.
+        /// </summary>
+        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium loaded).</param>
+        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
+        /// <param name="xslPath">Absolute or app-relative path to the XSL stylesheet.</param>
+        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
+        private string? BuildProposalXml(Proposal proposal, string policyNumber, string xslPath, string region)
         {
             try
             {
                 var q        = proposal.Quotation;
                 var qp       = q?.QuotationPremium;
                 var docsPath = _docSettings.DocsPath;
-                var entity   = _docSettings.Entity; // "EGIB" or "EGTB"
+                var entity   = _docSettings.Entity;
 
                 var coverageAmount   = Math.Round((q?.BuildingSum ?? 0) + (q?.ContentsSum ?? 0), 2).ToString("N2");
                 var planPremium      = (qp?.PlanPremium    ?? 0).ToString("N2");
-                var discountRate     = string.Empty;              // no DiscountRate% in regional model — null
+                var discountRate     = string.Empty;
                 var discountAmount   = (qp?.DiscountAmount ?? 0).ToString("N2");
-                var commissionRate   = "0";                       // no commission model
+                var commissionRate   = "0";
                 var commissionAmount = "0.00";
                 var netPremium       = (qp?.NetPremium     ?? 0).ToString("N2");
-                var serviceTaxRate   = ((int)((qp?.TaxRate ?? 0) * 100)).ToString(); // 0.08 → "8"
+                var serviceTaxRate   = ((int)((qp?.TaxRate ?? 0) * 100)).ToString();
                 var serviceTaxAmount = (qp?.TaxAmount      ?? 0).ToString("N2");
                 var stampDuty        = (qp?.StampDuty      ?? 0).ToString("N2");
                 var totalPremium     = (qp?.TotalPremium   ?? 0).ToString("N2");
 
-                bool isBanca             = false;
-                bool isAgency            = false;
-                bool isCommissionAgency  = false;
-                bool isCommissionBanca   = false;
+                bool isBanca            = false;
+                bool isAgency           = false;
+                bool isCommissionAgency = false;
+                bool isCommissionBanca  = false;
 
                 var addOnList = new List<(string Name, string Premium)>();
-                if (q?.HasRiotStrike              == true) addOnList.Add(("Riot & Strike",             "0.00"));
-                if (q?.HasExtendedTheft           == true) addOnList.Add(("Extended Theft",            "0.00"));
+                if (q?.HasRiotStrike               == true) addOnList.Add(("Riot & Strike",             "0.00"));
+                if (q?.HasExtendedTheft            == true) addOnList.Add(("Extended Theft",            "0.00"));
                 if (q?.HasAlternativeAccommodation == true) addOnList.Add(("Alternative Accommodation", "0.00"));
-                if (q?.HasPublicLiability         == true) addOnList.Add(("Public Liability",          "0.00"));
+                if (q?.HasPublicLiability          == true) addOnList.Add(("Public Liability",          "0.00"));
                 bool hasAddOn = addOnList.Count > 0;
 
-                var buildDir = Directory.GetCurrentDirectory();
+                // FIX #7 — Use AppContext.BaseDirectory (stable) instead of
+                // Directory.GetCurrentDirectory() (can change at runtime).
+                // FIX #6 — Use the actual region code instead of the hardcoded "/ID/" path.
+                // FIX #7 — Use Path.Combine instead of string concatenation with "/" to
+                // correctly handle cross-platform separators.
+                var baseDir = AppContext.BaseDirectory;
 
-                // Four header variants — XSL selects based on entity & language
-                byte[] egibHeaderEnByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/EGIB-ENG.png");
-                var egibHeaderEnImage   = "data:image/png;base64," + Convert.ToBase64String(egibHeaderEnByte);
+                string ImgPath(string fileName) =>
+                    Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
 
-                byte[] egibHeaderBmByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/EGIB-BM.png");
-                var egibHeaderBmImage   = "data:image/png;base64," + Convert.ToBase64String(egibHeaderBmByte);
+                string LoadImage(string fileName)
+                {
+                    var bytes = File.ReadAllBytes(ImgPath(fileName));
+                    return "data:image/png;base64," + Convert.ToBase64String(bytes);
+                }
 
+                var egibHeaderEnImage  = LoadImage("EGIB-ENG.png");
+                var egibHeaderBmImage  = LoadImage("EGIB-BM.png");
+                var logoImageBase64    = egibHeaderEnImage;
 
-                // Active logo for the current entity (EN only — regional service is English)
-                var logoImageBase64 = egibHeaderEnImage;
+                var blackCircledNumber1 = LoadImage("Black_Circled_Number_1.png");
+                var blackCircledNumber2 = LoadImage("Black_Circled_Number_2.png");
+                var blackCircledNumber3 = LoadImage("Black_Circled_Number_3.png");
+                var blackCircledNumber4 = LoadImage("Black_Circled_Number_4.png");
 
-                byte[] blackCircledNumber1Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_1.png");
-                var blackCircledNumber1        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber1Byte);
+                var phoneImageBase64   = LoadImage("Contact_Us.png");
+                var websiteImageBase64 = LoadImage("Visit_Us.png");
+                var emailImageBase64   = LoadImage("Email_To_Us.png");
+                var qrCodeImageBase64  = LoadImage("Etiqa_QR_EN.png");
+                var questionMarkBase64 = LoadImage("Question_Mark.png");
 
-                byte[] blackCircledNumber2Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_2.png");
-                var blackCircledNumber2        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber2Byte);
-
-                byte[] blackCircledNumber3Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_3.png");
-                var blackCircledNumber3        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber3Byte);
-
-                byte[] blackCircledNumber4Byte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Black_Circled_Number_4.png");
-                var blackCircledNumber4        = "data:image/png;base64," + Convert.ToBase64String(blackCircledNumber4Byte);
-
-
-                byte[] phoneImageByte   = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Contact_Us.png");
-                var phoneImageBase64    = "data:image/png;base64," + Convert.ToBase64String(phoneImageByte);
-
-                byte[] websiteImageByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Visit_Us.png");
-                var websiteImageBase64  = "data:image/png;base64," + Convert.ToBase64String(websiteImageByte);
-
-                byte[] emailImageByte   = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Email_To_Us.png");
-                var emailImageBase64    = "data:image/png;base64," + Convert.ToBase64String(emailImageByte);
-
-                byte[] qrCodeImageByte  = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Etiqa_QR_EN.png");
-                var qrCodeImageBase64   = "data:image/png;base64," + Convert.ToBase64String(qrCodeImageByte);
-
-                byte[] questionMarkByte = System.IO.File.ReadAllBytes(buildDir + "/" + docsPath + "/ID/Home/Images/Question_Mark.png");
-                var questionMarkBase64  = "data:image/png;base64," + Convert.ToBase64String(questionMarkByte);
-
-                // PerlindunganTenang is MyRumah-specific — empty for regional service
                 var perlindunganTenang = string.Empty;
-
-                // WebsiteUrl — not configured in regional model
-                var websiteUrl = string.Empty;
-
+                var websiteUrl         = string.Empty;
 
                 var xmlTree = new XDocument(
                     new XElement("root",
@@ -907,7 +944,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_IsCommissionAgency",  isCommissionAgency),
                         new XElement("P_IsCommissionBanca",   isCommissionBanca),
 
-                        new XElement("P_PaymentDate",         (string?)null),   // not tracked in regional model
+                        new XElement("P_PaymentDate",         (string?)null),
                         new XElement("P_CoverageAmount",      coverageAmount),
                         new XElement("P_PlanPremium",         planPremium),
                         new XElement("P_HasAddOn",            hasAddOn),
@@ -945,8 +982,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 if (!string.IsNullOrEmpty(xslPath) && File.Exists(xslPath))
                 {
-                    var xslt    = new XslCompiledTransform();
-                    xslt.Load(xslPath);
+                    var xslt = new XslCompiledTransform();
+
+                    // FIX #8 — Pass null as XmlResolver to prevent the XSL from resolving
+                    // external resources (file includes, UNC paths, HTTP requests).
+                    xslt.Load(xslPath, XsltSettings.Default, null);
 
                     var results = new StringWriter();
                     using (var reader = XmlReader.Create(new StringReader(xmlTree.ToString())))
@@ -967,26 +1007,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     proposal.ProposalId, ex.Message);
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Encrypts a PDF byte array with a user password.
-        /// Password format (mirrors commercial service): {DOB_ddMMyyyy}{Last4_IdNumber}
-        /// e.g. "01011990ABCD"
-        /// Falls back to returning the original bytes if encryption fails.
-        /// </summary>
-        private static byte[] EncryptPdf(byte[] pdfBytes, string password)
-        {
-            // NOTE: Add iTextSharp / iText7 NuGet package and implement here.
-            // Placeholder — returns unencrypted PDF until package is added.
-            // Example with iText7:
-            //   var writer = new PdfWriter(output, new WriterProperties()
-            //       .SetStandardEncryption(
-            //           Encoding.UTF8.GetBytes(password),
-            //           Encoding.UTF8.GetBytes(password),
-            //           EncryptionConstants.ALLOW_SCREENREADERS,
-            //           EncryptionConstants.ENCRYPTION_AES_128));
-            return pdfBytes;
         }
 
         private static string BuildPdfPassword(Proposal proposal)
@@ -1030,17 +1050,34 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return template;
         }
 
+        // FIX #5 — Escape policyNumber (was raw in the string interpolation).
         private static string BuildFallbackEmailHtml(Proposal proposal, string policyNumber) =>
             $@"<html><body>
                 <p>Dear {Escape(proposal.Name)},</p>
-                <p>Your Home Insurance policy <strong>{policyNumber}</strong> has been issued successfully.</p>
+                <p>Your Home Insurance policy <strong>{Escape(policyNumber)}</strong> has been issued successfully.</p>
                 <p>Please find your policy documents attached.</p>
                 <p>Thank you.</p>
                </body></html>";
 
-        /// <summary>XML-escapes a nullable string value.</summary>
+        /// <summary>XML/HTML-escapes a nullable string value.</summary>
         private static string Escape(string? value) =>
             string.IsNullOrEmpty(value) ? string.Empty
             : value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+        // FIX #4 — PII masking helpers.
+        // Email: show only the domain part  e.g.  "****@gmail.com"
+        private static string MaskEmail(string? email)
+        {
+            if (string.IsNullOrEmpty(email)) return "***";
+            var at = email.IndexOf('@');
+            return at > 0 ? $"****@{email[(at + 1)..]}" : "***";
+        }
+
+        // Mobile: show only the last 4 digits  e.g.  "****1234"
+        private static string MaskMobile(string? mobile)
+        {
+            if (string.IsNullOrEmpty(mobile)) return "***";
+            return mobile.Length > 4 ? $"****{mobile[^4..]}" : "***";
+        }
     }
 }
