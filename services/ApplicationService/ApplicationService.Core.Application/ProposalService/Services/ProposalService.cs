@@ -1,4 +1,4 @@
-using ApplicationService.Core.Application.InforcePolicyService.DTOs;
+﻿using ApplicationService.Core.Application.InforcePolicyService.DTOs;
 using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
 using ApplicationService.Core.Application.ProposalService.DTOs;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Repositories;
@@ -340,31 +340,31 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             var message = "";
             var savedDocuments = new List<PolicyDocument>();
 
-            // ── 1. PDS Form ───────────────────────────────────────────────────
-            if (status)
-            {
-                var (pdfPDSForm, pdsDoc) = await HomePDSFormAsync(request, proposal);
-                if (!pdfPDSForm.status)
-                {
-                    status  = false;
-                    message = $"PDF Generate Fail - {pdfPDSForm.ReferenceId}, {pdfPDSForm.Token}";
-                }
-                else if (pdsDoc != null)
-                    savedDocuments.Add(pdsDoc);
-            }
-
-            //// ── 2. ePolicy Form ───────────────────────────────────────────────
+            //// ── 1. PDS Form ───────────────────────────────────────────────────
             //if (status)
             //{
-            //    var (pdfPolicyForm, policyDoc) = await HomeEPolicyFormAsync(request, proposal);
-            //    if (!pdfPolicyForm.status)
+            //    var (pdfPDSForm, pdsDoc) = await HomePDSFormAsync(request, proposal);
+            //    if (!pdfPDSForm.status)
             //    {
             //        status  = false;
-            //        message = $"PDF Generate Fail - {pdfPolicyForm.ReferenceId}, {pdfPolicyForm.Token}";
+            //        message = $"PDF Generate Fail - {pdfPDSForm.ReferenceId}, {pdfPDSForm.Token}";
             //    }
-            //    else if (policyDoc != null)
-            //        savedDocuments.Add(policyDoc);
+            //    else if (pdsDoc != null)
+            //        savedDocuments.Add(pdsDoc);
             //}
+
+            // ── 2. ePolicy Form ───────────────────────────────────────────────
+            if (status)
+            {
+                var (pdfPolicyForm, policyDoc) = await HomeEPolicyFormAsync(request, proposal);
+                if (!pdfPolicyForm.status)
+                {
+                    status = false;
+                    message = $"PDF Generate Fail - {pdfPolicyForm.ReferenceId}, {pdfPolicyForm.Token}";
+                }
+                else if (policyDoc != null)
+                    savedDocuments.Add(policyDoc);
+            }
 
             //// ── 3. Tax Invoice Form ───────────────────────────────────────────
             //if (status)
@@ -548,7 +548,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     {
                         var status = false;
 
-                        var policyFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath, region);
+                        var policyFormHTML = HtmlEpolicyForm(proposal, request.PolicyNumber, xslPath, region);
                         if (policyFormHTML != null)
                         {
                             var sourceReferenceId = $"HOMESDKPDFEPOLICYFORM{DateTime.Now.Ticks}";
@@ -1008,6 +1008,220 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Builds the XML data tree for an ePolicy document, applies the XSL transform, and returns the resulting HTML.
+        /// </summary>
+        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium loaded).</param>
+        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
+        /// <param name="xslPath">Absolute path to the EpolicyForm XSL stylesheet.</param>
+        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
+        private string? HtmlEpolicyForm(Proposal proposal, string policyNumber, string xslPath, string region)
+        {
+            try
+            {
+                var q        = proposal.Quotation;
+                var qp       = q?.QuotationPremium;
+                var docsPath = _docSettings.DocsPath;
+
+                // ── Dates ────────────────────────────────────────────────────────────
+                var startDate = q?.CoverageStartDate ?? DateTime.Now;
+                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1);
+
+                // ── Premium figures ──────────────────────────────────────────────────
+                var planPremium    = qp?.PlanPremium    ?? 0m;
+                var addOnPremium   = qp?.AddOnPremium   ?? 0m;
+                var grossPremium   = qp?.GrossPremium   ?? (planPremium + addOnPremium);
+                var discountAmount = qp?.DiscountAmount ?? 0m;
+                var discountRate   = grossPremium > 0
+                                        ? Math.Round(discountAmount / grossPremium * 100, 2).ToString("0.##")
+                                        : "0";
+                var netPremium   = qp?.NetPremium   ?? 0m;
+                var taxRate      = (qp?.TaxRate      ?? 0m).ToString("0.##");
+                var taxAmount    = qp?.TaxAmount    ?? 0m;
+                var stampDuty    = qp?.StampDuty    ?? 0m;
+                var totalPremium = qp?.TotalPremium ?? 0m;
+
+                var buildingSum     = q?.BuildingSum  ?? 0m;
+                var contentsSum     = q?.ContentsSum  ?? 0m;
+                var totalSumInsured = buildingSum + contentsSum;
+
+                // ── Plan type flags ──────────────────────────────────────────────────
+                // PlanType values: "building" | "contents" | "building-contents"
+                var planType   = (q?.PlanType ?? string.Empty).ToLower();
+                var isBuilding = planType is "building" or "building-contents";
+                var isContent  = planType is "contents" or "building-contents";
+
+                // ── Construction class ───────────────────────────────────────────────
+                // ConstructionType values: "full-brick" | "partial-brick"
+                var constructionClass = (q?.ConstructionType ?? string.Empty).ToLower() switch
+                {
+                    "full-brick"       => "CLASS I - CONCRETE CONSTRUCTION",
+                    "partial-brick"    => "CLASS II - MIXED CONSTRUCTION",
+                    "fully-wooden"     => "CLASS III - TIMBER CONSTRUCTION",
+                    "partially-wooden" => "CLASS III - TIMBER CONSTRUCTION",
+                    _                  => "CLASS I - CONCRETE CONSTRUCTION"
+                };
+
+                // ── Building type ────────────────────────────────────────────────────
+                // PropertyType values: "landed" | "non-landed"
+                var buildingType = (q?.PropertyType ?? string.Empty).ToLower() switch
+                {
+                    "landed"     => "Private Dwelling – Landed",
+                    "non-landed" => "Private Dwelling – Strata",
+                    _            => "Private Dwelling – Landed"
+                };
+
+                // ── Add-on items (premium schedule table) ────────────────────────────
+                var addOnItems = new List<XElement>();
+                if (q?.HasRiotStrike               == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Riot, Strike & Malicious Damage"), new XElement("Price", "0.00")));
+                if (q?.HasExtendedTheft            == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Extended Theft"),                  new XElement("Price", "0.00")));
+                if (q?.HasAlternativeAccommodation == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Alternative Accommodation"),       new XElement("Price", "0.00")));
+                if (q?.HasPublicLiability          == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Public Liability"),                new XElement("Price", "0.00")));
+
+                // ── Images ───────────────────────────────────────────────────────────
+                var baseDir = AppContext.BaseDirectory;
+
+                string LoadEpolicyImage(string fileName)
+                {
+                    var path  = Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
+                    var bytes = File.ReadAllBytes(path);
+                    return "data:image/png;base64," + Convert.ToBase64String(bytes);
+                }
+
+                var headerImage  = LoadEpolicyImage("EGIB-ENG.png");
+                var footerImage  = LoadEpolicyImage("egib-footer-EV.png");
+                var checkedImg   = LoadEpolicyImage("checked.png");
+                var uncheckedImg = LoadEpolicyImage("uncheck.png");
+
+                // ── XML tree ─────────────────────────────────────────────────────────
+                var xmlTree = new XDocument(
+                    new XElement("root",
+
+                        // Images
+                        new XElement("ImageEgibEnHeader", headerImage),
+                        new XElement("ImageEgibEnFooter", footerImage),
+                        new XElement("ImageChecked",      checkedImg),
+                        new XElement("ImageUnchecked",    uncheckedImg),
+
+                        // Cover letter / schedule header
+                        new XElement("P_Date",    DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")),
+                        new XElement("P_Name",    (proposal.Name             ?? string.Empty).ToUpper()),
+                        new XElement("P_Address1",(proposal.MailAddressLine1 ?? string.Empty).ToUpper()),
+                        new XElement("P_Address2",(proposal.MailAddressLine2 ?? string.Empty).ToUpper()),
+                        new XElement("P_Address3",(proposal.MailCity         ?? string.Empty).ToUpper()),
+                        new XElement("P_Address4",
+                            $"{proposal.MailPostcode} {proposal.MailState}, {proposal.MailCountry}".ToUpper()),
+
+                        new XElement("P_PolicyNo",          policyNumber),
+                        new XElement("P_AgentCode",         "SYSTEM"),
+                        new XElement("P_CoverTypeName",     "HOUSEOWNER/HOUSEHOLDER COMPREHENSIVE INSURANCE"),
+
+                        new XElement("P_StartDate",         startDate.ToString("dd/MM/yyyy")),
+                        new XElement("P_EndDate",           endDate.ToString("dd/MM/yyyy")),
+                        new XElement("P_PeriodofInsurance", $"{startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}"),
+
+                        // Premium breakdown
+                        new XElement("P_TotalSumInsured",           totalSumInsured.ToString("#,##0.00")),
+                        new XElement("P_AnnualPremium",             planPremium.ToString("#,##0.00")),
+                        new XElement("P_AddOnItem",                 addOnItems),
+                        new XElement("P_GrossPremium",              grossPremium.ToString("#,##0.00")),
+                        new XElement("P_DiscountRate",              discountRate),
+                        new XElement("P_Discount",                  discountAmount.ToString("#,##0.00")),
+                        new XElement("P_GrossPremiumAfterDiscount", netPremium.ToString("#,##0.00")),
+                        new XElement("P_TaxRate",                   taxRate),
+                        new XElement("P_Tax",                       taxAmount.ToString("#,##0.00")),
+
+                        // P_StampDuty — dual-purpose:
+                        //   1st element: numeric string rendered in the premium table via xsl:value-of
+                        //   2nd element: boolean string used in the stamp duty exemption row test
+                        //   XSLT 1.0 node-set comparison (= 'true') returns true when ANY node matches.
+                        new XElement("P_StampDuty", stampDuty.ToString("#,##0.00")),
+                        new XElement("P_StampDuty", (stampDuty == 0m).ToString().ToLower()),
+
+                        new XElement("P_Total", totalPremium.ToString("#,##0.00")),
+
+                        // Risk / property details
+                        new XElement("P_RiskNo",           "001"),
+                        new XElement("P_PropertyAddress1", proposal.PropAddressLine1 ?? string.Empty),
+                        new XElement("P_PropertyAddress2", proposal.PropAddressLine2 ?? string.Empty),
+                        new XElement("P_PropertyAddress3", $"{proposal.PropPostcode} {proposal.PropCity}"),
+                        new XElement("P_PropertyAddress4", $"{proposal.PropState}, {proposal.PropCountry}"),
+
+                        // Coverage flags
+                        new XElement("P_isBuilding",        isBuilding.ToString().ToLower()),
+                        new XElement("P_isContent",         isContent.ToString().ToLower()),
+                        new XElement("P_ConstructionClass", constructionClass),
+                        new XElement("P_BuildingType",      buildingType),
+                        new XElement("P_BuildingRate",      "0.000"),
+                        new XElement("P_ContentRate",       "0.000"),
+                        new XElement("P_BuildingSumInsured", buildingSum.ToString("#,##0.00")),
+                        new XElement("P_ContentSumInsured",  contentsSum.ToString("#,##0.00")),
+
+                        // Content declaration — not in regional model; defaults to empty/false
+                        new XElement("P_isContentDeclaration",    "false"),
+                        new XElement("P_needAdditionalPage",      "false"),
+                        new XElement("P_ContentDeclaration"),
+                        new XElement("P_ContentDeclaration2"),
+                        new XElement("P_TotalContentDeclaration", "0.00"),
+
+                        // Add-on clause rows (4th page table)
+                        new XElement("P_IsRsmdAddOnExist",          (q?.HasRiotStrike == true).ToString().ToLower()),
+                        new XElement("P_RsmdAddOnCode",             q?.HasRiotStrike == true ? "RSMD"  : string.Empty),
+                        new XElement("P_RsmdAddOnName",             q?.HasRiotStrike == true ? "RIOT, STRIKE AND MALICIOUS DAMAGE" : string.Empty),
+                        new XElement("P_RsmdAddOnRate",             "0.000"),
+
+                        new XElement("P_IsExtendedTheftAddOnExist", (q?.HasExtendedTheft == true).ToString().ToLower()),
+                        new XElement("P_ExtendedTheftAddOnCode",    q?.HasExtendedTheft == true ? "THEFT"           : string.Empty),
+                        new XElement("P_ExtendedTheftAddOnName",    q?.HasExtendedTheft == true ? "EXTENDED THEFT"  : string.Empty),
+                        new XElement("P_ExtendedTheftAddOnRate",    "0.000"),
+
+                        // Not in regional model — default to absent
+                        new XElement("P_IsSubsidenceAndLandslideAddOnExist", "false"),
+                        new XElement("P_SubsidenceAndLandslideAddOnCode",    string.Empty),
+                        new XElement("P_SubsidenceAndLandslideAddOnName",    string.Empty),
+
+                        new XElement("P_IsDamagesByFailingTreeAddOnExist", "false"),
+                        new XElement("P_DamagesByFailingTreeAddOnCode",    string.Empty),
+                        new XElement("P_DamagesByFailingTreeAddOnName",    string.Empty),
+
+                        // LPPSA — not applicable in regional model; default false
+                        new XElement("P_IsLppsa", "false"),
+
+                        // PDPA slip
+                        new XElement("P_Nric",    proposal.IdNumber ?? string.Empty),
+                        new XElement("P_Checked", "true")
+                    )
+                );
+
+                if (!string.IsNullOrEmpty(xslPath) && File.Exists(xslPath))
+                {
+                    var xslt = new XslCompiledTransform();
+
+                    // Null resolver prevents the XSL from loading external resources.
+                    xslt.Load(xslPath, XsltSettings.Default, null);
+
+                    var results = new StringWriter();
+                    using (var reader = XmlReader.Create(new StringReader(xmlTree.ToString())))
+                    {
+                        xslt.Transform(reader, null, results);
+                    }
+                    return results.ToString();
+                }
+                else
+                {
+                    _logger.LogError("XSL template not found at: {XslPath}", xslPath);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error in HtmlEpolicyForm for ProposalId={ProposalId}: {Message}",
+                    proposal.ProposalId, ex.Message);
+                return null;
+            }
+        }
+
 
         private static string BuildPdfPassword(Proposal proposal)
         {
