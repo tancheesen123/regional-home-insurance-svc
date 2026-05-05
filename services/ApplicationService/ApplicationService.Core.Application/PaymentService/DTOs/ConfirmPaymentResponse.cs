@@ -7,6 +7,10 @@ namespace ApplicationService.Core.Application.PaymentService.DTOs
         public string  PaymentStatus   { get; set; } = string.Empty;   // "SUCCESS"
         public string  ProposalId      { get; set; } = string.Empty;
 
+        /// <summary>Populated after inforce succeeds.</summary>
+        public string  PolicyId        { get; set; } = string.Empty;
+        public string  PolicyNumber    { get; set; } = string.Empty;
+
         /// <summary>Frontend URL the browser should be redirected to after payment.</summary>
         public string  RedirectUrl     { get; set; } = string.Empty;
 

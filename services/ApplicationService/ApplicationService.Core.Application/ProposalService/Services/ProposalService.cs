@@ -340,18 +340,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             var message = "";
             var savedDocuments = new List<PolicyDocument>();
 
-            //// ── 1. PDS Form ───────────────────────────────────────────────────
-            //if (status)
-            //{
-            //    var (pdfPDSForm, pdsDoc) = await HomePDSFormAsync(request, proposal);
-            //    if (!pdfPDSForm.status)
-            //    {
-            //        status  = false;
-            //        message = $"PDF Generate Fail - {pdfPDSForm.ReferenceId}, {pdfPDSForm.Token}";
-            //    }
-            //    else if (pdsDoc != null)
-            //        savedDocuments.Add(pdsDoc);
-            //}
+            // ── 1. PDS Form ───────────────────────────────────────────────────
+            if (status)
+            {
+                var (pdfPDSForm, pdsDoc) = await HomePDSFormAsync(request, proposal);
+                if (!pdfPDSForm.status)
+                {
+                    status = false;
+                    message = $"PDF Generate Fail - {pdfPDSForm.ReferenceId}, {pdfPDSForm.Token}";
+                }
+                else if (pdsDoc != null)
+                    savedDocuments.Add(pdsDoc);
+            }
 
             // ── 2. ePolicy Form ───────────────────────────────────────────────
             if (status)
@@ -366,18 +366,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     savedDocuments.Add(policyDoc);
             }
 
-            //// ── 3. Tax Invoice Form ───────────────────────────────────────────
-            //if (status)
-            //{
-            //    var (pdfTaxInvoiceForm, taxDoc) = await HomeTaxInvoiceFormAsync(request, proposal);
-            //    if (!pdfTaxInvoiceForm.status)
-            //    {
-            //        status  = false;
-            //        message = $"PDF Generate Fail - {pdfTaxInvoiceForm.ReferenceId}, {pdfTaxInvoiceForm.Token}";
-            //    }
-            //    else if (taxDoc != null)
-            //        savedDocuments.Add(taxDoc);
-            //}
+            // ── 3. Tax Invoice Form ───────────────────────────────────────────
+            if (status)
+            {
+                var (pdfTaxInvoiceForm, taxDoc) = await HomeTaxInvoiceFormAsync(request, proposal);
+                if (!pdfTaxInvoiceForm.status)
+                {
+                    status = false;
+                    message = $"PDF Generate Fail - {pdfTaxInvoiceForm.ReferenceId}, {pdfTaxInvoiceForm.Token}";
+                }
+                else if (taxDoc != null)
+                    savedDocuments.Add(taxDoc);
+            }
 
             if (!status)
             {
@@ -655,7 +655,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     {
                         var status = false;
 
-                        var taxFormHTML = BuildProposalXml(proposal, request.PolicyNumber, xslPath, region);
+                        var taxFormHTML = HtmlTaxInvoiceForm(proposal, request.PolicyNumber, xslPath, region);
                         if (taxFormHTML != null)
                         {
                             var sourceReferenceId = $"HOMESDKPDFTAXINVOICE{DateTime.Now.Ticks}";
@@ -1222,6 +1222,148 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             }
         }
 
+
+        /// <summary>
+        /// Builds the XML data tree for a Tax Invoice document, applies the XSL transform, and returns the resulting HTML.
+        /// </summary>
+        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium + Payments loaded).</param>
+        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
+        /// <param name="xslPath">Absolute path to the TaxInvoice XSL stylesheet.</param>
+        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
+        private string? HtmlTaxInvoiceForm(Proposal proposal, string policyNumber, string xslPath, string region)
+        {
+            try
+            {
+                var q  = proposal.Quotation;
+                var qp = q?.QuotationPremium;
+                var docsPath = _docSettings.DocsPath;
+
+                // ── Dates ────────────────────────────────────────────────────────────
+                var startDate = q?.CoverageStartDate ?? DateTime.Now;
+                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1);
+
+                // ── Premium figures ──────────────────────────────────────────────────
+                var grossPremium   = qp?.GrossPremium   ?? 0m;
+                var discountAmount = qp?.DiscountAmount ?? 0m;
+                var discountRate   = grossPremium > 0
+                                        ? Math.Round(discountAmount / grossPremium * 100, 2).ToString("0.##")
+                                        : "0";
+                var sstAmount    = qp?.TaxAmount    ?? 0m;
+                var taxRate      = (qp?.TaxRate      ?? 0m).ToString("0.##");
+                var stampDuty    = qp?.StampDuty    ?? 0m;
+                var totalPremium = qp?.TotalPremium ?? 0m;
+
+                // ── Payment mode ─────────────────────────────────────────────────────
+                // Resolve from the latest successful payment; fall back to "Online".
+                var latestPayment = proposal.Payments?
+                    .Where(p => p.Status == "SUCCESS")
+                    .OrderByDescending(p => p.PaymentDate)
+                    .FirstOrDefault();
+
+                var paymode = (latestPayment?.PaymentMethod ?? string.Empty).ToLower() switch
+                {
+                    "credit-card"    => "Online / Credit Card",
+                    "debit-card"     => "Online / Debit Card",
+                    "online-banking" => "Online / Online Banking",
+                    "fpx"            => "Online / FPX",
+                    _                => "Online"
+                };
+
+                // ── Being payment text ───────────────────────────────────────────────
+                var beingPayment =
+                    $"New Business - Premium for Houseowner/Householder Comprehensive Insurance " +
+                    $"Policy No. {policyNumber} " +
+                    $"({startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy})";
+
+                // ── Images ───────────────────────────────────────────────────────────
+                var baseDir = AppContext.BaseDirectory;
+
+                string LoadTaxImage(string fileName)
+                {
+                    var path  = Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
+                    var bytes = File.ReadAllBytes(path);
+                    return "data:image/png;base64," + Convert.ToBase64String(bytes);
+                }
+
+                var headerImage = LoadTaxImage("EGIB-ENG.png");
+                var footerImage = LoadTaxImage("egib-footer-EV.png");
+
+                // ── XML tree ─────────────────────────────────────────────────────────
+                var xmlTree = new XDocument(
+                    new XElement("root",
+
+                        // Images
+                        new XElement("ImageEgibEnHeader", headerImage),
+                        new XElement("FooterImage",       footerImage),
+
+                        // Company tax registration (static EGIB value)
+                        new XElement("P_taxRegNo",        "W10-1806-30000001"),
+
+                        // Tax invoice number — prefixed to distinguish from policy number
+                        new XElement("P_TaxInvoiceNo",    $"TI-{policyNumber}"),
+
+                        // Date & payment mode
+                        new XElement("P_Date",    DateTime.Now.ToString("dd/MM/yyyy")),
+                        new XElement("P_Paymode", paymode),
+
+                        // Customer details
+                        new XElement("P_Name",    (proposal.Name             ?? string.Empty).ToUpper()),
+                        new XElement("P_Address1", proposal.MailAddressLine1 ?? string.Empty),
+                        new XElement("P_Address2", proposal.MailAddressLine2 ?? string.Empty),
+                        new XElement("P_Address3", proposal.MailCity         ?? string.Empty),
+                        new XElement("P_Address4",
+                            $"{proposal.MailPostcode} {proposal.MailState}, {proposal.MailCountry}"),
+
+                        // Premium breakdown
+                        new XElement("P_GrossPremium",  grossPremium.ToString("#,##0.00")),
+                        new XElement("P_Discount",      discountAmount.ToString("#,##0.00")),
+                        new XElement("P_DiscountRate",  discountRate),
+                        new XElement("P_taxType",       "Cukai Perkhidmatan/Service Tax"),
+                        new XElement("P_TaxPercentage", taxRate),
+                        new XElement("P_SST",           sstAmount.ToString("#,##0.00")),
+                        new XElement("P_StampDuty",     stampDuty.ToString("#,##0.00")),
+
+                        // LPPSA — not in regional model; defaults to false / zero
+                        new XElement("P_IsLppsa",          "false"),
+                        new XElement("P_SubsidizedAmount",  "0.00"),
+
+                        new XElement("P_Total", totalPremium.ToString("#,##0.00")),
+
+                        // Policy / product info
+                        new XElement("P_ProductTypeName", "HOUSEOWNER/HOUSEHOLDER COMPREHENSIVE INSURANCE"),
+                        new XElement("P_AgentCode",       "SYSTEM"),
+                        new XElement("P_policyNo",        policyNumber),
+                        new XElement("P_BeingPayment",    beingPayment)
+                    )
+                );
+
+                if (!string.IsNullOrEmpty(xslPath) && File.Exists(xslPath))
+                {
+                    var xslt = new XslCompiledTransform();
+
+                    // Null resolver prevents the XSL from loading external resources.
+                    xslt.Load(xslPath, XsltSettings.Default, null);
+
+                    var results = new StringWriter();
+                    using (var reader = XmlReader.Create(new StringReader(xmlTree.ToString())))
+                    {
+                        xslt.Transform(reader, null, results);
+                    }
+                    return results.ToString();
+                }
+                else
+                {
+                    _logger.LogError("XSL template not found at: {XslPath}", xslPath);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error in HtmlTaxInvoiceForm for ProposalId={ProposalId}: {Message}",
+                    proposal.ProposalId, ex.Message);
+                return null;
+            }
+        }
 
         private static string BuildPdfPassword(Proposal proposal)
         {
