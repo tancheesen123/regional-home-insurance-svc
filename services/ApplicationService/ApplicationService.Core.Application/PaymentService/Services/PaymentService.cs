@@ -1,3 +1,5 @@
+using ApplicationService.Core.Application.InforcePolicyService.DTOs;
+using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
 using ApplicationService.Core.Application.PaymentService.DTOs;
 using ApplicationService.Core.Application.PaymentService.Interfaces.Repositories;
 using ApplicationService.Core.Application.PaymentService.Interfaces.Services;
@@ -8,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
+using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.PaymentService.Services
 {
@@ -18,6 +21,7 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         private readonly IProposalRepository _proposalRepository;
         private readonly IStripeService _stripeService;
         private readonly StripeSettings _stripeSettings;
+        private readonly IInforcePolicyService _inforcePolicyService;
 
         private static readonly Dictionary<string, string> RegionCurrency =
             new(StringComparer.OrdinalIgnoreCase)
@@ -45,13 +49,15 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             IPaymentRepository paymentRepository,
             IProposalRepository proposalRepository,
             IStripeService stripeService,
-            IOptions<StripeSettings> stripeOptions)
+            IOptions<StripeSettings> stripeOptions,
+            IInforcePolicyService inforcePolicyService)
         {
             _logger = logger;
             _paymentRepository = paymentRepository;
             _proposalRepository = proposalRepository;
             _stripeService = stripeService;
             _stripeSettings = stripeOptions.Value;
+            _inforcePolicyService = inforcePolicyService;
         }
 
         // ── InitiatePayment ───────────────────────────────────────────────────
@@ -257,14 +263,14 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         }
 
         // ── ConfirmPayment ────────────────────────────────────────────────────
-        // Verifies the Stripe session was paid, then updates Payment → SUCCESS.
-        // Policy creation and proposal inforce is handled by the InforcePolicy API.
+        // Verifies the Stripe session was paid, updates Payment → SUCCESS,
+        // then immediately inforces the policy before redirecting to the frontend.
 
         public async Task<ConfirmPaymentResponse> ConfirmPaymentAsync(string sessionId)
         {
             _logger.LogInformation("=== PaymentService.ConfirmPaymentAsync | SessionId={SessionId} ===", sessionId);
 
-            // ── Verify with Stripe that the session was actually paid ─────────
+            // ── 1. Verify with Stripe that the session was actually paid ───────
             Stripe.Checkout.Session stripeSession;
             try
             {
@@ -280,21 +286,69 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 throw new InvalidOperationException(
                     $"Stripe session payment_status is '{stripeSession.PaymentStatus}'. Payment not yet completed.");
 
-            // ── Find local Payment record ─────────────────────────────────────
+            // ── 2. Find local Payment record ──────────────────────────────────
             var payment = await _paymentRepository.GetByTransactionIdAsync(sessionId);
             if (payment == null)
                 throw new KeyNotFoundException($"No payment found for Stripe session '{sessionId}'.");
 
-            // ── Update Payment → SUCCESS (idempotent) ─────────────────────────
+            // ── 3. Mark Payment → SUCCESS (idempotent) ────────────────────────
             payment.Status        = "SUCCESS";
             payment.TransactionId = stripeSession.PaymentIntentId ?? sessionId;
             payment.UpdatedAt     = DateTime.UtcNow;
             _paymentRepository.UpdatePayment(payment);
             await _paymentRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Payment {PaymentId} marked SUCCESS.", payment.PaymentId);
+            _logger.LogInformation("Payment {PaymentId} marked SUCCESS for ProposalId={ProposalId}.",
+                payment.PaymentId, payment.ProposalId);
 
-            var redirectUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber);
+            // ── 4. Inforce the policy ─────────────────────────────────────────
+            // Payment is already confirmed above, so skip the payment check inside
+            // InforcePolicyAsync (CheckPayment = false). The call is server-initiated
+            // (Stripe redirect), so we pass a system ClaimsPrincipal — the service
+            // falls back to "SYSTEM" for IssuedBy when no identity is present.
+            var policyId     = string.Empty;
+            var policyNumber = string.Empty;
+            var inforceMsg   = string.Empty;
+
+            try
+            {
+                var inforceRequest = new InforcePolicyRequest
+                {
+                    ProposalId    = payment.ProposalId,
+                    SendEmail     = true,
+                    SendSms       = null,       // resolved from proposal region inside the service
+                    CheckPayment  = false,      // payment already verified above
+                    WithUrlLink   = false
+                };
+
+                // System principal — no authenticated user in this Stripe redirect flow.
+                var systemPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
+
+                var inforceResult = await _inforcePolicyService.InforcePolicyAsync(
+                    inforceRequest, systemPrincipal);
+
+                policyId     = inforceResult.PolicyId;
+                policyNumber = inforceResult.PolicyNumber;
+                inforceMsg   = inforceResult.AlreadyInforced
+                    ? "Policy already inforced."
+                    : "Policy issued successfully.";
+
+                _logger.LogInformation(
+                    "InforcePolicy completed | ProposalId={ProposalId} PolicyNumber={PolicyNumber} AlreadyInforced={AlreadyInforced}",
+                    payment.ProposalId, policyNumber, inforceResult.AlreadyInforced);
+            }
+            catch (Exception ex)
+            {
+                // Inforce failure must NOT block the redirect — the customer's payment
+                // was accepted. Log the error for ops investigation and continue.
+                _logger.LogError(ex,
+                    "InforcePolicy FAILED after successful payment | ProposalId={ProposalId} PaymentId={PaymentId}",
+                    payment.ProposalId, payment.PaymentId);
+                inforceMsg = "Payment confirmed. Policy issuance pending — please contact support if not received.";
+            }
+
+            // ── 5. Build redirect URL and return ──────────────────────────────
+            var redirectUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber, policyNumber);
 
             return new ConfirmPaymentResponse
             {
@@ -302,15 +356,20 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 ReferenceNumber = payment.ReferenceNumber,
                 PaymentStatus   = "SUCCESS",
                 ProposalId      = payment.ProposalId,
+                PolicyId        = policyId,
+                PolicyNumber    = policyNumber,
                 RedirectUrl     = redirectUrl,
-                Message         = "Payment confirmed. Call InforcePolicy API to issue the policy."
+                Message         = inforceMsg
             };
         }
 
-        private string BuildFrontendSuccessUrl(string referenceNumber)
+        private string BuildFrontendSuccessUrl(string referenceNumber, string policyNumber = "")
         {
             var baseUrl = _stripeSettings.FrontendSuccessUrl;
-            return $"{baseUrl}?ref={Uri.EscapeDataString(referenceNumber)}&status=paid";
+            var url     = $"{baseUrl}?ref={Uri.EscapeDataString(referenceNumber)}&status=paid";
+            if (!string.IsNullOrEmpty(policyNumber))
+                url += $"&policy={Uri.EscapeDataString(policyNumber)}";
+            return url;
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
