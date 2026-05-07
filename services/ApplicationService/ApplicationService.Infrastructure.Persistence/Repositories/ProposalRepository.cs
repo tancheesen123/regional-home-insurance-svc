@@ -50,6 +50,30 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(p => p.QuotationId == quotationId);
         }
 
+        /// <inheritdoc />
+        public async Task<List<Proposal>> GetAllByCustomerIdAsync(string customerId)
+        {
+            return await _resolver.Resolve().Proposals
+                .Where(p => p.CustomerId == customerId && p.Status == "INFORCED")
+                .Include(p => p.Policy)
+                    .ThenInclude(pol => pol.PolicyDocuments)
+                .Include(p => p.Quotation)
+                .OrderByDescending(p => p.Policy!.IssuedAt)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<List<Proposal>> GetProposalsByCustomerIdAsync(string customerId)
+        {
+            return await _resolver.Resolve().Proposals
+                .Where(p => p.CustomerId == customerId)
+                .Include(p => p.Quotation)
+                .Include(p => p.Policy)
+                    .ThenInclude(pol => pol.PolicyDocuments)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task CreateProposalAndLockQuotationAsync(Proposal proposal)
         {
             var context = _resolver.Resolve();
