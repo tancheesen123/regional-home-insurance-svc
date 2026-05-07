@@ -51,6 +51,7 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.HashedPassword).IsRequired().HasColumnType("TEXT");
                 entity.Property(e => e.IsVerified).IsRequired();
+                entity.Property(e => e.Role).IsRequired().HasMaxLength(20).HasDefaultValue("User");
             });
 
             // Address
