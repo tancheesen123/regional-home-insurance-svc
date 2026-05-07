@@ -1,9 +1,11 @@
 using ApplicationService.Core.Application.ProposalService.DTOs;
 using ApplicationService.Core.Application.ProposalService.Features.Proposal.Command;
 using ApplicationService.Core.Application.ProposalService.Features.Proposal.Query;
+
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace ApplicationService.WebAPI.Controllers
 {
@@ -16,6 +18,30 @@ namespace ApplicationService.WebAPI.Controllers
         public ProposalController(IMediator mediator)
         {
             _mediator = mediator;
+        }
+
+        /// <summary>
+        /// Returns all proposals for a given customer (any status),
+        /// with their linked policy and policy documents nested beneath each proposal.
+        /// Use this for a full customer portfolio view.
+        /// </summary>
+        [HttpPost("[action]")]
+        [Authorize]
+        public async Task<IActionResult> GetCustomerProposals([FromBody] GetCustomerProposalsRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CustomerId))
+                return BadRequest(new { message = "customerId is required." });
+
+            try
+            {
+                var query  = new GetCustomerProposalsQuery { CustomerId = request.CustomerId };
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         /// <summary>
