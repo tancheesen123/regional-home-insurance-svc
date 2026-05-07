@@ -1,1 +1,0 @@
-RM0 Your password for the HOHH Insurance policy ending in <last 4 digit of policy number> is combination of DDMMYYYY(Date of Birth) and last 4 digit of your NRIC.

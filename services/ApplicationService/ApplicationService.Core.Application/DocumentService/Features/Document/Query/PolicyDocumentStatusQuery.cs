@@ -105,6 +105,18 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
 
             private static string ResolveFileType(string fileName)
             {
+                // Local language variants checked first — pattern: "- PDS (Bahasa Indonesia).pdf"
+                if (fileName.Contains("- PDS (", StringComparison.OrdinalIgnoreCase) &&
+                    fileName.EndsWith(").pdf",   StringComparison.OrdinalIgnoreCase))
+                    return "PDS_Local";
+                if (fileName.Contains("- ePolicy (", StringComparison.OrdinalIgnoreCase) &&
+                    fileName.EndsWith(").pdf",        StringComparison.OrdinalIgnoreCase))
+                    return "EPolicy_Local";
+                if (fileName.Contains("- Tax Invoice (", StringComparison.OrdinalIgnoreCase) &&
+                    fileName.EndsWith(").pdf",            StringComparison.OrdinalIgnoreCase))
+                    return "TaxInvoice_Local";
+
+                // English versions
                 if (fileName.EndsWith("- PDS.pdf",         StringComparison.OrdinalIgnoreCase))
                     return "PDS";
                 if (fileName.EndsWith("- ePolicy.pdf",     StringComparison.OrdinalIgnoreCase))
@@ -117,10 +129,13 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
 
             private static int FileTypeSortOrder(string fileType) => fileType switch
             {
-                "PDS"        => 1,
-                "EPolicy"    => 2,
-                "TaxInvoice" => 3,
-                _            => 99
+                "PDS"              => 1,
+                "PDS_Local"        => 2,
+                "EPolicy"          => 3,
+                "EPolicy_Local"    => 4,
+                "TaxInvoice"       => 5,
+                "TaxInvoice_Local" => 6,
+                _                  => 99
             };
         }
     }
