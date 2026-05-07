@@ -34,8 +34,21 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
         // Product type variants present in the XSL file names (INS = conventional insurance)
         private const string ProductType = "INS";
-        // Language variant: EV = English Version, BV = Bahasa Version
-        private const string LangVariant = "EV";
+        // Language variant: EV = English Version, BV = Bahasa Version (local)
+        private const string LangVariantEn    = "EV";
+        private const string LangVariantLocal = "BV";
+
+        /// <summary>
+        /// Display name of the local language for each region.
+        /// Used as a filename suffix: "{policyNumber} - PDS ({LocalLangName}).pdf"
+        /// </summary>
+        private static readonly Dictionary<string, string> LocalLanguageNames =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ID"] = "Bahasa Indonesia",
+                ["KH"] = "Khmer",
+                ["PH"] = "Filipino",
+            };
 
         // ── Security: allowlist of valid region codes ─────────────────────────
         // FIX #3 — Path traversal: region is used directly in file paths;
@@ -340,43 +353,55 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             var message = "";
             var savedDocuments = new List<PolicyDocument>();
 
-            // ── 1. PDS Form ───────────────────────────────────────────────────
+            var region    = request.Region.ToUpper();
+            var localLang = LocalLanguageNames.TryGetValue(region, out var ln) ? ln : region;
+
+            // ── 1. PDS — English ──────────────────────────────────────────────
             if (status)
             {
-                var (pdfPDSForm, pdsDoc) = await HomePDSFormAsync(request, proposal);
-                if (!pdfPDSForm.status)
-                {
-                    status = false;
-                    message = $"PDF Generate Fail - {pdfPDSForm.ReferenceId}, {pdfPDSForm.Token}";
-                }
-                else if (pdsDoc != null)
-                    savedDocuments.Add(pdsDoc);
+                var (r, doc) = await HomePDSFormAsync(request, proposal, LangVariantEn, langName: null);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (PDS EN) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 2. ePolicy Form ───────────────────────────────────────────────
+            // ── 2. PDS — Local language ───────────────────────────────────────
             if (status)
             {
-                var (pdfPolicyForm, policyDoc) = await HomeEPolicyFormAsync(request, proposal);
-                if (!pdfPolicyForm.status)
-                {
-                    status = false;
-                    message = $"PDF Generate Fail - {pdfPolicyForm.ReferenceId}, {pdfPolicyForm.Token}";
-                }
-                else if (policyDoc != null)
-                    savedDocuments.Add(policyDoc);
+                var (r, doc) = await HomePDSFormAsync(request, proposal, LangVariantLocal, localLang);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (PDS Local) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 3. Tax Invoice Form ───────────────────────────────────────────
+            // ── 3. ePolicy — English ──────────────────────────────────────────
             if (status)
             {
-                var (pdfTaxInvoiceForm, taxDoc) = await HomeTaxInvoiceFormAsync(request, proposal);
-                if (!pdfTaxInvoiceForm.status)
-                {
-                    status = false;
-                    message = $"PDF Generate Fail - {pdfTaxInvoiceForm.ReferenceId}, {pdfTaxInvoiceForm.Token}";
-                }
-                else if (taxDoc != null)
-                    savedDocuments.Add(taxDoc);
+                var (r, doc) = await HomeEPolicyFormAsync(request, proposal, LangVariantEn, langName: null);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (ePolicy EN) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
+            }
+
+            // ── 4. ePolicy — Local language ───────────────────────────────────
+            if (status)
+            {
+                var (r, doc) = await HomeEPolicyFormAsync(request, proposal, LangVariantLocal, localLang);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (ePolicy Local) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
+            }
+
+            // ── 5. Tax Invoice — English ──────────────────────────────────────
+            if (status)
+            {
+                var (r, doc) = await HomeTaxInvoiceFormAsync(request, proposal, LangVariantEn, langName: null);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (TaxInvoice EN) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
+            }
+
+            // ── 6. Tax Invoice — Local language ───────────────────────────────
+            if (status)
+            {
+                var (r, doc) = await HomeTaxInvoiceFormAsync(request, proposal, LangVariantLocal, localLang);
+                if (!r.status) { status = false; message = $"PDF Generate Fail (TaxInvoice Local) - {r.ReferenceId}"; }
+                else if (doc != null) savedDocuments.Add(doc);
             }
 
             if (!status)
@@ -398,15 +423,21 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomePDSFormAsync(
-            BackendInvokeRequest request, Proposal proposal)
+            BackendInvokeRequest request, Proposal proposal,
+            string lang = LangVariantEn, string? langName = null)
         {
             var response = new PDFStatusResponse();
-            var file     = $"{request.PolicyNumber} - Product Disclosure Sheet.pdf";
+            // langName null  → English:  "HI-ID-2026-001234 - PDS.pdf"
+            // langName set   → Local  :  "HI-ID-2026-001234 - PDS (Bahasa Indonesia).pdf"
+            var fileSuffix = langName == null ? "PDS" : $"PDS ({langName})";
+            var file       = $"{request.PolicyNumber} - {fileSuffix}.pdf";
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
             var entity   = _docSettings.Entity;
-            var xslPath  = Path.Combine(_docSettings.DocsPath, region, "Home", "XSL", $"HOHH_PDS_{entity}_EN.xsl");
+            // EN → HOHH_PDS_{entity}_EN.xsl   |   Local → HOHH_PDS_{entity}_{region}.xsl  (e.g. _ID, _KH, _PH)
+            var xslSuffix = lang == LangVariantLocal ? region : "EN";
+            var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"HOHH_PDS_{entity}_{xslSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
             var filePath = Path.Combine(storeDir, file);
 
@@ -470,7 +501,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = "PDS",
+                                    FileType   = langName == null ? "PDS" : "PDS_Local",
                                     PolicyId   = request.PolicyId,
                                     CreatedAt  = DateTime.UtcNow
                                 };
@@ -506,14 +537,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeEPolicyFormAsync(
-            BackendInvokeRequest request, Proposal proposal)
+            BackendInvokeRequest request, Proposal proposal,
+            string lang = LangVariantEn, string? langName = null)
         {
-            var response = new PDFStatusResponse();
-            var file     = $"{request.PolicyNumber} - ePolicy.pdf";
+            var response   = new PDFStatusResponse();
+            var fileSuffix = langName == null ? "ePolicy" : $"ePolicy ({langName})";
+            var file       = $"{request.PolicyNumber} - {fileSuffix}.pdf";
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
-            var xslPath  = Path.Combine(_docSettings.DocsPath, region, "Home", "XSL", $"EpolicyForm_{ProductType}_EV.xsl");
+            // EN → EpolicyForm_{ProductType}_EV.xsl   |   Local → EpolicyForm_{ProductType}_{region}.xsl
+            var xslFileSuffix = lang == LangVariantLocal ? region : LangVariantEn;
+            var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"EpolicyForm_{ProductType}_{xslFileSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
             var filePath = Path.Combine(storeDir, file);
 
@@ -577,7 +612,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = "EPolicy",
+                                    FileType   = langName == null ? "EPolicy" : "EPolicy_Local",
                                     PolicyId   = request.PolicyId,
                                     CreatedAt  = DateTime.UtcNow
                                 };
@@ -613,14 +648,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
 
         private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeTaxInvoiceFormAsync(
-            BackendInvokeRequest request, Proposal proposal)
+            BackendInvokeRequest request, Proposal proposal,
+            string lang = LangVariantEn, string? langName = null)
         {
-            var response = new PDFStatusResponse();
-            var file     = $"{request.PolicyNumber} - Tax Invoice.pdf";
+            var response   = new PDFStatusResponse();
+            var fileSuffix = langName == null ? "Tax Invoice" : $"Tax Invoice ({langName})";
+            var file       = $"{request.PolicyNumber} - {fileSuffix}.pdf";
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
-            var xslPath  = Path.Combine(_docSettings.DocsPath, region, "Home", "XSL", $"TaxInvoice_{ProductType}_EV.xsl");
+            // EN → TaxInvoice_{ProductType}_EV.xsl   |   Local → TaxInvoice_{ProductType}_{region}.xsl
+            var xslFileSuffix = lang == LangVariantLocal ? region : LangVariantEn;
+            var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"TaxInvoice_{ProductType}_{xslFileSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
             var filePath = Path.Combine(storeDir, file);
 
@@ -684,7 +723,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = "TaxInvoice",
+                                    FileType   = langName == null ? "TaxInvoice" : "TaxInvoice_Local",
                                     PolicyId   = request.PolicyId,
                                     CreatedAt  = DateTime.UtcNow
                                 };
@@ -735,7 +774,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var entity   = _docSettings.Entity.ToLower();
                 var docLang  = "en";
                 var emailXsl = Path.Combine(
-                    _docSettings.DocsPath, region, "Home", "Email",
+                    _docSettings.DocsPath, "Home", "Email",
                     $"{entity}_hohh_success_{docLang}.xsl");
 
                 string htmlBody;
@@ -809,7 +848,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var region  = request.Region.ToUpper();
                 var entity  = _docSettings.Entity.ToLower();
                 var smsFile = Path.Combine(
-                    _docSettings.DocsPath, region, "Home", "SMS",
+                    _docSettings.DocsPath, "Home", "SMS",
                     $"{entity}_en_sms.txt");
 
                 string smsText;
@@ -906,7 +945,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var baseDir = AppContext.BaseDirectory;
 
                 string ImgPath(string fileName) =>
-                    Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
+                    Path.Combine(baseDir, docsPath, "Home", "Images", fileName);
 
                 string LoadImage(string fileName)
                 {
@@ -1084,7 +1123,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 string LoadEpolicyImage(string fileName)
                 {
-                    var path  = Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
+                    var path  = Path.Combine(baseDir, docsPath, "Home", "Images", fileName);
                     var bytes = File.ReadAllBytes(path);
                     return "data:image/png;base64," + Convert.ToBase64String(bytes);
                 }
@@ -1280,7 +1319,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 string LoadTaxImage(string fileName)
                 {
-                    var path  = Path.Combine(baseDir, docsPath, region, "Home", "Images", fileName);
+                    var path  = Path.Combine(baseDir, docsPath, "Home", "Images", fileName);
                     var bytes = File.ReadAllBytes(path);
                     return "data:image/png;base64," + Convert.ToBase64String(bytes);
                 }

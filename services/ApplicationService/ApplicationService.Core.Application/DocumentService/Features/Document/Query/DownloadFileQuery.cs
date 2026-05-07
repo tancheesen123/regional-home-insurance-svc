@@ -27,13 +27,29 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
             private readonly IProposalRepository _proposalRepository;
             private readonly DocumentSettings    _docSettings;
 
-            // Maps the API fileType token to the suffix used in the saved filename.
+            // Maps the API fileType token → exact filename suffix (English versions).
             private static readonly Dictionary<string, string> FileTypeSuffix =
                 new(StringComparer.OrdinalIgnoreCase)
                 {
                     ["PDS"]        = "- PDS.pdf",
                     ["EPolicy"]    = "- ePolicy.pdf",
                     ["TaxInvoice"] = "- Tax Invoice.pdf",
+                };
+
+            // For local-language variants the suffix contains a parenthesised language name
+            // that differs per region, so we match by a fixed infix instead.
+            private static readonly HashSet<string> LocalFileTypes =
+                new(StringComparer.OrdinalIgnoreCase)
+                {
+                    "PDS_Local", "EPolicy_Local", "TaxInvoice_Local"
+                };
+
+            private static readonly Dictionary<string, string> LocalFileTypeInfix =
+                new(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["PDS_Local"]         = "- PDS (",
+                    ["EPolicy_Local"]     = "- ePolicy (",
+                    ["TaxInvoice_Local"]  = "- Tax Invoice (",
                 };
 
             public DownloadFileQueryHandler(
@@ -53,10 +69,14 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                     "=== DownloadFile | ProposalId={ProposalId} FileType={FileType} ===",
                     request.ProposalId, request.FileType);
 
-                if (!FileTypeSuffix.ContainsKey(request.FileType))
+                var isLocal  = LocalFileTypes.Contains(request.FileType);
+                var isEnglish = FileTypeSuffix.ContainsKey(request.FileType);
+                if (!isEnglish && !isLocal)
+                {
+                    var allKeys = string.Join(", ", FileTypeSuffix.Keys.Concat(LocalFileTypes));
                     throw new ArgumentException(
-                        $"Invalid fileType '{request.FileType}'. " +
-                        $"Accepted values: {string.Join(", ", FileTypeSuffix.Keys)}.");
+                        $"Invalid fileType '{request.FileType}'. Accepted values: {allKeys}.");
+                }
 
                 var proposal = await _proposalRepository.GetByIdWithDetailsAsync(request.ProposalId);
                 if (proposal == null)
@@ -83,10 +103,26 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                     throw new KeyNotFoundException(
                         "Document folder not found. Please contact support.");
 
-                var suffix   = FileTypeSuffix[request.FileType];
-                var filePath = Directory.GetFiles(storeDir, "*.pdf")
-                    .FirstOrDefault(f => Path.GetFileName(f).EndsWith(
-                        suffix, StringComparison.OrdinalIgnoreCase));
+                string? filePath;
+                if (isLocal)
+                {
+                    // Local files have a parenthesised language name: "- PDS (Bahasa Indonesia).pdf"
+                    var infix = LocalFileTypeInfix[request.FileType];
+                    filePath = Directory.GetFiles(storeDir, "*.pdf")
+                        .FirstOrDefault(f =>
+                        {
+                            var name = Path.GetFileName(f);
+                            return name.Contains(infix, StringComparison.OrdinalIgnoreCase) &&
+                                   name.EndsWith(").pdf", StringComparison.OrdinalIgnoreCase);
+                        });
+                }
+                else
+                {
+                    var suffix = FileTypeSuffix[request.FileType];
+                    filePath = Directory.GetFiles(storeDir, "*.pdf")
+                        .FirstOrDefault(f => Path.GetFileName(f).EndsWith(
+                            suffix, StringComparison.OrdinalIgnoreCase));
+                }
 
                 if (filePath == null)
                     throw new KeyNotFoundException(
