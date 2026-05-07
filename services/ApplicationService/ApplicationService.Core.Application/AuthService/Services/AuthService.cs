@@ -69,13 +69,14 @@ namespace ApplicationService.Core.Application.AuthService.Services
             var customerId = customer?.CustomerId ?? string.Empty;
 
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.ExpiryHours);
-            var token = GenerateJwtToken(user.UserId, user.Email, customerId, "auth", expiresAt);
+            var token = GenerateJwtToken(user.UserId, user.Email, customerId, user.Role, "auth", expiresAt);
 
             return new LoginResponse
             {
                 Token     = token,
                 UserId    = user.UserId,
                 Email     = user.Email,
+                Role      = user.Role,
                 ExpiresAt = expiresAt
             };
         }
@@ -96,7 +97,8 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 UserId         = userId,
                 Email          = request.Email,
                 HashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                IsVerified     = false
+                IsVerified     = false,
+                Role           = "User"
             };
 
             // Create Customer linked to UserAccount
@@ -128,9 +130,9 @@ namespace ApplicationService.Core.Application.AuthService.Services
 
             await _authRepository.RegisterAsync(userAccount, customer);
 
-            // Generate verification JWT token (short-lived) — no customerId needed for verification flow
+            // Generate verification JWT token (short-lived) — no customerId or role needed for verification flow
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.VerificationExpiryHours);
-            var verificationToken = GenerateJwtToken(userId, request.Email, string.Empty, "email-verification", expiresAt);
+            var verificationToken = GenerateJwtToken(userId, request.Email, string.Empty, string.Empty, "email-verification", expiresAt);
             var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}&countryCode={request.Region.ToUpper()}";
 
             await _emailService.SendVerificationEmailAsync(request.Email, $"{request.FirstName} {request.LastName}", verificationLink);
@@ -182,7 +184,7 @@ namespace ApplicationService.Core.Application.AuthService.Services
 
 
         private string GenerateJwtToken(
-            string userId, string email, string customerId, string purpose, DateTime expiresAt)
+            string userId, string email, string customerId, string role, string purpose, DateTime expiresAt)
         {
             var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -195,9 +197,12 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 new Claim("purpose",                     purpose)
             };
 
-            // Include customerId claim only for auth tokens — verification tokens don't need it
+            // Include customerId and role only for auth tokens — verification tokens don't need them
             if (!string.IsNullOrEmpty(customerId))
                 claims.Add(new Claim("customerId", customerId));
+
+            if (!string.IsNullOrEmpty(role))
+                claims.Add(new Claim(ClaimTypes.Role, role));
 
             var token = new JwtSecurityToken(
                 issuer:             _jwtSettings.Issuer,
