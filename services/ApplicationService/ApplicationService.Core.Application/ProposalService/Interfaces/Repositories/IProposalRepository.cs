@@ -16,6 +16,21 @@ namespace ApplicationService.Core.Application.ProposalService.Interfaces.Reposit
         /// </summary>
         Task<List<Proposal>> GetProposalsByCustomerIdAsync(string customerId);
 
+        /// <summary>
+        /// Returns all proposals in the current region within the optional date range,
+        /// with Quotation (+ QuotationPremium), Policy (+ PolicyDocuments) and Payments eagerly loaded.
+        /// Date filter is applied against Policy.IssuedAt for inforced proposals,
+        /// and Proposal.CreatedAt for all others. Ordered newest first.
+        /// Used by the Sales reporting API.
+        /// </summary>
+        Task<List<Proposal>> GetSalesProposalsAsync(DateTime? dateFrom, DateTime? dateTo);
+
+        /// <summary>
+        /// Returns a single proposal by ProposalId with all sales-related data eagerly loaded:
+        /// Quotation (+ QuotationPremium), Policy (+ PolicyDocuments) and Payments.
+        /// </summary>
+        Task<Proposal?> GetSalesRecordByProposalIdAsync(string proposalId);
+
         Task CreateProposalAndLockQuotationAsync(Proposal proposal);
         Task InforceProposalAsync(Proposal proposal, Policy policy);
         Task AddPolicyDocumentsAsync(List<PolicyDocument> documents, string policyId, bool hasFullDocument);

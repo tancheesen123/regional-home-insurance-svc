@@ -74,6 +74,45 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
+        /// <inheritdoc />
+        public async Task<List<Proposal>> GetSalesProposalsAsync(DateTime? dateFrom, DateTime? dateTo)
+        {
+            var query = _resolver.Resolve().Proposals
+                .Include(p => p.Policy)
+                    .ThenInclude(pol => pol!.PolicyDocuments)
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q!.QuotationPremium)
+                .Include(p => p.Payments)
+                .AsQueryable();
+
+            // Filter by date: use Policy.IssuedAt for inforced, CreatedAt for others
+            if (dateFrom.HasValue)
+                query = query.Where(p =>
+                    (p.Policy != null && p.Policy.IssuedAt >= dateFrom.Value) ||
+                    (p.Policy == null && p.CreatedAt >= dateFrom.Value));
+
+            if (dateTo.HasValue)
+                query = query.Where(p =>
+                    (p.Policy != null && p.Policy.IssuedAt <= dateTo.Value) ||
+                    (p.Policy == null && p.CreatedAt <= dateTo.Value));
+
+            return await query
+                .OrderByDescending(p => p.Policy != null ? p.Policy.IssuedAt : p.CreatedAt)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<Proposal?> GetSalesRecordByProposalIdAsync(string proposalId)
+        {
+            return await _resolver.Resolve().Proposals
+                .Include(p => p.Policy)
+                    .ThenInclude(pol => pol!.PolicyDocuments)
+                .Include(p => p.Quotation)
+                    .ThenInclude(q => q!.QuotationPremium)
+                .Include(p => p.Payments)
+                .FirstOrDefaultAsync(p => p.ProposalId == proposalId);
+        }
+
         public async Task CreateProposalAndLockQuotationAsync(Proposal proposal)
         {
             var context = _resolver.Resolve();

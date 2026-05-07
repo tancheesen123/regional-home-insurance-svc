@@ -1,0 +1,70 @@
+using ApplicationService.Core.Application.SalesService.DTOs;
+using ApplicationService.Core.Application.SalesService.Features.Query;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ApplicationService.WebAPI.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class SalesController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+
+        public SalesController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+
+        /// <summary>
+        /// Returns a filtered list of sales records and an unfiltered period summary.
+        /// All filters are optional. Summary is always computed from the full date-range
+        /// dataset — not limited by status / search filters.
+        /// Requires X-Country-Code header: PH | ID | KH
+        /// </summary>
+        [HttpPost("[action]")]
+        public async Task<IActionResult> GetSalesRecords([FromBody] GetSalesRecordsRequest request)
+        {
+            try
+            {
+                var query  = new GetSalesRecordsQuery { Request = request };
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Returns the full detail of a single sales record by its ProposalId
+        /// (the "id" field returned in the sales records list).
+        /// Requires X-Country-Code header: PH | ID | KH
+        /// </summary>
+        /// <param name="recordId">ProposalId of the sales record.</param>
+        [HttpGet("{recordId}")]
+        public async Task<IActionResult> GetSalesRecordDetail(string recordId)
+        {
+            if (string.IsNullOrWhiteSpace(recordId))
+                return BadRequest(new { message = "recordId is required." });
+
+            try
+            {
+                var query  = new GetSalesRecordDetailQuery { RecordId = recordId };
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+    }
+}
