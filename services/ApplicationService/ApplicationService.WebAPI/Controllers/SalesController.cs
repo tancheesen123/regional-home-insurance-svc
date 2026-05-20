@@ -1,4 +1,5 @@
 using ApplicationService.Core.Application.SalesService.DTOs;
+using ApplicationService.Core.Application.SalesService.Features.Command;
 using ApplicationService.Core.Application.SalesService.Features.Query;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -86,6 +87,39 @@ namespace ApplicationService.WebAPI.Controllers
                 var query  = new GetSalesRecordDetailQuery { RecordId = recordId };
                 var result = await _mediator.Send(query);
                 return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{recordId}/SendEmail")]
+        public async Task<IActionResult> SendEmail(string recordId, [FromBody] SendSalesEmailRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(recordId))
+                return BadRequest(new { message = "recordId is required." });
+
+            if (string.IsNullOrWhiteSpace(request?.To))
+                return BadRequest(new { message = "'to' (recipient email) is required." });
+
+            try
+            {
+                var command = new SendSalesEmailCommand
+                {
+                    RecordId = recordId,
+                    ToEmail  = request.To.Trim(),
+                };
+                var result = await _mediator.Send(command);
+
+                if (!result.Succeeded)
+                    return UnprocessableEntity(new { succeeded = false, message = result.Message });
+
+                return Ok(new { succeeded = true, message = result.Message });
             }
             catch (KeyNotFoundException ex)
             {
