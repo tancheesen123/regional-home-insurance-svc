@@ -7,10 +7,6 @@ using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.DocumentService.Features.Document.Query
 {
-    /// <summary>
-    /// Returns whether all policy documents (PDS, ePolicy, Tax Invoice) have been generated.
-    /// The frontend polls this endpoint after payment to know when to show the download modal.
-    /// </summary>
     public class PolicyDocumentStatusQuery : IRequest<PolicyDocumentStatusResult>
     {
 

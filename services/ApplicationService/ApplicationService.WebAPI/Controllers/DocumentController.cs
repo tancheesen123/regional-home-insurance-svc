@@ -17,12 +17,6 @@ namespace ApplicationService.WebAPI.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Polls whether all policy documents (PDS, ePolicy, Tax Invoice) have been generated.
-        /// Returns isReady=false while generation is still in progress — safe to poll every few seconds.
-        /// Only the authenticated customer who owns the proposal may call this endpoint.
-        /// </summary>
-        /// <param name="proposalId">The proposal ID returned during the inforce/payment flow.</param>
         [HttpGet("PolicyDocumentStatus")]
         public async Task<IActionResult> PolicyDocumentStatus([FromQuery] string proposalId)
         {
@@ -49,13 +43,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Downloads a single policy PDF by file-type token.
-        /// Accepted fileType values: "PDS" | "EPolicy" | "TaxInvoice"
-        /// Only the authenticated customer who owns the proposal may call this endpoint.
-        /// </summary>
-        /// <param name="proposalId">The proposal ID returned during the inforce/payment flow.</param>
-        /// <param name="fileType">One of: PDS, EPolicy, TaxInvoice (case-insensitive).</param>
         [HttpGet("DownloadFile")]
         public async Task<IActionResult> DownloadFile(
             [FromQuery] string proposalId,
@@ -92,11 +79,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Downloads all policy documents (PDS, ePolicy, Tax Invoice) bundled into a single ZIP.
-        /// Only the authenticated customer who owns the proposal may call this endpoint.
-        /// </summary>
-        /// <param name="proposalId">The proposal ID returned during the inforce/payment flow.</param>
         [HttpGet("DownloadPolicyDocuments")]
         public async Task<IActionResult> DownloadPolicyDocuments([FromQuery] string proposalId)
         {

@@ -8,16 +8,11 @@ using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.DocumentService.Features.Document.Query
 {
-    /// <summary>
-    /// Streams all policy PDF documents (PDS, ePolicy, Tax Invoice) as a single ZIP file.
-    /// Only the authenticated customer who owns the proposal may download their documents.
-    /// </summary>
     public class DownloadPolicyDocumentsQuery : IRequest<DownloadPolicyDocumentsResult>
     {
 
         public string ProposalId { get; set; } = string.Empty;
 
-        /// <summary>Authenticated user — used for IDOR ownership check.</summary>
         public ClaimsPrincipal User { get; set; } = new ClaimsPrincipal();
 
         public class DownloadPolicyDocumentsQueryHandler
@@ -49,7 +44,9 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                     throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
 
                 var customerId = request.User.FindFirst("customerId")?.Value ?? string.Empty;
-                if (string.IsNullOrEmpty(customerId) || proposal.CustomerId != customerId)
+                var isAdmin    = request.User.IsInRole("Admin");
+
+                if (!isAdmin && (string.IsNullOrEmpty(customerId) || proposal.CustomerId != customerId))
                     throw new UnauthorizedAccessException(
                         "You are not authorised to download documents for this proposal.");
 
