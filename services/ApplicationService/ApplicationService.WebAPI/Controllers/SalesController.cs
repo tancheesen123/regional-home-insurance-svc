@@ -40,6 +40,36 @@ namespace ApplicationService.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Exports the filtered sales records as an .xlsx file with two sheets:
+        /// "Sales Records" (one row per record) and "Summary" (aggregated KPIs).
+        /// Same filters as GetSalesRecords — all optional.
+        /// Requires X-Country-Code header: PH | ID | KH
+        /// </summary>
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ExportExcel([FromBody] GetSalesRecordsRequest request)
+        {
+            var region = HttpContext.Request.Headers["X-Country-Code"].ToString();
+
+            try
+            {
+                var query  = new ExportSalesExcelQuery { Request = request, Region = region };
+                var result = await _mediator.Send(query);
+
+                if (result.FileBytes.Length == 0)
+                    return NoContent();
+
+                return File(
+                    result.FileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    result.FileName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Returns the full detail of a single sales record by its ProposalId
         /// (the "id" field returned in the sales records list).
         /// Requires X-Country-Code header: PH | ID | KH
