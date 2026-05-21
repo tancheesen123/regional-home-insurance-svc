@@ -89,8 +89,10 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
                 {
                     PolicyId       = Guid.NewGuid().ToString(),
                     PolicyNumber   = GeneratePolicyNumber(region),
-                    StartDate      = quotation?.CoverageStartDate ?? DateTime.UtcNow.Date,
-                    EndDate        = quotation?.ExpiryDate        ?? DateTime.UtcNow.Date.AddYears(1),
+                    StartDate      = quotation?.CoverageStartDate                           ?? DateTime.UtcNow.Date,
+                    // ExpiryDate is already set to StartDate + 1yr - 1day at quotation time.
+                    // Fallback applies the same rule in case quotation is null.
+                    EndDate        = quotation?.ExpiryDate ?? DateTime.UtcNow.Date.AddYears(1).AddDays(-1),
                     CoverageAmount = quotation?.Premium * 100     ?? 0m,
                     IssuedAt       = DateTime.UtcNow,
                     IssuedBy       = user.Identity?.Name ?? "SYSTEM",

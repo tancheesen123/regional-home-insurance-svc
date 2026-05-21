@@ -37,7 +37,9 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             var premium = CalculatePremium(request);
 
             var coverageStart = ParseDate(request.CoverageStartDate);
-            var expiryDate    = coverageStart.AddYears(1);
+            // EndDate = StartDate + 1 year - 1 day so the purchase day is day 1 of coverage
+            // e.g. start Jun 21 2025 → end Jun 20 2026 (365 days inclusive)
+            var expiryDate    = coverageStart.AddYears(1).AddDays(-1);
 
             var quotation = new Quotation
             {
@@ -348,7 +350,8 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
 
             var startDate = quotation.CoverageStartDate;
-            var endDate   = startDate.AddYears(1);
+            // EndDate = StartDate + 1 year - 1 day so the purchase day is day 1 of coverage
+            var endDate   = startDate.AddYears(1).AddDays(-1);
 
             var policy = new Policy
             {
