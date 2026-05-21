@@ -28,6 +28,8 @@ using ApplicationService.Core.Application.ProductService.Interfaces.Services;
 using ApplicationService.Core.Application.InforcePolicyService.Features.InforcePolicy.Command;
 using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
 using ApplicationService.Core.Application.InforcePolicyService.Services;
+using ApplicationService.Core.Application.RateConfigService.Features.Command;
+using ApplicationService.Core.Application.RateConfigService.Features.Query;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using ApplicationService.Core.Application.ProposalService.Settings;
 using ApplicationService.Infrastructure.Persistence.Repositories;
@@ -53,6 +55,8 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InitiatePaymentCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CalculatePremiumCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InforcePolicyCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SeedRateConfigCommand).Assembly));
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetBuildingConfigQuery).Assembly));
 
             // Services
             services.AddScoped<ICustomerService, CustomerService>();

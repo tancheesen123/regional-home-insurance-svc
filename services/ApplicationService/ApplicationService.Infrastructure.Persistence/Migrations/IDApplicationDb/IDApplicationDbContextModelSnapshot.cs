@@ -173,6 +173,56 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.ToTable("Addresses");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.BuildingConstructionRate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ConstructionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PropertySubType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<decimal>("RatePerUnit")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "PropertySubType", "ConstructionType", "IsActive");
+
+                    b.ToTable("BuildingConstructionRates");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
                 {
                     b.Property<string>("CustomerId")
@@ -318,6 +368,60 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                     b.HasIndex("CustomerId");
 
                     b.ToTable("CustomerPaymentMethods");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.LocationTierConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("KeywordsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("Multiplier")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "Tier", "IsActive");
+
+                    b.ToTable("LocationTierConfigs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
@@ -959,6 +1063,114 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                         .IsUnique();
 
                     b.ToTable("QuotationPremiums");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RegionRateConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("AreaMax")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("AreaMin")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("AreaUnit")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<int>("BenchmarkYear")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("MaxStoreys")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ProfessionalFeeRate")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<decimal>("StoreyIncrementPct")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "IsActive");
+
+                    b.ToTable("RegionRateConfigs");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RiskMultiplierConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FactorKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("Multiplier")
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "FactorKey", "IsActive");
+
+                    b.ToTable("RiskMultiplierConfigs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.TaxConfig", b =>

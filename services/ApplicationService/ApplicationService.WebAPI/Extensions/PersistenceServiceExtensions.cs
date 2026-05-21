@@ -4,6 +4,7 @@ using ApplicationService.Core.Application.PaymentService.Interfaces.Repositories
 using ApplicationService.Core.Application.ProfileService.Interfaces.Repositories;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Repositories;
 using ApplicationService.Core.Application.QuotationService.Interfaces.Repositories;
+using ApplicationService.Core.Application.RateConfigService.Interfaces.Repositories;
 using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IQuotationRepository, QuotationRepository>();
             services.AddScoped<IProposalRepository, ProposalRepository>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IRateConfigRepository, RateConfigRepository>();
 
             return services;
         }

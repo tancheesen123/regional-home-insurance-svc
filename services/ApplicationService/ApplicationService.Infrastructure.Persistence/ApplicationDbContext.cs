@@ -40,6 +40,12 @@ namespace ApplicationService.Infrastructure.Persistence
         // ── Valuable item category rates (per region) ─────────────────────────
         public DbSet<ValuableCategoryRate> ValuableCategoryRates { get; set; }
 
+        // ── Building cost estimator & risk config (admin-adjustable) ──────────
+        public DbSet<BuildingConstructionRate> BuildingConstructionRates { get; set; }
+        public DbSet<RegionRateConfig>         RegionRateConfigs          { get; set; }
+        public DbSet<LocationTierConfig>       LocationTierConfigs        { get; set; }
+        public DbSet<RiskMultiplierConfig>     RiskMultiplierConfigs      { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // UserAccount
@@ -397,6 +403,77 @@ namespace ApplicationService.Infrastructure.Persistence
                       .HasForeignKey<QuotationPremium>(e => e.QuotationId)
                       .HasPrincipalKey<Quotation>(q => q.QuotationId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // BuildingConstructionRate
+            modelBuilder.Entity<BuildingConstructionRate>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.PropertySubType).IsRequired().HasMaxLength(30);
+                entity.Property(e => e.ConstructionType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.RatePerUnit).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                // One active rate per region + property subtype + construction type
+                entity.HasIndex(e => new { e.Region, e.PropertySubType, e.ConstructionType, e.IsActive });
+            });
+
+            // RegionRateConfig
+            modelBuilder.Entity<RegionRateConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.AreaUnit).IsRequired().HasMaxLength(5);
+                entity.Property(e => e.AreaMin).HasColumnType("decimal(10,2)");
+                entity.Property(e => e.AreaMax).HasColumnType("decimal(10,2)");
+                entity.Property(e => e.StoreyIncrementPct).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.MaxStoreys).IsRequired();
+                entity.Property(e => e.ProfessionalFeeRate).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.BenchmarkYear).IsRequired();
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.IsActive });
+            });
+
+            // LocationTierConfig
+            modelBuilder.Entity<LocationTierConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.Tier).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.Multiplier).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.Label).IsRequired().HasMaxLength(150);
+                entity.Property(e => e.KeywordsJson).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                // One row per region + tier
+                entity.HasIndex(e => new { e.Region, e.Tier, e.IsActive });
+            });
+
+            // RiskMultiplierConfig
+            modelBuilder.Entity<RiskMultiplierConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(5); // "ALL" | "PH" | "ID" | "KH"
+                entity.Property(e => e.FactorKey).IsRequired().HasMaxLength(40);
+                entity.Property(e => e.Multiplier).HasColumnType("decimal(10,4)");
+                entity.Property(e => e.Description).HasColumnType("TEXT");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.FactorKey, e.IsActive });
             });
 
             // Payment
