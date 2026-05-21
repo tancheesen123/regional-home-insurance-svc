@@ -1065,7 +1065,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 // ── Dates ────────────────────────────────────────────────────────────
                 var startDate = q?.CoverageStartDate ?? DateTime.Now;
-                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1);
+                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
                 // ── Premium figures ──────────────────────────────────────────────────
                 var planPremium    = qp?.PlanPremium    ?? 0m;
@@ -1279,7 +1279,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 // ── Dates ────────────────────────────────────────────────────────────
                 var startDate = q?.CoverageStartDate ?? DateTime.Now;
-                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1);
+                var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
                 // ── Premium figures ──────────────────────────────────────────────────
                 var grossPremium   = qp?.GrossPremium   ?? 0m;
