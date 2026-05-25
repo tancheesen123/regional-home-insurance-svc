@@ -30,6 +30,7 @@ using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Servic
 using ApplicationService.Core.Application.InforcePolicyService.Services;
 using ApplicationService.Core.Application.RateConfigService.Features.Command;
 using ApplicationService.Core.Application.RateConfigService.Features.Query;
+using ApplicationService.Core.Application.RateConfigService.Services;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Services;
 using ApplicationService.Core.Application.ProposalService.Settings;
 using ApplicationService.Infrastructure.Persistence.Repositories;
@@ -76,6 +77,7 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             services.AddSingleton<IPdfService, PdfService>();
             services.AddScoped<INotificationEmailService, NotificationEmailService>();
+            services.AddScoped<RateConfigAuditService>();
             services.AddScoped<ISmsService, SmsService>();
 
             // Settings

@@ -46,6 +46,10 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<LocationTierConfig>       LocationTierConfigs        { get; set; }
         public DbSet<RiskMultiplierConfig>     RiskMultiplierConfigs      { get; set; }
 
+        // ── Rate config audit trail ───────────────────────────────────────────
+        public DbSet<RateConfigSnapshot>   RateConfigSnapshots  { get; set; }
+        public DbSet<RateConfigChangeLog>  RateConfigChangeLogs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // UserAccount
@@ -474,6 +478,47 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
                 entity.HasIndex(e => new { e.Region, e.FactorKey, e.IsActive });
+            });
+
+            // RateConfigSnapshot
+            modelBuilder.Entity<RateConfigSnapshot>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.Label).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.SnapshotJson).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.SnapshotType).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.CreatedAt });
+            });
+
+            // RateConfigChangeLog
+            modelBuilder.Entity<RateConfigChangeLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.SnapshotId).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.TableName).IsRequired().HasMaxLength(60);
+                entity.Property(e => e.RecordId).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.FieldName).IsRequired().HasMaxLength(150);
+                entity.Property(e => e.OldValue).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.NewValue).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ChangedBy).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ChangedAt).IsRequired();
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.ChangedAt });
+                entity.HasIndex(e => e.SnapshotId);
+
+                entity.HasOne(e => e.Snapshot)
+                      .WithMany(s => s.ChangeLogs)
+                      .HasForeignKey(e => e.SnapshotId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Payment

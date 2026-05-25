@@ -24,6 +24,15 @@ namespace ApplicationService.Core.Application.RateConfigService.Interfaces.Repos
         Task<RiskMultiplierConfig?> GetRiskMultiplierByIdAsync(string id);
         Task UpdateRiskMultiplierAsync(RiskMultiplierConfig config);
 
+        // ── Snapshots ─────────────────────────────────────────────────────────
+        Task<RateConfigSnapshot> SaveSnapshotAsync(RateConfigSnapshot snapshot);
+        Task SaveChangeLogsAsync(List<RateConfigChangeLog> logs);
+        Task<List<RateConfigSnapshot>> GetSnapshotsAsync(string region);
+        Task<RateConfigSnapshot?> GetSnapshotByIdAsync(string snapshotId);
+
+        // ── Change logs ───────────────────────────────────────────────────────
+        Task<List<RateConfigChangeLog>> GetChangeLogsAsync(string region, int pageSize, int page);
+
         // ── Seeder ────────────────────────────────────────────────────────────
         Task<bool> HasBuildingRatesAsync(string region);
         Task SeedBuildingRatesAsync(List<BuildingConstructionRate> rates);

@@ -1065,6 +1065,124 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.ToTable("QuotationPremiums");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigChangeLog", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("NewValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OldValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RecordId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("SnapshotId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SnapshotId");
+
+                    b.HasIndex("Region", "ChangedAt");
+
+                    b.ToTable("RateConfigChangeLogs");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigSnapshot", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SnapshotType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Region", "CreatedAt");
+
+                    b.ToTable("RateConfigSnapshots");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RegionRateConfig", b =>
                 {
                     b.Property<string>("Id")
@@ -1481,6 +1599,17 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.Navigation("Quotation");
                 });
 
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigChangeLog", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.RateConfigSnapshot", "Snapshot")
+                        .WithMany("ChangeLogs")
+                        .HasForeignKey("SnapshotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Snapshot");
+                });
+
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.ValuableItem", b =>
                 {
                     b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
@@ -1542,6 +1671,11 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.Navigation("QuotationPremium");
 
                     b.Navigation("ValuableItems");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigSnapshot", b =>
+                {
+                    b.Navigation("ChangeLogs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>
