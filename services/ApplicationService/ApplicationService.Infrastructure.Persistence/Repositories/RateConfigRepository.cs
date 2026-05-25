@@ -82,6 +82,40 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             await Task.CompletedTask;
         }
 
+        // ── Snapshots & Change Logs ───────────────────────────────────────────
+
+        public async Task<RateConfigSnapshot> SaveSnapshotAsync(RateConfigSnapshot snapshot)
+        {
+            await Db.RateConfigSnapshots.AddAsync(snapshot);
+            return snapshot;
+        }
+
+        public async Task SaveChangeLogsAsync(List<RateConfigChangeLog> logs)
+        {
+            if (logs.Count > 0)
+                await Db.RateConfigChangeLogs.AddRangeAsync(logs);
+        }
+
+        public Task<List<RateConfigSnapshot>> GetSnapshotsAsync(string region) =>
+            Db.RateConfigSnapshots
+              .Where(s => s.Region == region)
+              .OrderByDescending(s => s.CreatedAt)
+              .ToListAsync();
+
+        public Task<RateConfigSnapshot?> GetSnapshotByIdAsync(string snapshotId) =>
+            Db.RateConfigSnapshots
+              .Include(s => s.ChangeLogs)
+              .FirstOrDefaultAsync(s => s.Id == snapshotId);
+
+        public Task<List<RateConfigChangeLog>> GetChangeLogsAsync(
+            string region, int pageSize, int page) =>
+            Db.RateConfigChangeLogs
+              .Where(l => l.Region == region)
+              .OrderByDescending(l => l.ChangedAt)
+              .Skip((page - 1) * pageSize)
+              .Take(pageSize)
+              .ToListAsync();
+
         // ── Seeder ────────────────────────────────────────────────────────────
 
         public Task<bool> HasBuildingRatesAsync(string region) =>

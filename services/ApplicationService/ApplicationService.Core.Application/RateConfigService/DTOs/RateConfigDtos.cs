@@ -1,7 +1,5 @@
 namespace ApplicationService.Core.Application.RateConfigService.DTOs
 {
-    // ── Read DTOs ─────────────────────────────────────────────────────────────
-
     public class BuildingRateDto
     {
         public string  Id               { get; set; } = string.Empty;
@@ -33,7 +31,6 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public string  Tier         { get; set; } = string.Empty;
         public decimal Multiplier   { get; set; }
         public string  Label        { get; set; } = string.Empty;
-        /// <summary>Parsed list of keywords (deserialized from KeywordsJson).</summary>
         public List<string> Keywords { get; set; } = new();
         public bool    IsActive     { get; set; }
     }
@@ -47,13 +44,6 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public string? Description { get; set; }
         public bool    IsActive    { get; set; }
     }
-
-    // ── Full building-config response (shaped for the frontend) ───────────────
-
-    /// <summary>
-    /// Full region config in the shape the frontend expects.
-    /// Replaces the static BUILDING_CONFIGS object in building-rates.ts.
-    /// </summary>
     public class BuildingConfigResponse
     {
         public string  CountryCode        { get; set; } = string.Empty;
@@ -64,11 +54,7 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public int     MaxStoreys         { get; set; }
         public decimal ProfessionalFeeRate{ get; set; }
         public int     BenchmarkYear      { get; set; }
-
-        /// <summary>prime | urban | rural → { multiplier, label, keywords }</summary>
         public Dictionary<string, LocationTierDetail> LocationTiers { get; set; } = new();
-
-        /// <summary>propertySubType → { fullBrick, partialBrick }</summary>
         public Dictionary<string, ConstructionRateDetail> Rates { get; set; } = new();
     }
 
@@ -85,20 +71,14 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public decimal PartialBrick { get; set; }
     }
 
-    // ── Update request bodies ─────────────────────────────────────────────────
-
-    /// <summary>One item in a bulk building-rate update.</summary>
     public class UpdateBuildingRateItem
     {
-        /// <summary>Id of the BuildingConstructionRate row to update.</summary>
         public string  Id          { get; set; } = string.Empty;
-        /// <summary>New rate per area unit in local currency. Must be > 0.</summary>
         public decimal RatePerUnit { get; set; }
     }
 
     public class UpdateBuildingRatesRequest
     {
-        /// <summary>One or more rows to update in a single call.</summary>
         public List<UpdateBuildingRateItem> Rates { get; set; } = new();
     }
 
@@ -117,7 +97,6 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
     {
         public decimal?      Multiplier { get; set; }
         public string?       Label      { get; set; }
-        /// <summary>Full replacement list of province keywords.</summary>
         public List<string>? Keywords   { get; set; }
     }
 
@@ -125,5 +104,32 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
     {
         public decimal  Multiplier  { get; set; }
         public string?  Description { get; set; }
+    }
+    public class RateConfigSnapshotDto
+    {
+        public string   Id           { get; set; } = string.Empty;
+        public string   Region       { get; set; } = string.Empty;
+        public string   Label        { get; set; } = string.Empty;
+        public string   SnapshotType { get; set; } = string.Empty;
+        public string   CreatedBy    { get; set; } = string.Empty;
+        public DateTime CreatedAt    { get; set; }
+        public List<RateConfigChangeLogDto> ChangeLogs { get; set; } = new();
+    }
+
+    public class RateConfigChangeLogDto
+    {
+        public string   Id        { get; set; } = string.Empty;
+        public string   TableName { get; set; } = string.Empty;
+        public string   RecordId  { get; set; } = string.Empty;
+        public string   FieldName { get; set; } = string.Empty;
+        public string   OldValue  { get; set; } = string.Empty;
+        public string   NewValue  { get; set; } = string.Empty;
+        public string   ChangedBy { get; set; } = string.Empty;
+        public DateTime ChangedAt { get; set; }
+    }
+
+    public class RestoreSnapshotRequest
+    {
+        public string? Note { get; set; }
     }
 }

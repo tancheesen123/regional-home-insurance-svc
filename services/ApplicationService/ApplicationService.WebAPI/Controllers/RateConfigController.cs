@@ -11,15 +11,19 @@ namespace ApplicationService.WebAPI.Controllers
     /// Rate configuration endpoints.
     ///
     /// Admin endpoints (require Role=Admin):
-    ///   GET  /api/rateconfig/configs           — all raw config rows for the region
-    ///   PUT  /api/rateconfig/building-rates/{id}
-    ///   PUT  /api/rateconfig/region-config/{id}
-    ///   PUT  /api/rateconfig/location-tiers/{id}
-    ///   PUT  /api/rateconfig/risk-multipliers/{id}
-    ///   POST /api/rateconfig/seed              — seed initial data for a region
+    ///   GET  /api/rateconfig/configs                    — all raw config rows for the region
+    ///   PUT  /api/rateconfig/building-rates             — bulk update building-rate rows
+    ///   PUT  /api/rateconfig/region-config/{id}        — update region-level config
+    ///   PUT  /api/rateconfig/location-tiers/{id}       — update a location-tier row
+    ///   PUT  /api/rateconfig/risk-multipliers/{id}     — update a risk-multiplier row
+    ///   POST /api/rateconfig/seed                      — seed initial data for a region
+    ///   GET  /api/rateconfig/snapshots                 — list config snapshots (newest first)
+    ///   GET  /api/rateconfig/snapshots/{snapshotId}    — single snapshot with change-log detail
+    ///   GET  /api/rateconfig/change-logs               — paginated field-level change log
+    ///   POST /api/rateconfig/restore/{snapshotId}      — roll back to a previous snapshot
     ///
     /// Public endpoint (any authenticated user / frontend):
-    ///   GET  /api/rateconfig/building-config   — full config in frontend shape
+    ///   GET  /api/rateconfig/building-config           — full config in frontend shape
     ///
     /// All endpoints require the X-Country-Code header: PH | ID | KH
     /// </summary>
@@ -82,7 +86,7 @@ namespace ApplicationService.WebAPI.Controllers
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // ADMIN — update individual rows
+        // ADMIN — update individual config rows
         // ════════════════════════════════════════════════════════════════════════
 
         /// <summary>
@@ -96,6 +100,9 @@ namespace ApplicationService.WebAPI.Controllers
         public async Task<IActionResult> UpdateBuildingRates(
             [FromBody] UpdateBuildingRatesRequest body)
         {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
             if (body?.Rates == null || body.Rates.Count == 0)
                 return BadRequest(new { message = "At least one rate entry is required." });
 
@@ -105,6 +112,7 @@ namespace ApplicationService.WebAPI.Controllers
                 {
                     Body      = body,
                     UpdatedBy = CallerName,
+                    Region    = Region,
                 });
 
                 if (result.Errors.Count > 0)
@@ -130,6 +138,9 @@ namespace ApplicationService.WebAPI.Controllers
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new { message = "id is required." });
 
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
             try
             {
                 var result = await _mediator.Send(new UpdateRegionConfigCommand
@@ -137,6 +148,7 @@ namespace ApplicationService.WebAPI.Controllers
                     Id        = id,
                     Body      = body,
                     UpdatedBy = CallerName,
+                    Region    = Region,
                 });
                 return Ok(result);
             }
@@ -159,6 +171,9 @@ namespace ApplicationService.WebAPI.Controllers
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new { message = "id is required." });
 
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
             try
             {
                 var result = await _mediator.Send(new UpdateLocationTierCommand
@@ -166,6 +181,7 @@ namespace ApplicationService.WebAPI.Controllers
                     Id        = id,
                     Body      = body,
                     UpdatedBy = CallerName,
+                    Region    = Region,
                 });
                 return Ok(result);
             }
@@ -187,6 +203,9 @@ namespace ApplicationService.WebAPI.Controllers
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new { message = "id is required." });
 
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
             try
             {
                 var result = await _mediator.Send(new UpdateRiskMultiplierCommand
@@ -194,6 +213,7 @@ namespace ApplicationService.WebAPI.Controllers
                     Id        = id,
                     Body      = body,
                     UpdatedBy = CallerName,
+                    Region    = Region,
                 });
                 return Ok(result);
             }
@@ -231,6 +251,105 @@ namespace ApplicationService.WebAPI.Controllers
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // ADMIN — snapshot & change-log audit
+        // ════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Returns all config snapshots for the region, newest first.
+        /// Each snapshot records the full region config at the moment of a save.
+        /// Use GET /snapshots/{snapshotId} to see the field-level change log for a specific save.
+        /// </summary>
+        [HttpGet("snapshots")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetSnapshots()
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            var result = await _mediator.Send(new GetSnapshotsQuery { Region = Region });
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Returns a single snapshot with the full field-level change log attached.
+        /// The snapshotJson field contains the complete region config as it was at save time.
+        /// </summary>
+        [HttpGet("snapshots/{snapshotId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetSnapshotById(string snapshotId)
+        {
+            try
+            {
+                var result = await _mediator.Send(
+                    new GetSnapshotByIdQuery { SnapshotId = snapshotId });
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Returns a paginated list of every individual field change for the region,
+        /// newest first. Each row shows which table/record/field changed and the old vs new value.
+        /// Query params: page (default 1), pageSize (default 50, max 200).
+        /// </summary>
+        [HttpGet("change-logs")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetChangeLogs(
+            [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            var result = await _mediator.Send(new GetChangeLogsQuery
+            {
+                Region   = Region,
+                Page     = page,
+                PageSize = pageSize,
+            });
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Restores every rate config table for the region to the values stored in the
+        /// specified snapshot. A new "restored" audit snapshot is created automatically.
+        /// Body: { "note": "optional comment" }
+        /// </summary>
+        [HttpPost("restore/{snapshotId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RestoreSnapshot(
+            string snapshotId, [FromBody] RestoreSnapshotRequest? body)
+        {
+            if (string.IsNullOrWhiteSpace(snapshotId))
+                return BadRequest(new { message = "snapshotId is required." });
+
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            try
+            {
+                var result = await _mediator.Send(new RestoreSnapshotCommand
+                {
+                    SnapshotId = snapshotId,
+                    RestoredBy = CallerName,
+                    Region     = Region,
+                    Note       = body?.Note,
+                });
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return UnprocessableEntity(new { message = ex.Message });
             }
         }
     }
