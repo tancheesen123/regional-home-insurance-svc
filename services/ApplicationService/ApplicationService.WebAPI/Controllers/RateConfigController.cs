@@ -14,8 +14,10 @@ namespace ApplicationService.WebAPI.Controllers
     ///   GET  /api/rateconfig/configs                    — all raw config rows for the region
     ///   PUT  /api/rateconfig/building-rates             — bulk update building-rate rows
     ///   PUT  /api/rateconfig/region-config/{id}        — update region-level config
-    ///   PUT  /api/rateconfig/location-tiers/{id}       — update a location-tier row
-    ///   PUT  /api/rateconfig/risk-multipliers/{id}     — update a risk-multiplier row
+    ///   PUT  /api/rateconfig/location-tiers            — bulk update location-tier rows
+    ///   PUT  /api/rateconfig/location-tiers/{id}       — update a single location-tier row
+    ///   PUT  /api/rateconfig/risk-multipliers          — bulk update risk-multiplier rows
+    ///   PUT  /api/rateconfig/risk-multipliers/{id}     — update a single risk-multiplier row
     ///   POST /api/rateconfig/seed                      — seed initial data for a region
     ///   GET  /api/rateconfig/snapshots                 — list config snapshots (newest first)
     ///   GET  /api/rateconfig/snapshots/{snapshotId}    — single snapshot with change-log detail
@@ -41,6 +43,58 @@ namespace ApplicationService.WebAPI.Controllers
 
         private string CallerName =>
             User.Identity?.Name ?? User.FindFirst("customerId")?.Value ?? "Admin";
+
+        // ════════════════════════════════════════════════════════════════════════
+        // PUBLIC — building cost estimator (standalone calculator page)
+        // ════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Calculates a recommended Building Sum Insured from the customer's floor area,
+        /// property type, construction type, storey count, province, and optional add-on costs.
+        ///
+        /// Formula (in order):
+        ///   1. constructionCost     = FloorArea × BaseRatePerUnit
+        ///   2. storeyLoading        = constructionCost × (NumberOfStoreys − 1) × StoreyIncrementPct
+        ///      storeyAdjusted       = constructionCost + storeyLoading
+        ///   3. locationAdjusted     = storeyAdjusted × LocationMultiplier   (auto-detected from Province)
+        ///   4. professionalFee      = locationAdjusted × ProfessionalFeeRate
+        ///   5. TotalRebuildingCost  = locationAdjusted + professionalFee + AdditionalCost
+        ///
+        /// Province is matched case-insensitively against stored location-tier keywords.
+        /// Unrecognised provinces default to the "urban" tier (multiplier = 1.00).
+        /// </summary>
+        [HttpPost("calculate-building-cost")]
+        public async Task<IActionResult> CalculateBuildingCost(
+            [FromBody] BuildingCostRequest body)
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            if (body == null)
+                return BadRequest(new { message = "Request body is required." });
+
+            try
+            {
+                var result = await _mediator.Send(new CalculateBuildingCostQuery
+                {
+                    Region = Region,
+                    Body   = body,
+                });
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return UnprocessableEntity(new { message = ex.Message });
+            }
+        }
 
         // ════════════════════════════════════════════════════════════════════════
         // PUBLIC — frontend fetches this to replace hardcoded BUILDING_CONFIGS
@@ -159,7 +213,44 @@ namespace ApplicationService.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Updates a location-tier row (multiplier, display label, or province keyword list).
+        /// Bulk-updates one or more location-tier rows in a single call.
+        /// Pass an array of { id, multiplier?, label?, keywords? } — only provided fields are updated.
+        /// Sending "keywords" replaces the entire keyword list for that tier.
+        /// If any entry fails validation the entire batch is rejected; no changes are saved.
+        /// </summary>
+        [HttpPut("location-tiers")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateLocationTiers(
+            [FromBody] UpdateLocationTiersRequest body)
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            if (body?.Tiers == null || body.Tiers.Count == 0)
+                return BadRequest(new { message = "At least one tier entry is required." });
+
+            try
+            {
+                var result = await _mediator.Send(new UpdateLocationTiersCommand
+                {
+                    Body      = body,
+                    UpdatedBy = CallerName,
+                    Region    = Region,
+                });
+
+                if (result.Errors.Count > 0)
+                    return BadRequest(new { message = "Some entries failed.", errors = result.Errors });
+
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Updates a single location-tier row (multiplier, display label, or province keyword list).
         /// All fields are optional — only provided fields are updated.
         /// Sending "keywords" replaces the entire keyword list for that tier.
         /// </summary>
@@ -192,7 +283,43 @@ namespace ApplicationService.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Updates a risk multiplier value (e.g. flooding loading, partial-brick surcharge).
+        /// Bulk-updates one or more risk multiplier rows in a single call.
+        /// Pass an array of { id, multiplier, description? }.
+        /// If any entry fails validation the entire batch is rejected; no changes are saved.
+        /// </summary>
+        [HttpPut("risk-multipliers")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateRiskMultipliers(
+            [FromBody] UpdateRiskMultipliersRequest body)
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            if (body?.Multipliers == null || body.Multipliers.Count == 0)
+                return BadRequest(new { message = "At least one multiplier entry is required." });
+
+            try
+            {
+                var result = await _mediator.Send(new UpdateRiskMultipliersCommand
+                {
+                    Body      = body,
+                    UpdatedBy = CallerName,
+                    Region    = Region,
+                });
+
+                if (result.Errors.Count > 0)
+                    return BadRequest(new { message = "Some entries failed.", errors = result.Errors });
+
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Updates a single risk multiplier value (e.g. flooding loading, partial-brick surcharge).
         /// Body: { "multiplier": 1.30, "description": "optional note" }
         /// </summary>
         [HttpPut("risk-multipliers/{id}")]
@@ -247,6 +374,31 @@ namespace ApplicationService.WebAPI.Controllers
             {
                 var result = await _mediator.Send(new SeedRateConfigCommand { Region = Region });
                 return Ok(new { seeded = result.Seeded, message = result.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Inserts any missing RiskMultiplierConfig rows for the region without touching existing data.
+        /// Safe to call multiple times — skips keys that already exist.
+        /// Use this after deploying a backend update that added new multiplier keys
+        /// (e.g. age.*, quality.*, topography.*, site.*) to already-seeded regions.
+        /// </summary>
+        [HttpPost("patch-seed")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> PatchSeed()
+        {
+            if (string.IsNullOrWhiteSpace(Region))
+                return BadRequest(new { message = "X-Country-Code header is required (PH | ID | KH)." });
+
+            try
+            {
+                var result = await _mediator.Send(
+                    new PatchSeedRiskMultipliersCommand { Region = Region });
+                return Ok(result);
             }
             catch (ArgumentException ex)
             {

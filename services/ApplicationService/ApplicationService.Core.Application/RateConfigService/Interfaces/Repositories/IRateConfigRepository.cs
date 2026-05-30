@@ -39,6 +39,11 @@ namespace ApplicationService.Core.Application.RateConfigService.Interfaces.Repos
         Task SeedRegionConfigAsync(RegionRateConfig config);
         Task SeedLocationTiersAsync(List<LocationTierConfig> tiers);
         Task SeedRiskMultipliersAsync(List<RiskMultiplierConfig> multipliers);
+        /// <summary>
+        /// Returns all FactorKeys that already exist for the region.
+        /// Used by patch-seed to avoid inserting duplicates.
+        /// </summary>
+        Task<HashSet<string>> GetExistingRiskMultiplierKeysAsync(string region);
         Task SaveChangesAsync();
     }
 }

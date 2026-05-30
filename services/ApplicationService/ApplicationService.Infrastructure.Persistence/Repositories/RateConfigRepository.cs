@@ -141,6 +141,15 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             await Db.RiskMultiplierConfigs.AddRangeAsync(multipliers);
         }
 
+        public async Task<HashSet<string>> GetExistingRiskMultiplierKeysAsync(string region)
+        {
+            var keys = await Db.RiskMultiplierConfigs
+                .Where(r => r.Region == region)
+                .Select(r => r.FactorKey)
+                .ToListAsync();
+            return new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
+        }
+
         public Task SaveChangesAsync() => Db.SaveChangesAsync();
     }
 }
