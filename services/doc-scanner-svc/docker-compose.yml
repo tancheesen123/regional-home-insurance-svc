@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  doc-scanner-svc:
+    build: .
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app/app        # live reload picks up code changes without rebuild
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+    # ── GPU passthrough ───────────────────────────────────────────────────────
+    # Uncomment when running on a GPU server (Step 10 — production).
+    # Requires nvidia-container-toolkit installed on the host.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
