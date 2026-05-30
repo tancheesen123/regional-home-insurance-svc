@@ -31,6 +31,10 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 if (cmd.Body.Rates == null || cmd.Body.Rates.Count == 0)
                     throw new ArgumentException("At least one rate entry is required.");
 
+                // Capture pre-change snapshot BEFORE loading any entities into
+                // the EF change tracker, so the stored JSON reflects the old values.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
                 var updated  = new List<BuildingRateDto>();
                 var errors   = new List<string>();
                 var logs     = new List<RateConfigChangeLog>();
@@ -70,11 +74,12 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 await _repo.SaveChangesAsync();
 
                 await _audit.RecordAsync(
-                    region:       cmd.Region,
-                    changedBy:    cmd.UpdatedBy,
-                    label:        $"Building rates updated — {logs.Count} change(s)",
-                    snapshotType: "auto",
-                    changeLogs:   logs);
+                    region:              cmd.Region,
+                    changedBy:           cmd.UpdatedBy,
+                    label:               $"Building rates updated — {logs.Count} change(s)",
+                    snapshotType:        "auto",
+                    changeLogs:          logs,
+                    preBuiltSnapshotJson: preChangeSnapshot);
 
                 await _repo.SaveChangesAsync();
 
@@ -112,6 +117,9 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public async Task<RegionRateConfigDto> Handle(
                 UpdateRegionConfigCommand cmd, CancellationToken ct)
             {
+                // Capture pre-change snapshot before any entity is loaded.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
                 var row = await _repo.GetRegionConfigByIdAsync(cmd.Id)
                     ?? throw new KeyNotFoundException($"RegionRateConfig '{cmd.Id}' not found.");
 
@@ -136,7 +144,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 await _repo.SaveChangesAsync();
 
                 await _audit.RecordAsync(cmd.Region, cmd.UpdatedBy,
-                    $"Region config updated — {logs.Count} change(s)", "auto", logs);
+                    $"Region config updated — {logs.Count} change(s)", "auto", logs,
+                    preChangeSnapshot);
                 await _repo.SaveChangesAsync();
 
                 return new RegionRateConfigDto
@@ -173,6 +182,9 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public async Task<LocationTierDto> Handle(
                 UpdateLocationTierCommand cmd, CancellationToken ct)
             {
+                // Capture pre-change snapshot before any entity is loaded.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
                 var row = await _repo.GetLocationTierByIdAsync(cmd.Id)
                     ?? throw new KeyNotFoundException($"LocationTierConfig '{cmd.Id}' not found.");
 
@@ -199,7 +211,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 await _repo.SaveChangesAsync();
 
                 await _audit.RecordAsync(cmd.Region, cmd.UpdatedBy,
-                    $"Location tier '{row.Tier}' updated — {logs.Count} change(s)", "auto", logs);
+                    $"Location tier '{row.Tier}' updated — {logs.Count} change(s)", "auto", logs,
+                    preChangeSnapshot);
                 await _repo.SaveChangesAsync();
 
                 return new LocationTierDto
@@ -214,6 +227,194 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             {
                 try { return JsonSerializer.Deserialize<List<string>>(json) ?? new(); }
                 catch { return new(); }
+            }
+        }
+    }
+
+    // ── Bulk-update LocationTierConfig rows ───────────────────────────────────
+
+    public class UpdateLocationTiersCommand : IRequest<UpdateLocationTiersResult>
+    {
+        public UpdateLocationTiersRequest Body      { get; set; } = new();
+        public string                     UpdatedBy { get; set; } = string.Empty;
+        public string                     Region    { get; set; } = string.Empty;
+
+        public class Handler : IRequestHandler<UpdateLocationTiersCommand, UpdateLocationTiersResult>
+        {
+            private readonly IRateConfigRepository  _repo;
+            private readonly RateConfigAuditService _audit;
+            public Handler(IRateConfigRepository repo, RateConfigAuditService audit)
+            {
+                _repo  = repo;
+                _audit = audit;
+            }
+
+            public async Task<UpdateLocationTiersResult> Handle(
+                UpdateLocationTiersCommand cmd, CancellationToken ct)
+            {
+                if (cmd.Body.Tiers == null || cmd.Body.Tiers.Count == 0)
+                    throw new ArgumentException("At least one tier entry is required.");
+
+                // Pre-change snapshot before any entity is touched.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
+                var updated = new List<LocationTierDto>();
+                var errors  = new List<string>();
+                var logs    = new List<RateConfigChangeLog>();
+
+                foreach (var item in cmd.Body.Tiers)
+                {
+                    if (string.IsNullOrWhiteSpace(item.Id))
+                    {
+                        errors.Add("An entry is missing its 'id'.");
+                        continue;
+                    }
+
+                    var row = await _repo.GetLocationTierByIdAsync(item.Id);
+                    if (row == null)
+                    {
+                        errors.Add($"LocationTierConfig '{item.Id}' not found.");
+                        continue;
+                    }
+
+                    void Track(string field, string old, string next)
+                    {
+                        if (old != next)
+                            logs.Add(RateConfigAuditService.Log("LocationTierConfigs", row.Id,
+                                $"{row.Tier} → {field}", old, next));
+                    }
+
+                    if (item.Multiplier != null) { Track("Multiplier", row.Multiplier.ToString("F4"), item.Multiplier.Value.ToString("F4")); row.Multiplier = item.Multiplier.Value; }
+                    if (item.Label      != null) { Track("Label",      row.Label,                     item.Label);                            row.Label      = item.Label; }
+                    if (item.Keywords   != null)
+                    {
+                        var newJson = JsonSerializer.Serialize(item.Keywords.Select(k => k.ToLower().Trim()).ToList());
+                        Track("Keywords", row.KeywordsJson, newJson);
+                        row.KeywordsJson = newJson;
+                    }
+
+                    row.UpdatedAt = DateTime.UtcNow;
+                    row.UpdatedBy = cmd.UpdatedBy;
+                    await _repo.UpdateLocationTierAsync(row);
+
+                    updated.Add(new LocationTierDto
+                    {
+                        Id = row.Id, Region = row.Region, Tier = row.Tier,
+                        Multiplier = row.Multiplier, Label = row.Label,
+                        Keywords = DeserializeKeywords(row.KeywordsJson), IsActive = row.IsActive,
+                    });
+                }
+
+                if (errors.Count > 0)
+                    return new UpdateLocationTiersResult { UpdatedCount = 0, Updated = new(), Errors = errors };
+
+                await _repo.SaveChangesAsync();
+
+                await _audit.RecordAsync(
+                    region:              cmd.Region,
+                    changedBy:           cmd.UpdatedBy,
+                    label:               $"Location tiers updated — {logs.Count} change(s)",
+                    snapshotType:        "auto",
+                    changeLogs:          logs,
+                    preBuiltSnapshotJson: preChangeSnapshot);
+
+                await _repo.SaveChangesAsync();
+
+                return new UpdateLocationTiersResult
+                {
+                    UpdatedCount = updated.Count,
+                    Updated      = updated,
+                    Errors       = errors,
+                };
+            }
+
+            private static List<string> DeserializeKeywords(string json)
+            {
+                try { return JsonSerializer.Deserialize<List<string>>(json) ?? new(); }
+                catch { return new(); }
+            }
+        }
+    }
+
+    // ── Bulk-update RiskMultiplierConfig rows ─────────────────────────────────
+
+    public class UpdateRiskMultipliersCommand : IRequest<UpdateRiskMultipliersResult>
+    {
+        public UpdateRiskMultipliersRequest Body      { get; set; } = new();
+        public string                       UpdatedBy { get; set; } = string.Empty;
+        public string                       Region    { get; set; } = string.Empty;
+
+        public class Handler : IRequestHandler<UpdateRiskMultipliersCommand, UpdateRiskMultipliersResult>
+        {
+            private readonly IRateConfigRepository  _repo;
+            private readonly RateConfigAuditService _audit;
+            public Handler(IRateConfigRepository repo, RateConfigAuditService audit)
+            {
+                _repo  = repo;
+                _audit = audit;
+            }
+
+            public async Task<UpdateRiskMultipliersResult> Handle(
+                UpdateRiskMultipliersCommand cmd, CancellationToken ct)
+            {
+                if (cmd.Body.Multipliers == null || cmd.Body.Multipliers.Count == 0)
+                    throw new ArgumentException("At least one multiplier entry is required.");
+
+                // Pre-change snapshot before any entity is touched.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
+                var updated = new List<RiskMultiplierDto>();
+                var errors  = new List<string>();
+                var logs    = new List<RateConfigChangeLog>();
+
+                foreach (var item in cmd.Body.Multipliers)
+                {
+                    if (string.IsNullOrWhiteSpace(item.Id))  { errors.Add("An entry is missing its 'id'."); continue; }
+                    if (item.Multiplier <= 0)                 { errors.Add($"Multiplier for id '{item.Id}' must be greater than zero."); continue; }
+
+                    var row = await _repo.GetRiskMultiplierByIdAsync(item.Id);
+                    if (row == null) { errors.Add($"RiskMultiplierConfig '{item.Id}' not found."); continue; }
+
+                    if (row.Multiplier != item.Multiplier)
+                        logs.Add(RateConfigAuditService.Log("RiskMultiplierConfigs", row.Id,
+                            $"{row.FactorKey} → Multiplier",
+                            row.Multiplier.ToString("F4"),
+                            item.Multiplier.ToString("F4")));
+
+                    row.Multiplier  = item.Multiplier;
+                    if (item.Description != null) row.Description = item.Description;
+                    row.UpdatedAt   = DateTime.UtcNow;
+                    row.UpdatedBy   = cmd.UpdatedBy;
+                    await _repo.UpdateRiskMultiplierAsync(row);
+
+                    updated.Add(new RiskMultiplierDto
+                    {
+                        Id = row.Id, Region = row.Region, FactorKey = row.FactorKey,
+                        Multiplier = row.Multiplier, Description = row.Description, IsActive = row.IsActive,
+                    });
+                }
+
+                if (errors.Count > 0)
+                    return new UpdateRiskMultipliersResult { UpdatedCount = 0, Updated = new(), Errors = errors };
+
+                await _repo.SaveChangesAsync();
+
+                await _audit.RecordAsync(
+                    region:              cmd.Region,
+                    changedBy:           cmd.UpdatedBy,
+                    label:               $"Risk multipliers updated — {logs.Count} change(s)",
+                    snapshotType:        "auto",
+                    changeLogs:          logs,
+                    preBuiltSnapshotJson: preChangeSnapshot);
+
+                await _repo.SaveChangesAsync();
+
+                return new UpdateRiskMultipliersResult
+                {
+                    UpdatedCount = updated.Count,
+                    Updated      = updated,
+                    Errors       = errors,
+                };
             }
         }
     }
@@ -240,6 +441,9 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public async Task<RiskMultiplierDto> Handle(
                 UpdateRiskMultiplierCommand cmd, CancellationToken ct)
             {
+                // Capture pre-change snapshot before any entity is loaded.
+                var preChangeSnapshot = await _audit.CaptureSnapshotJsonAsync(cmd.Region);
+
                 var row = await _repo.GetRiskMultiplierByIdAsync(cmd.Id)
                     ?? throw new KeyNotFoundException($"RiskMultiplierConfig '{cmd.Id}' not found.");
 
@@ -261,7 +465,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 await _repo.SaveChangesAsync();
 
                 await _audit.RecordAsync(cmd.Region, cmd.UpdatedBy,
-                    $"Risk multiplier '{row.FactorKey}' updated", "auto", logs);
+                    $"Risk multiplier '{row.FactorKey}' updated", "auto", logs,
+                    preChangeSnapshot);
                 await _repo.SaveChangesAsync();
 
                 return new RiskMultiplierDto

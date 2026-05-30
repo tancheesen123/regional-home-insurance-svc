@@ -226,22 +226,39 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             private static List<RiskMultiplierConfig> BuildRiskMultipliers(string region) =>
                 new()
                 {
-                    // Base premium used in the initial rough quote
+                    // ── Initial rough-quote multipliers ──────────────────────────────
                     Risk(region, "base.premium",              500m,  "Fixed base amount before any multipliers (initial quote only)"),
 
-                    // Construction type multipliers
                     Risk(region, "construction.full-brick",   1.00m, "Full-brick construction — base rate (no surcharge)"),
                     Risk(region, "construction.partial-brick",1.30m, "Partial-brick construction — 30% surcharge"),
 
-                    // Storey count multipliers
                     Risk(region, "storey.1",                  1.00m, "Single-storey property — base rate"),
                     Risk(region, "storey.2",                  1.10m, "Two-storey property — 10% surcharge"),
                     Risk(region, "storey.3plus",              1.20m, "Three or more storeys — 20% surcharge"),
 
-                    // Risk loadings
                     Risk(region, "risk.flooding",             1.25m, "Property currently in a flood-prone area — 25% loading"),
                     Risk(region, "risk.unoccupied",           1.20m, "Unoccupied property — 20% loading"),
                     Risk(region, "risk.previous-loss",        1.15m, "Previous insurance loss on record — 15% loading"),
+
+                    // ── Building Cost Calculator — Age of building ────────────────
+                    Risk(region, "age.1to10",                 1.00m, "Building age 1–10 years — no surcharge"),
+                    Risk(region, "age.11to20",                1.05m, "Building age 11–20 years — 5% surcharge"),
+                    Risk(region, "age.21to30",                1.10m, "Building age 21–30 years — 10% surcharge"),
+                    Risk(region, "age.30plus",                1.15m, "Building age 30+ years — 15% surcharge"),
+
+                    // ── Building Cost Calculator — Quality of property ────────────
+                    Risk(region, "quality.low",               0.80m, "Low quality finishes — 20% reduction on build cost"),
+                    Risk(region, "quality.standard",          1.00m, "Standard quality finishes — base rate"),
+                    Risk(region, "quality.high",              1.25m, "High quality finishes — 25% surcharge"),
+
+                    // ── Building Cost Calculator — Topography ─────────────────────
+                    Risk(region, "topography.flat",           1.00m, "Flat topography — no surcharge"),
+                    Risk(region, "topography.slope",          1.10m, "Sloped topography — 10% surcharge for foundation/grading"),
+
+                    // ── Building Cost Calculator — Site surrounding ───────────────
+                    Risk(region, "site.normal",               1.00m, "Normal site access — no surcharge"),
+                    Risk(region, "site.confined",             1.10m, "Confined site — 10% surcharge for restricted access"),
+                    Risk(region, "site.city-centre",          1.15m, "City centre — 15% surcharge for logistics and access"),
                 };
 
             // ── Helpers ───────────────────────────────────────────────────────

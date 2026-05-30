@@ -19,19 +19,32 @@ namespace ApplicationService.Core.Application.RateConfigService.Services
         }
 
         /// <summary>
-        /// Takes a full JSON snapshot of the current region config, links it to the
+        /// Captures the current full-region config as a JSON string.
+        /// Call this BEFORE applying any changes to get a pre-change snapshot.
+        /// </summary>
+        public Task<string> CaptureSnapshotJsonAsync(string region) =>
+            BuildSnapshotJsonAsync(region);
+
+        /// <summary>
+        /// Takes a full JSON snapshot of the region config, links it to the
         /// supplied change-log entries, and saves everything in one batch.
-        /// Call this AFTER applying changes but BEFORE SaveChangesAsync.
+        ///
+        /// Pass <paramref name="preBuiltSnapshotJson"/> (obtained via
+        /// <see cref="CaptureSnapshotJsonAsync"/> BEFORE the changes were applied)
+        /// so the snapshot reflects the pre-change state — which is what
+        /// restore needs to revert to.  When null the snapshot is built from
+        /// the current DB state (post-change), which was the original behaviour.
         /// </summary>
         public async Task RecordAsync(
             string                    region,
             string                    changedBy,
             string                    label,
             string                    snapshotType,
-            List<RateConfigChangeLog> changeLogs)
+            List<RateConfigChangeLog> changeLogs,
+            string?                   preBuiltSnapshotJson = null)
         {
-            // Build full-region config snapshot JSON (reads the already-updated rows)
-            var snapshotJson = await BuildSnapshotJsonAsync(region);
+            var snapshotJson = preBuiltSnapshotJson
+                               ?? await BuildSnapshotJsonAsync(region);
 
             var snapshot = new RateConfigSnapshot
             {
