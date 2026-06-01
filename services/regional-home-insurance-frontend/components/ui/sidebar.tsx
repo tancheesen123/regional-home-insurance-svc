@@ -496,7 +496,17 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<"div">) 
 function SidebarMenuSkeleton({
   className, showIcon = false, ...props
 }: React.ComponentProps<"div"> & { showIcon?: boolean }) {
-  const width = React.useMemo(() => `${Math.floor(Math.random() * 40) + 50}%`, [])
+  // Fixed widths avoid SSR/client hydration mismatch from Math.random().
+  // Callers can pass a unique className (e.g. "skeleton-item-1") to vary
+  // the apparent width while keeping the value stable across renders.
+  const WIDTHS = ["60%", "70%", "75%", "80%", "85%", "55%", "65%", "90%"]
+  const width = React.useMemo(() => {
+    const seed = className
+      ? className.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
+      : 0
+    return WIDTHS[seed % WIDTHS.length]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [className])
   return (
     <div
       data-slot="sidebar-menu-skeleton"

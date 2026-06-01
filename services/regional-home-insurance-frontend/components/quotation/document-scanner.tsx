@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
 import {
   Upload, X, Loader2, AlertCircle, AlertTriangle,
   CheckCircle2, FileText, CreditCard, Home, Zap,
@@ -59,6 +59,32 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
   const [isDragging,  setIsDragging]  = useState(false)
   const [showDetails, setShowDetails] = useState(false)
 
+  // ── Transition animations ─────────────────────────────────────────────────────
+  const [animateIn,     setAnimateIn]     = useState(false) // full scanner card
+  const [stripAnimateIn, setStripAnimateIn] = useState(false) // collapsed strip
+
+  useEffect(() => {
+    let raf: number
+    if (!collapsed) {
+      // → opening full scanner (re-scan): fade+slide down
+      setShowDetails(false)          // reset so it opens fresh next scan
+      setAnimateIn(false)
+      raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimateIn(true))
+      })
+    } else {
+      // → collapsing to strip (scan done): auto-open details + fade+slide up
+      setStripAnimateIn(false)
+      raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setStripAnimateIn(true)
+          setShowDetails(true)       // auto-expand field list after scan
+        })
+      })
+    }
+    return () => cancelAnimationFrame(raf)
+  }, [collapsed])
+
   // ── File handling ────────────────────────────────────────────────────────────
 
   const addFiles = useCallback((list: FileList | null) => {
@@ -112,7 +138,11 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     const canExpand = !!result  // only expand if there's actual scan data to show
 
     return (
-      <div className="rounded-xl border border-[#E0E0E0] bg-white overflow-hidden">
+      <div className={cn(
+        "rounded-xl border border-[#E0E0E0] bg-white overflow-hidden",
+        "transition-all duration-500 ease-out",
+        stripAnimateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+      )}>
 
         {/* Toggle row — div to avoid nested <button> hydration error */}
         <div
@@ -157,7 +187,13 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             {result && (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setResult(null); setFiles([]) }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setResult(null)
+                  setFiles([])
+                  setError(null)
+                  onReopen()
+                }}
                 className="text-xs text-[#9E9E9E] hover:text-[#555555] transition-colors px-1"
               >
                 Re-scan
@@ -199,20 +235,24 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
 
   return (
     <div>
-      {/* Hero */}
-      <div className="text-center mb-6">
-        <div className="w-14 h-14 rounded-2xl bg-[#F5A623] flex items-center justify-center mx-auto mb-4">
-          <ScanLine className="h-7 w-7 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold text-[#1A1A1A]">Save time — let AI fill your form</h2>
-        <p className="text-sm text-[#555555] mt-2">
-          Upload your IC or property document and we'll pre-fill as many fields as possible.
-        </p>
-      </div>
-
       {/* Upload card — hide once result is shown */}
       {!result && (
-        <div className="bg-white rounded-2xl border border-[#E0E0E0] shadow-sm p-6">
+        <div className={cn(
+          "rounded-2xl border-2 border-dashed border-[#F5A623] bg-[#FFFBF0] p-6 text-center",
+          "transition-all duration-500 ease-out",
+          animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
+        )}>
+
+          {/* Icon */}
+          <div className="w-14 h-14 rounded-2xl bg-[#FEF3DC] flex items-center justify-center mx-auto mb-4">
+            <ScanLine className="h-7 w-7 text-[#D4891A]" />
+          </div>
+
+          {/* Heading */}
+          <h2 className="text-xl font-bold text-[#1A1A1A]">Save time — let AI fill your form</h2>
+          <p className="text-sm text-[#6B6B6B] mt-2 mb-5 leading-relaxed">
+            Upload your IC or property document and our AI will pre-fill as many fields as possible to streamline your journey.
+          </p>
 
           {/* Drop zone */}
           <div
@@ -221,15 +261,15 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             onDragLeave={() => setIsDragging(false)}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "border-2 border-dashed rounded-xl px-6 py-10 text-center cursor-pointer transition-all",
+              "border border-dashed rounded-xl px-6 py-8 text-center cursor-pointer transition-all mb-4",
               isDragging
                 ? "border-[#F5A623] bg-[#FEF3DC]"
-                : "border-[#E0E0E0] bg-[#FAFAFA] hover:border-[#F5A623] hover:bg-[#FEFBF3]",
+                : "border-[#E0E0E0] bg-white hover:border-[#F5A623] hover:bg-[#FEFBF3]",
             )}
           >
-            <Upload className="h-8 w-8 text-[#9E9E9E] mx-auto mb-2" />
-            <p className="text-sm font-medium text-[#1A1A1A]">Drop your document here or click to browse</p>
-            <p className="text-xs text-[#9E9E9E] mt-1">PDF · JPG · PNG · WEBP · max 10 MB · up to 3 files</p>
+            <Upload className="h-8 w-8 text-[#BDBDBD] mx-auto mb-2" />
+            <p className="text-sm font-semibold text-[#1A1A1A]">Drop your document here or click to browse</p>
+            <p className="text-xs text-[#9E9E9E] mt-1">PDF, JPG, PNG • max 10MB • up to 3 files</p>
           </div>
           <input
             ref={fileInputRef}
@@ -242,9 +282,9 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
 
           {/* Selected file pills */}
           {files.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mb-4 flex flex-wrap gap-2 justify-center">
               {files.map((f) => (
-                <div key={f.name} className="flex items-center gap-1.5 bg-[#F5F5F5] rounded-lg px-2.5 py-1.5 text-xs text-[#555555]">
+                <div key={f.name} className="flex items-center gap-1.5 bg-white border border-[#E0E0E0] rounded-lg px-2.5 py-1.5 text-xs text-[#555555]">
                   <FileText className="h-3 w-3 text-[#9E9E9E] shrink-0" />
                   <span className="max-w-[140px] truncate">{f.name}</span>
                   <button
@@ -261,7 +301,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
 
           {/* Error */}
           {error && (
-            <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-3 py-2.5">
+            <div className="mb-4 flex items-start gap-2 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-3 py-2.5 text-left">
               <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
               <p className="text-xs text-[#D32F2F] leading-snug">{error}</p>
             </div>
@@ -273,7 +313,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             onClick={handleScan}
             disabled={!files.length || scanning}
             className={cn(
-              "mt-4 w-full h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors",
+              "w-full h-12 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-colors",
               files.length && !scanning
                 ? "bg-[#F5A623] hover:bg-[#D4891A] text-white"
                 : "bg-[#F5A623]/40 text-white cursor-not-allowed",
@@ -286,11 +326,11 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
           </button>
 
           {/* Skip */}
-          <div className="mt-3 text-center">
+          <div className="mt-3">
             <button
               type="button"
               onClick={onSkip}
-              className="text-xs text-[#9E9E9E] hover:text-[#555555] transition-colors"
+              className="text-sm text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors font-medium"
             >
               Skip — fill the form manually
             </button>
@@ -300,7 +340,11 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
 
       {/* ── Scan result ── */}
       {result && (
-        <div className="bg-white rounded-2xl border border-[#E0E0E0] shadow-sm overflow-hidden">
+        <div className={cn(
+          "bg-white rounded-2xl border border-[#E0E0E0] shadow-sm overflow-hidden",
+          "transition-all duration-500 ease-out",
+          animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
+        )}>
 
           {/* Result header */}
           <div className="px-5 py-4 border-b border-[#F5F5F5] flex items-center justify-between">

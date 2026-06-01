@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Check, Home, Package, Shield, Calculator } from "lucide-react"
+import { Check, Home, Package, Shield, Calculator, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -374,8 +374,8 @@ export default function PlanCustomization() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">{t("customize.title")}</h2>
-            <Button variant="link" className="text-blue-600">
-              {t("customize.productComparison")}
+            <Button variant="link" className="text-[#0066CC] hover:text-[#004EA8] flex items-center gap-1">
+              {t("customize.productComparison")}<ChevronRight className="h-[14px] w-[14px]" />
             </Button>
           </div>
 
@@ -388,10 +388,10 @@ export default function PlanCustomization() {
                   <Card
                     key={id}
                     className={cn(
-                      "cursor-pointer transition-all hover:shadow-md",
+                      "cursor-pointer transition-all duration-150",
                       planState.selectedPlan === id
-                        ? "border-green-500 bg-green-50 ring-2 ring-green-500"
-                        : "border-gray-200",
+                        ? "border-2 border-[#00A651] bg-[#E6F7EE]"
+                        : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
                     )}
                     onClick={() => handlePlanSelect(id)}
                   >
@@ -399,15 +399,15 @@ export default function PlanCustomization() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
                           {icons.map((Icon, i) => (
-                            <Icon key={i} className="h-6 w-6 text-gray-600" />
+                            <Icon key={i} className="h-8 w-8 text-[#F5A623]" />
                           ))}
                         </div>
                         {planState.selectedPlan === id && (
-                          <Check className="h-5 w-5 text-green-600" />
+                          <div className="w-5 h-5 rounded-full bg-[#00A651] flex items-center justify-center shrink-0"><Check className="h-3 w-3 text-white" strokeWidth={2.5} /></div>
                         )}
                       </div>
                       <h3 className="font-semibold mb-1">{planTitle(id)}</h3>
-                      <p className="text-sm text-gray-600">{planDesc(id)}</p>
+                      <p className="text-sm text-[#555555]">{planDesc(id)}</p>
                     </CardContent>
                   </Card>
                 )
@@ -420,24 +420,24 @@ export default function PlanCustomization() {
         {(planState.selectedPlan === "building-contents" ||
           planState.selectedPlan === "building-only") && (
           <div className={cn(
-            "border p-6 rounded-lg transition-colors duration-300",
+            "border p-6 rounded-lg transition-all duration-150",
             buildingFromCalc
-              ? "bg-green-50 border-green-200"
-              : "bg-blue-50 border-blue-100",
+              ? "bg-[#E6F7EE] border-[#00A651]"
+              : "bg-white border-[#E0E0E0]",
           )}>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xl font-semibold">{t("customize.homeBuildingTitle")}</h3>
+              <h3 className="text-lg font-semibold text-[#1A1A1A]">{t("customize.homeBuildingTitle")}</h3>
               {buildingFromCalc && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 border border-green-200 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#00A651] bg-[#E6F7EE] border border-[#00A651]/30 px-2.5 py-1 rounded-full">
                   <Calculator className="h-3 w-3" />
                   {t("customize.estimateApplied")}
                 </span>
               )}
             </div>
-            <p className="text-gray-600 mb-4 text-sm">{t("customize.homeBuildingDesc")}</p>
+            <p className="text-[#555555] mb-4 text-sm">{t("customize.homeBuildingDesc")}</p>
 
             <div className="flex items-center space-x-3 mb-2">
-              <Label htmlFor="building-amount" className="text-sm font-medium text-gray-600 w-10 text-right shrink-0">
+              <Label htmlFor="building-amount" className="text-sm font-medium text-[#555555] w-10 text-right shrink-0">
                 {region.symbol}
               </Label>
               <Input
@@ -447,20 +447,20 @@ export default function PlanCustomization() {
                 onBlur={() => handleAmountBlur("buildingAmount")}
                 className={cn(
                   "w-44 text-right transition-colors duration-300",
-                  buildingFromCalc && "border-green-400 ring-1 ring-green-300 bg-white",
+                  buildingFromCalc && "border-[#00A651] ring-1 ring-[#00A651]/30 bg-white",
                 )}
                 inputMode="numeric"
               />
               <Button
                 variant="link"
-                className="text-blue-600 text-sm p-0 h-auto"
+                className="text-[#0066CC] hover:text-[#004EA8] text-sm p-0 h-auto"
                 onClick={() => setShowBuildingCalculator(true)}
               >
                 {t("customize.getEstimate")}
               </Button>
             </div>
 
-            <p className="text-xs text-gray-400 ml-13">
+            <p className="text-xs text-[#9E9E9E] ml-13">
               Min {region.symbol} {fmtAmount(region.buildingMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.buildingMax)}
             </p>
           </div>
@@ -469,13 +469,14 @@ export default function PlanCustomization() {
         {/* ── Content Sum Insured ── */}
         {(planState.selectedPlan === "building-contents" ||
           planState.selectedPlan === "content-only") && (
-          <div className="bg-amber-50 border border-amber-100 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-1">{t("customize.homeContentTitle")}</h3>
-            <p className="text-gray-600 mb-1 text-sm">{t("customize.homeContentDesc")}</p>
-            <p className="text-xs text-gray-500 mb-4 italic">{t("customize.homeContentExample")}</p>
+          <div className="bg-[#FFFDE7] border border-[#E0E0E0] p-6 rounded-lg">
+            <span className="inline-block mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#E87722] bg-[#FDF0E6] border border-[#F5C896] px-2 py-0.5 rounded-md">Home Content</span>
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-1">{t("customize.homeContentTitle")}</h3>
+            <p className="text-[#555555] mb-1 text-sm">{t("customize.homeContentDesc")}</p>
+            <p className="text-xs text-[#9E9E9E] mb-4 italic">{t("customize.homeContentExample")}</p>
 
             <div className="flex items-center space-x-3 mb-2">
-              <Label htmlFor="content-amount" className="text-sm font-medium text-gray-600 w-10 text-right shrink-0">
+              <Label htmlFor="content-amount" className="text-sm font-medium text-[#555555] w-10 text-right shrink-0">
                 {region.symbol}
               </Label>
               <Input
@@ -489,14 +490,14 @@ export default function PlanCustomization() {
               {/* Opens the in-app room-by-room content calculator */}
               <Button
                 variant="link"
-                className="text-blue-600 text-sm p-0 h-auto"
+                className="text-[#0066CC] hover:text-[#004EA8] text-sm p-0 h-auto"
                 onClick={() => setShowContentCalculator(true)}
               >
                 {t("customize.getEstimate")}
               </Button>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[#9E9E9E]">
               Min {region.symbol} {fmtAmount(region.contentMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.contentMax)}
             </p>
           </div>
@@ -504,30 +505,34 @@ export default function PlanCustomization() {
 
         {/* ── Optional Add-ons ── */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">{t("customize.optionalAddons")}</h3>
+          <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">{t("customize.optionalAddons")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ADD_ON_IDS.map((id) => (
-              <Card key={id} className="border-gray-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <Shield className="h-8 w-8 text-gray-400 mt-1" />
-                  </div>
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-500 mb-1">{addOnCategory(id)}</p>
+              <Card
+                key={id}
+                className={cn(
+                  "transition-all duration-150",
+                  planState.addOns[id]
+                    ? "border-[#00A651] bg-[#E6F7EE]"
+                    : "border-[#E0E0E0] bg-white",
+                )}
+              >
+                <CardContent className="p-4 flex items-start gap-4">
+                  <Shield className={cn("h-6 w-6 shrink-0 mt-0.5", planState.addOns[id] ? "text-[#F5A623]" : "text-[#9E9E9E]")} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E87722] mb-0.5">{addOnCategory(id)}</p>
                     <h4 className="font-semibold text-sm">{addOnTitle(id)}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{addOnDesc(id)}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Button variant="link" className="text-blue-600 text-sm p-0 h-auto">
+                    <p className="text-xs text-[#9E9E9E] mt-1">{addOnDesc(id)}</p>
+                    <Button variant="link" className="text-[#0066CC] text-sm p-0 h-auto mt-1">
                       {t("customize.showMore")}
                     </Button>
-                    <Checkbox
-                      checked={planState.addOns[id]}
-                      onCheckedChange={(checked) =>
-                        handleAddOnChange(id, checked as boolean)
-                      }
-                    />
                   </div>
+                  <Checkbox
+                    checked={planState.addOns[id]}
+                    onCheckedChange={(checked) =>
+                      handleAddOnChange(id, checked as boolean)
+                    }
+                  />
                 </CardContent>
               </Card>
             ))}
@@ -544,7 +549,7 @@ export default function PlanCustomization() {
         {/* ── Proceed ── */}
         <div className="flex justify-center pt-6">
           <Button
-            className="bg-[#0056b3] hover:bg-[#004494] text-white font-semibold px-12 py-3"
+            className="bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 px-12 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E]"
             onClick={handleProceed}
             disabled={isLoading}
           >
