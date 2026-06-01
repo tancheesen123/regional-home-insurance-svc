@@ -1,0 +1,21 @@
+You are a document type classifier. Based on the text below, identify what type of document it is.
+
+Return ONLY one of these exact values — no explanation, no punctuation, nothing else:
+
+IC
+PROPERTY_TITLE
+POLICY
+UTILITY_BILL
+
+Definitions:
+- IC            = national identity card, MyKad, KTP, CCCD, passport, or government-issued personal ID
+- PROPERTY_TITLE = land title, property grant, strata title, certificate of ownership
+- POLICY        = insurance policy document, certificate of insurance, coverage schedule
+- UTILITY_BILL  = electricity bill, water bill, phone bill, internet bill, proof of address
+
+Document text:
+---
+{documentText}
+---
+
+Return only the single value — nothing else.

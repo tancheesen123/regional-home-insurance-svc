@@ -7,7 +7,14 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    # ── Ollama ────────────────────────────────────────────────────────────────
+    # ── Inference backend — set USE_GROQ=true to use Groq, false for local Ollama
+    use_groq: bool = False
+
+    # ── Groq (cloud) ──────────────────────────────────────────────────────────
+    groq_api_key: str = ""
+    groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+    # ── Ollama (local) ────────────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
     model_name: str = "llama3.2-vision:11b"
 
@@ -16,9 +23,11 @@ class Settings(BaseSettings):
     max_pdf_pages: int = 3            # only first N pages scanned from a PDF
 
     # ── Auth ──────────────────────────────────────────────────────────────────
-    # Must match the JWT secret used by ApplicationService
+    # Must match JwtSettings in ApplicationService appsettings.json
     jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
+    jwt_audience: str = "ApplicationServiceClients"   # matches Audience in appsettings.json
+    jwt_issuer: str = "ApplicationService"             # matches Issuer in appsettings.json
 
     # ── App ───────────────────────────────────────────────────────────────────
     app_env: str = "development"

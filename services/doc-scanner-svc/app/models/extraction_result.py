@@ -8,10 +8,23 @@ class FieldResult(BaseModel):
     filled:     bool
 
 
+class SourceResult(BaseModel):
+    """Summary of one scanned document contributing to a merged result."""
+    documentType:  str
+    autoDetected:  bool
+    confidence:    float = Field(ge=0.0, le=1.0)
+    fieldsFound:   int
+
+
 class ExtractionResult(BaseModel):
     """Full response returned by POST /scan."""
-    documentType: str
-    countryCode:  str
-    confidence:   float = Field(ge=0.0, le=1.0, description="Overall document confidence")
-    fields:       dict[str, FieldResult]
-    warnings:     list[str] = []
+    documentType:         str
+    detectedDocumentType: str
+    autoDetected:         bool
+    extractionMethod:     str = "vision"   # "text" | "vision"
+    countryCode:          str
+    confidence:           float = Field(ge=0.0, le=1.0)
+    fields:               dict[str, FieldResult]
+    warnings:             list[str] = []
+    # Populated when multiple files are scanned — one entry per file
+    sources:              list[SourceResult] = []

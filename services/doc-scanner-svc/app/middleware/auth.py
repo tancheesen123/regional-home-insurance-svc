@@ -44,6 +44,8 @@ async def require_jwt(request: Request) -> dict:
             credentials.credentials,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
         )
         return claims
     except JWTError as exc:
