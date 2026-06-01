@@ -1,15 +1,14 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Camera, Save, X, Edit, Eye, EyeOff, Shield, Bell, CreditCard, User } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Save, X, Edit, Eye, EyeOff, Shield, CreditCard, User } from "lucide-react"
+import { getCustomerByUserId, updateCustomerData } from "@/lib/api"
+import { getSession } from "@/lib/session"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
@@ -59,9 +58,9 @@ interface ProfileData {
 export default function ProfileForm() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
-  const [profileImage, setProfileImage] = useState("/placeholder.svg?height=100&width=100")
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: "Adam",
@@ -97,34 +96,100 @@ export default function ProfileForm() {
     twoFactorEnabled: false,
   })
 
+  useEffect(() => {
+    const session = getSession()
+    if (!session?.userId) return
+
+    getCustomerByUserId(session.userId)
+      .then((res) => {
+        if (!res.succeeded) return
+        console.log(res.data);
+        const c = res.data
+        setProfileData((prev) => ({
+          ...prev,
+          firstName: c.firstName ?? prev.firstName,
+          lastName: c.lastName ?? prev.lastName,
+          email: c.email ?? prev.email,
+          phone: c.contact ?? prev.phone,
+          dateOfBirth: c.dateOfBirth ?? prev.dateOfBirth,
+          gender: c.gender ?? prev.gender,
+          nationality: c.nationality ?? prev.nationality,
+          idType: c.idType ?? prev.idType,
+          idNumber: c.idNumber ?? prev.idNumber,
+          // Address (null-safe)
+          address1: c.address?.addressLine1 ?? prev.address1,
+          address2: c.address?.addressLine2 ?? prev.address2,
+          city: c.address?.city ?? prev.city,
+          postcode: c.address?.postcode ?? prev.postcode,
+          state: c.address?.state
+            ? c.address.state.charAt(0).toUpperCase() + c.address.state.slice(1)
+            : prev.state,
+        }))
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false))
+  }, [])
+
   const handleInputChange = (field: keyof ProfileData, value: string | boolean) => {
     setProfileData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
-      setIsEditing(false)
-      // Show success message
-    }, 2000)
-  }
+    const session = getSession()
+    if (!session?.userId) return
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string)
+    setIsSaving(true)
+    try {
+      const response = await updateCustomerData(
+        session.userId,
+        {
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          dateOfBirth: profileData.dateOfBirth,
+          gender: profileData.gender,
+          nationality: profileData.nationality,
+          idType: profileData.idType,
+          idNumber: profileData.idNumber,
+          contact: profileData.phone,
+          address: {
+            addressLine1: profileData.address1,
+            addressLine2: profileData.address2,
+            city: profileData.city,
+            postcode: profileData.postcode,
+            state: profileData.state,
+            country: "",
+          },
+        },
+        session.countryCode
+      )
+
+      if (!response.succeeded) {
+        console.error("[UpdateCustomer] Failed:", response.message)
+        return
       }
-      reader.readAsDataURL(file)
+
+      console.log("[UpdateCustomer] Success")
+      setIsEditing(false)
+    } catch (error) {
+      console.error("[UpdateCustomer] Error:", error)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const countries = ["Malaysia", "Singapore", "Indonesia", "Thailand", "Philippines"]
-  const states = ["Selangor", "Kuala Lumpur", "Johor", "Penang", "Sabah", "Sarawak"]
+  const states = ["Selangor", "Kuala Lumpur", "Johor", "Penang", "Sabah", "Sarawak", "Kedah"]
   const relations = ["Spouse", "Parent", "Sibling", "Child", "Friend", "Other"]
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3 text-gray-500">
+          <div className="w-8 h-8 border-4 border-[#0056b3]/20 border-t-[#0056b3] rounded-full animate-spin" />
+          <p className="text-sm">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -167,23 +232,8 @@ export default function ProfileForm() {
       {/* Profile Card */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={profileImage || "/placeholder.svg"} alt="Profile" />
-                <AvatarFallback className="text-lg">
-                  {profileData.firstName[0]}
-                  {profileData.lastName[0]}
-                </AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <label className="absolute bottom-0 right-0 bg-[#0056b3] text-white p-2 rounded-full cursor-pointer hover:bg-[#004494] transition-colors">
-                  <Camera className="h-4 w-4" />
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-              )}
-            </div>
-            <div className="flex-1">
+          <div className="flex items-center space-x-4">
+            <div>
               <h2 className="text-2xl font-bold">
                 {profileData.firstName} {profileData.lastName}
               </h2>
@@ -193,9 +243,6 @@ export default function ProfileForm() {
                   <Shield className="h-3 w-3 mr-1" />
                   Verified Account
                 </Badge>
-                <Badge variant={profileData.twoFactorEnabled ? "default" : "secondary"}>
-                  {profileData.twoFactorEnabled ? "2FA Enabled" : "2FA Disabled"}
-                </Badge>
               </div>
             </div>
           </div>
@@ -204,7 +251,7 @@ export default function ProfileForm() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="personal" className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <span>Personal</span>
@@ -213,10 +260,11 @@ export default function ProfileForm() {
             <Shield className="h-4 w-4" />
             <span>Security</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center space-x-2">
+          {/* Notifications tab — commented out, pending implementation */}
+          {/* <TabsTrigger value="notifications" className="flex items-center space-x-2">
             <Bell className="h-4 w-4" />
             <span>Notifications</span>
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger value="billing" className="flex items-center space-x-2">
             <CreditCard className="h-4 w-4" />
             <span>Billing</span>
@@ -413,29 +461,10 @@ export default function ProfileForm() {
                   />
                 </div>
               </div>
-              <div>
-                <Label>Country</Label>
-                <Select
-                  value={profileData.country}
-                  onValueChange={(value) => handleInputChange("country", value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Emergency Contact</CardTitle>
             </CardHeader>
@@ -480,7 +509,7 @@ export default function ProfileForm() {
                 />
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </TabsContent>
 
         {/* Security Tab */}
@@ -519,9 +548,9 @@ export default function ProfileForm() {
                 <Input id="confirmPassword" type="password" placeholder="Confirm new password" disabled={!isEditing} />
               </div>
 
-              <Separator />
+              {/* <Separator /> */}
 
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Two-Factor Authentication</h4>
                   <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
@@ -531,7 +560,7 @@ export default function ProfileForm() {
                   onCheckedChange={(checked) => handleInputChange("twoFactorEnabled", checked)}
                   disabled={!isEditing}
                 />
-              </div>
+              </div> */}
 
               {profileData.twoFactorEnabled && (
                 <Alert>
@@ -544,7 +573,7 @@ export default function ProfileForm() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Login Activity</CardTitle>
             </CardHeader>
@@ -568,11 +597,11 @@ export default function ProfileForm() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
+        {/* Notifications Tab — commented out, pending implementation */}
+        {/* <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
@@ -672,7 +701,7 @@ export default function ProfileForm() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* Billing Tab */}
         <TabsContent value="billing" className="space-y-6">

@@ -1,8 +1,22 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Eye, Calendar, TrendingUp, DollarSign, Users, FileText, BarChart3, PieChart } from "lucide-react"
+import {
+  Search,
+  Eye,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Users,
+  FileText,
+  BarChart3,
+  PieChart,
+  RefreshCw,
+  AlertCircle,
+  Download,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,548 +25,178 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 import { addDays, format } from "date-fns"
 import type { DateRange } from "react-day-picker"
+import { fetchSalesRecords, exportSalesExcel, type SalesRecord, type SalesSummary } from "@/lib/api/sales"
+import { getSession } from "@/lib/session"
+import { formatAmount, getCurrencyByCountryCode } from "@/lib/currency"
 
-interface SalesRecord {
-  id: string
-  policyNumber: string
-  customerName: string
-  customerEmail: string
-  productType: string
-  coverageType: string
-  premium: number
-  commission: number
-  saleDate: string
-  effectiveDate: string
-  status: "Active" | "Pending" | "Cancelled" | "Expired"
-  paymentMethod: string
-  region: string
-  agentName: string
-  agentId: string
-  renewalDate: string
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "Active":    return "bg-green-100 text-green-800"
+    case "Pending":   return "bg-yellow-100 text-yellow-800"
+    case "Cancelled": return "bg-red-100 text-red-800"
+    case "Expired":   return "bg-gray-100 text-gray-800"
+    default:          return "bg-gray-100 text-gray-800"
+  }
 }
 
-const mockSalesData: SalesRecord[] = [
-  {
-    id: "SR-2025-001",
-    policyNumber: "HI-2025-001234",
-    customerName: "Maria Santos",
-    customerEmail: "maria.santos@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building + Contents",
-    premium: 1333.76,
-    commission: 133.38,
-    saleDate: "2025-01-06",
-    effectiveDate: "2025-01-12",
-    status: "Active",
-    paymentMethod: "Credit Card",
-    region: "Philippines",
-    agentName: "Juan Dela Cruz",
-    agentId: "AGT-001",
-    renewalDate: "2026-01-12",
-  },
-  {
-    id: "SR-2025-002",
-    policyNumber: "HI-2025-001235",
-    customerName: "Sok Dara",
-    customerEmail: "sok.dara@email.com",
-    productType: "Home Insurance",
-    coverageType: "Contents Only",
-    premium: 890.5,
-    commission: 89.05,
-    saleDate: "2025-01-05",
-    effectiveDate: "2025-01-11",
-    status: "Active",
-    paymentMethod: "Bank Transfer",
-    region: "Cambodia",
-    agentName: "Chea Samnang",
-    agentId: "AGT-002",
-    renewalDate: "2026-01-11",
-  },
-  {
-    id: "SR-2025-003",
-    policyNumber: "HI-2025-001236",
-    customerName: "Budi Santoso",
-    customerEmail: "budi.santoso@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building Only",
-    premium: 1150.25,
-    commission: 115.03,
-    saleDate: "2025-01-04",
-    effectiveDate: "2025-01-10",
-    status: "Pending",
-    paymentMethod: "Digital Wallet",
-    region: "Indonesia",
-    agentName: "Sari Dewi",
-    agentId: "AGT-003",
-    renewalDate: "2026-01-10",
-  },
-  {
-    id: "SR-2025-004",
-    policyNumber: "HI-2025-001237",
-    customerName: "Nguyen Van Minh",
-    customerEmail: "nguyen.minh@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building + Contents",
-    premium: 1450.0,
-    commission: 145.0,
-    saleDate: "2025-01-03",
-    effectiveDate: "2025-01-09",
-    status: "Active",
-    paymentMethod: "Online Banking",
-    region: "Vietnam",
-    agentName: "Tran Thi Lan",
-    agentId: "AGT-004",
-    renewalDate: "2026-01-09",
-  },
-  {
-    id: "SR-2025-005",
-    policyNumber: "HI-2025-001238",
-    customerName: "Lim Wei Ming",
-    customerEmail: "lim.weiming@email.com",
-    productType: "Home Insurance",
-    coverageType: "Contents Only",
-    premium: 750.8,
-    commission: 75.08,
-    saleDate: "2025-01-02",
-    effectiveDate: "2025-01-08",
-    status: "Cancelled",
-    paymentMethod: "Credit Card",
-    region: "Malaysia",
-    agentName: "Ahmad Rahman",
-    agentId: "AGT-005",
-    renewalDate: "2026-01-08",
-  },
-  {
-    id: "SR-2025-006",
-    policyNumber: "CI-2025-001239",
-    customerName: "Sarah Johnson",
-    customerEmail: "sarah.johnson@email.com",
-    productType: "Car Insurance",
-    coverageType: "Comprehensive",
-    premium: 2100.0,
-    commission: 210.0,
-    saleDate: "2025-01-01",
-    effectiveDate: "2025-01-07",
-    status: "Active",
-    paymentMethod: "Credit Card",
-    region: "Philippines",
-    agentName: "Juan Dela Cruz",
-    agentId: "AGT-001",
-    renewalDate: "2026-01-07",
-  },
-  {
-    id: "SR-2025-007",
-    policyNumber: "TI-2025-001240",
-    customerName: "Chen Wei",
-    customerEmail: "chen.wei@email.com",
-    productType: "Travel Insurance",
-    coverageType: "International",
-    premium: 450.0,
-    commission: 45.0,
-    saleDate: "2024-12-31",
-    effectiveDate: "2025-01-06",
-    status: "Active",
-    paymentMethod: "Digital Wallet",
-    region: "Malaysia",
-    agentName: "Ahmad Rahman",
-    agentId: "AGT-005",
-    renewalDate: "2026-01-06",
-  },
-  {
-    id: "SR-2025-008",
-    policyNumber: "HI-2025-001241",
-    customerName: "Preap Sovann",
-    customerEmail: "preap.sovann@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building + Contents",
-    premium: 1275.5,
-    commission: 127.55,
-    saleDate: "2024-12-30",
-    effectiveDate: "2025-01-05",
-    status: "Pending",
-    paymentMethod: "Bank Transfer",
-    region: "Cambodia",
-    agentName: "Chea Samnang",
-    agentId: "AGT-002",
-    renewalDate: "2026-01-05",
-  },
-  {
-    id: "SR-2025-009",
-    policyNumber: "CI-2025-001242",
-    customerName: "Indira Sari",
-    customerEmail: "indira.sari@email.com",
-    productType: "Car Insurance",
-    coverageType: "Third Party",
-    premium: 850.0,
-    commission: 85.0,
-    saleDate: "2024-12-29",
-    effectiveDate: "2025-01-04",
-    status: "Active",
-    paymentMethod: "Online Banking",
-    region: "Indonesia",
-    agentName: "Sari Dewi",
-    agentId: "AGT-003",
-    renewalDate: "2026-01-04",
-  },
-  {
-    id: "SR-2025-010",
-    policyNumber: "HI-2025-001243",
-    customerName: "Le Thi Mai",
-    customerEmail: "le.mai@email.com",
-    productType: "Home Insurance",
-    coverageType: "Contents Only",
-    premium: 680.25,
-    commission: 68.03,
-    saleDate: "2024-12-28",
-    effectiveDate: "2025-01-03",
-    status: "Expired",
-    paymentMethod: "Credit Card",
-    region: "Vietnam",
-    agentName: "Tran Thi Lan",
-    agentId: "AGT-004",
-    renewalDate: "2026-01-03",
-  },
-  {
-    id: "SR-2025-011",
-    policyNumber: "TI-2025-001244",
-    customerName: "Rajesh Kumar",
-    customerEmail: "rajesh.kumar@email.com",
-    productType: "Travel Insurance",
-    coverageType: "Domestic",
-    premium: 280.0,
-    commission: 28.0,
-    saleDate: "2024-12-27",
-    effectiveDate: "2025-01-02",
-    status: "Active",
-    paymentMethod: "Digital Wallet",
-    region: "Malaysia",
-    agentName: "Priya Sharma",
-    agentId: "AGT-006",
-    renewalDate: "2026-01-02",
-  },
-  {
-    id: "SR-2025-012",
-    policyNumber: "HI-2025-001245",
-    customerName: "Jose Rizal",
-    customerEmail: "jose.rizal@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building Only",
-    premium: 1050.0,
-    commission: 105.0,
-    saleDate: "2024-12-26",
-    effectiveDate: "2025-01-01",
-    status: "Active",
-    paymentMethod: "Bank Transfer",
-    region: "Philippines",
-    agentName: "Maria Garcia",
-    agentId: "AGT-007",
-    renewalDate: "2026-01-01",
-  },
-  {
-    id: "SR-2025-013",
-    policyNumber: "CI-2025-001246",
-    customerName: "Vanna Sophea",
-    customerEmail: "vanna.sophea@email.com",
-    productType: "Car Insurance",
-    coverageType: "Comprehensive",
-    premium: 1950.0,
-    commission: 195.0,
-    saleDate: "2024-12-25",
-    effectiveDate: "2024-12-31",
-    status: "Cancelled",
-    paymentMethod: "Credit Card",
-    region: "Cambodia",
-    agentName: "Chea Samnang",
-    agentId: "AGT-002",
-    renewalDate: "2025-12-31",
-  },
-  {
-    id: "SR-2025-014",
-    policyNumber: "HI-2025-001247",
-    customerName: "Dewi Kartika",
-    customerEmail: "dewi.kartika@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building + Contents",
-    premium: 1425.75,
-    commission: 142.58,
-    saleDate: "2024-12-24",
-    effectiveDate: "2024-12-30",
-    status: "Active",
-    paymentMethod: "Online Banking",
-    region: "Indonesia",
-    agentName: "Andi Wijaya",
-    agentId: "AGT-008",
-    renewalDate: "2025-12-30",
-  },
-  {
-    id: "SR-2025-015",
-    policyNumber: "TI-2025-001248",
-    customerName: "Pham Van Duc",
-    customerEmail: "pham.duc@email.com",
-    productType: "Travel Insurance",
-    coverageType: "International",
-    premium: 520.0,
-    commission: 52.0,
-    saleDate: "2024-12-23",
-    effectiveDate: "2024-12-29",
-    status: "Active",
-    paymentMethod: "Digital Wallet",
-    region: "Vietnam",
-    agentName: "Tran Thi Lan",
-    agentId: "AGT-004",
-    renewalDate: "2025-12-29",
-  },
-  {
-    id: "SR-2024-016",
-    policyNumber: "HI-2024-001249",
-    customerName: "Tan Ah Kow",
-    customerEmail: "tan.ahkow@email.com",
-    productType: "Home Insurance",
-    coverageType: "Contents Only",
-    premium: 795.0,
-    commission: 79.5,
-    saleDate: "2024-12-22",
-    effectiveDate: "2024-12-28",
-    status: "Active",
-    paymentMethod: "Credit Card",
-    region: "Malaysia",
-    agentName: "Priya Sharma",
-    agentId: "AGT-006",
-    renewalDate: "2025-12-28",
-  },
-  {
-    id: "SR-2024-017",
-    policyNumber: "CI-2024-001250",
-    customerName: "Anna Reyes",
-    customerEmail: "anna.reyes@email.com",
-    productType: "Car Insurance",
-    coverageType: "Third Party",
-    premium: 720.0,
-    commission: 72.0,
-    saleDate: "2024-12-21",
-    effectiveDate: "2024-12-27",
-    status: "Pending",
-    paymentMethod: "Bank Transfer",
-    region: "Philippines",
-    agentName: "Maria Garcia",
-    agentId: "AGT-007",
-    renewalDate: "2025-12-27",
-  },
-  {
-    id: "SR-2024-018",
-    policyNumber: "HI-2024-001251",
-    customerName: "Kosal Meas",
-    customerEmail: "kosal.meas@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building Only",
-    premium: 980.0,
-    commission: 98.0,
-    saleDate: "2024-12-20",
-    effectiveDate: "2024-12-26",
-    status: "Active",
-    paymentMethod: "Online Banking",
-    region: "Cambodia",
-    agentName: "Sophea Kem",
-    agentId: "AGT-009",
-    renewalDate: "2025-12-26",
-  },
-  {
-    id: "SR-2024-019",
-    policyNumber: "TI-2024-001252",
-    customerName: "Rini Susanti",
-    customerEmail: "rini.susanti@email.com",
-    productType: "Travel Insurance",
-    coverageType: "Domestic",
-    premium: 320.0,
-    commission: 32.0,
-    saleDate: "2024-12-19",
-    effectiveDate: "2024-12-25",
-    status: "Expired",
-    paymentMethod: "Digital Wallet",
-    region: "Indonesia",
-    agentName: "Andi Wijaya",
-    agentId: "AGT-008",
-    renewalDate: "2025-12-25",
-  },
-  {
-    id: "SR-2024-020",
-    policyNumber: "HI-2024-001253",
-    customerName: "Hoang Thi Linh",
-    customerEmail: "hoang.linh@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building + Contents",
-    premium: 1380.0,
-    commission: 138.0,
-    saleDate: "2024-12-18",
-    effectiveDate: "2024-12-24",
-    status: "Active",
-    paymentMethod: "Credit Card",
-    region: "Vietnam",
-    agentName: "Nguyen Van Duc",
-    agentId: "AGT-010",
-    renewalDate: "2025-12-24",
-  },
-  {
-    id: "SR-2024-021",
-    policyNumber: "CI-2024-001254",
-    customerName: "Siti Nurhaliza",
-    customerEmail: "siti.nurhaliza@email.com",
-    productType: "Car Insurance",
-    coverageType: "Comprehensive",
-    premium: 2250.0,
-    commission: 225.0,
-    saleDate: "2024-12-17",
-    effectiveDate: "2024-12-23",
-    status: "Active",
-    paymentMethod: "Bank Transfer",
-    region: "Malaysia",
-    agentName: "Ahmad Rahman",
-    agentId: "AGT-005",
-    renewalDate: "2025-12-23",
-  },
-  {
-    id: "SR-2024-022",
-    policyNumber: "TI-2024-001255",
-    customerName: "Roberto Santos",
-    customerEmail: "roberto.santos@email.com",
-    productType: "Travel Insurance",
-    coverageType: "International",
-    premium: 480.0,
-    commission: 48.0,
-    saleDate: "2024-12-16",
-    effectiveDate: "2024-12-22",
-    status: "Cancelled",
-    paymentMethod: "Online Banking",
-    region: "Philippines",
-    agentName: "Juan Dela Cruz",
-    agentId: "AGT-001",
-    renewalDate: "2025-12-22",
-  },
-  {
-    id: "SR-2024-023",
-    policyNumber: "HI-2024-001256",
-    customerName: "Pisach Roth",
-    customerEmail: "pisach.roth@email.com",
-    productType: "Home Insurance",
-    coverageType: "Contents Only",
-    premium: 650.0,
-    commission: 65.0,
-    saleDate: "2024-12-15",
-    effectiveDate: "2024-12-21",
-    status: "Active",
-    paymentMethod: "Digital Wallet",
-    region: "Cambodia",
-    agentName: "Sophea Kem",
-    agentId: "AGT-009",
-    renewalDate: "2025-12-21",
-  },
-  {
-    id: "SR-2024-024",
-    policyNumber: "CI-2024-001257",
-    customerName: "Bambang Sutrisno",
-    customerEmail: "bambang.sutrisno@email.com",
-    productType: "Car Insurance",
-    coverageType: "Third Party",
-    premium: 890.0,
-    commission: 89.0,
-    saleDate: "2024-12-14",
-    effectiveDate: "2024-12-20",
-    status: "Pending",
-    paymentMethod: "Credit Card",
-    region: "Indonesia",
-    agentName: "Sari Dewi",
-    agentId: "AGT-003",
-    renewalDate: "2025-12-20",
-  },
-  {
-    id: "SR-2024-025",
-    policyNumber: "HI-2024-001258",
-    customerName: "Vo Thi Hoa",
-    customerEmail: "vo.hoa@email.com",
-    productType: "Home Insurance",
-    coverageType: "Building Only",
-    premium: 1125.0,
-    commission: 112.5,
-    saleDate: "2024-12-13",
-    effectiveDate: "2024-12-19",
-    status: "Active",
-    paymentMethod: "Bank Transfer",
-    region: "Vietnam",
-    agentName: "Nguyen Van Duc",
-    agentId: "AGT-010",
-    renewalDate: "2025-12-19",
-  },
-]
+function formatGrowth(pct: number) {
+  const sign = pct >= 0 ? "+" : ""
+  return `${sign}${pct.toFixed(1)}%`
+}
+
+const DEFAULT_SUMMARY: SalesSummary = {
+  totalSales: 0,
+  totalPremium: 0,
+  totalCommission: 0,
+  activePolicies: 0,
+  pendingPolicies: 0,
+  averagePremium: 0,
+  conversionRate: 0,
+  premiumGrowthPct: 0,
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SalesReports() {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRegion, setSelectedRegion] = useState("all")
-  const [selectedStatus, setSelectedStatus] = useState("all")
-  const [selectedProduct, setSelectedProduct] = useState("all")
+
+  // Currency for summary totals — driven by the session's country (all API records are country-scoped)
+  const sessionCountryCode = getSession()?.countryCode ?? "PH"
+  const summaryCurrency = getCurrencyByCountryCode(sessionCountryCode)
+
+  // ── Server-side filter state (triggers refetch)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -60),
     to: new Date(),
   })
-  const [activeTab, setActiveTab] = useState("overview")
 
-  // Filter data based on search and filters
+  // ── Client-side filter state (applied on already-fetched records)
+  const [searchTerm,      setSearchTerm]      = useState("")
+  const [selectedRegion,  setSelectedRegion]  = useState("all")
+  const [selectedStatus,  setSelectedStatus]  = useState("all")
+  const [selectedProduct, setSelectedProduct] = useState("all")
+
+  // ── Data state
+  const [records,  setRecords]  = useState<SalesRecord[]>([])
+  const [summary,  setSummary]  = useState<SalesSummary>(DEFAULT_SUMMARY)
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState<string | null>(null)
+
+  const [activeTab,   setActiveTab]   = useState("overview")
+  const [exporting,   setExporting]   = useState(false)
+  const [exportNote,  setExportNote]  = useState<string | null>(null) // feedback after export
+
+  // ── Fetch (only dateFrom/dateTo go to the server; other filters are client-side)
+  const loadRecords = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const filter: { dateFrom?: string; dateTo?: string } = {}
+      if (dateRange?.from) filter.dateFrom = dateRange.from.toISOString()
+      if (dateRange?.to)   filter.dateTo   = dateRange.to.toISOString()
+
+      const data = await fetchSalesRecords(filter)
+      setRecords(data.records ?? [])
+      setSummary(data.summary ?? DEFAULT_SUMMARY)
+    } catch (err) {
+      console.error("[SalesReports] fetch error", err)
+      setError("Failed to load sales records. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => {
+    loadRecords()
+  }, [loadRecords])
+
+  // ── Derive available regions from fetched data
+  const regions = useMemo(() => {
+    const set = new Set(records.map((r) => r.region).filter(Boolean))
+    return Array.from(set).sort()
+  }, [records])
+
+  // ── Client-side filtering
   const filteredData = useMemo(() => {
-    return mockSalesData.filter((record) => {
+    return records.filter((record) => {
+      const q = searchTerm.toLowerCase()
       const matchesSearch =
-        record.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.policyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+        !q ||
+        record.customerName.toLowerCase().includes(q) ||
+        record.policyNumber.toLowerCase().includes(q) ||
+        record.customerEmail.toLowerCase().includes(q)
 
-      const matchesRegion = selectedRegion === "all" || record.region === selectedRegion
-      const matchesStatus = selectedStatus === "all" || record.status === selectedStatus
+      const matchesRegion  = selectedRegion  === "all" || record.region      === selectedRegion
+      const matchesStatus  = selectedStatus  === "all" || record.status      === selectedStatus
       const matchesProduct = selectedProduct === "all" || record.productType === selectedProduct
 
-      const saleDate = new Date(record.saleDate)
-      const matchesDateRange =
-        !dateRange?.from || !dateRange?.to || (saleDate >= dateRange.from && saleDate <= dateRange.to)
-
-      return matchesSearch && matchesRegion && matchesStatus && matchesProduct && matchesDateRange
+      return matchesSearch && matchesRegion && matchesStatus && matchesProduct
     })
-  }, [searchTerm, selectedRegion, selectedStatus, selectedProduct, dateRange])
+  }, [records, searchTerm, selectedRegion, selectedStatus, selectedProduct])
 
-  // Calculate summary statistics
-  const summaryStats = useMemo(() => {
-    const totalSales = filteredData.length
-    const totalPremium = filteredData.reduce((sum, record) => sum + record.premium, 0)
-    const totalCommission = filteredData.reduce((sum, record) => sum + record.commission, 0)
-    const activePolicies = filteredData.filter((record) => record.status === "Active").length
-    const pendingPolicies = filteredData.filter((record) => record.status === "Pending").length
+  // ── Summary always comes from API (not recomputed from filtered records)
 
-    return {
-      totalSales,
-      totalPremium,
-      totalCommission,
-      activePolicies,
-      pendingPolicies,
-      averagePremium: totalSales > 0 ? totalPremium / totalSales : 0,
-    }
-  }, [filteredData])
-
-  const handleViewReport = (reportId: string) => {
-    router.push(`/dashboard/sales/${reportId}`)
+  // ── Handlers
+  const handleViewReport = (recordId: string) => {
+    router.push(`/dashboard/sales/${recordId}`)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800"
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "Cancelled":
-        return "bg-red-100 text-red-800"
-      case "Expired":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  const handleExport = async () => {
+    setExporting(true)
+    setExportNote(null)
+    try {
+      // Send the same server-supported filters the admin has active.
+      // Region is client-side only — the backend doesn't have a region filter yet.
+      const filter: Parameters<typeof exportSalesExcel>[0] = {}
+      if (dateRange?.from)           filter.dateFrom    = dateRange.from.toISOString()
+      if (dateRange?.to)             filter.dateTo      = dateRange.to.toISOString()
+      if (selectedStatus  !== "all") filter.status      = selectedStatus
+      if (selectedProduct !== "all") filter.productType = selectedProduct
+      if (searchTerm.trim())         filter.search      = searchTerm.trim()
+
+      const result = await exportSalesExcel(filter)
+
+      if (result.type === "empty") {
+        setExportNote("No records matched the current filters. Nothing was exported.")
+      } else {
+        setExportNote(`Downloaded: ${result.filename}`)
+        // Auto-clear success note after 5 s
+        setTimeout(() => setExportNote(null), 5000)
+      }
+    } catch (err) {
+      console.error("[SalesReports] export error", err)
+      setExportNote("Export failed. Please try again.")
+    } finally {
+      setExporting(false)
     }
+  }
+
+  // ── Loading skeleton
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}><CardContent className="p-4"><Skeleton className="h-12 w-full" /></CardContent></Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -563,9 +207,49 @@ export default function SalesReports() {
           <h1 className="text-3xl font-bold">Sales Reports</h1>
           <p className="text-gray-600">Monitor and analyze insurance sales performance</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={loadRecords} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={loading || exporting || filteredData.length === 0}
+          >
+            <Download className={`h-4 w-4 mr-2 ${exporting ? "animate-bounce" : ""}`} />
+            {exporting ? "Exporting…" : "Export Excel"}
+          </Button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Fetch error */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            {error}
+            <Button variant="ghost" size="sm" onClick={loadRecords}>Retry</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Export feedback (success / empty / error) */}
+      {exportNote && (
+        <Alert
+          variant={exportNote.startsWith("Downloaded") ? "default" : "destructive"}
+          className={exportNote.startsWith("Downloaded") ? "border-green-200 bg-green-50 text-green-800" : undefined}
+        >
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            {exportNote}
+            <Button variant="ghost" size="sm" onClick={() => setExportNote(null)}>✕</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Top Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -573,7 +257,7 @@ export default function SalesReports() {
               <FileText className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">Total Sales</p>
-                <p className="text-2xl font-bold">{summaryStats.totalSales}</p>
+                <p className="text-2xl font-bold">{summary.totalSales}</p>
               </div>
             </div>
           </CardContent>
@@ -584,7 +268,7 @@ export default function SalesReports() {
               <DollarSign className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Total Premium</p>
-                <p className="text-2xl font-bold">${summaryStats.totalPremium.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatAmount(summary.totalPremium, sessionCountryCode, true)}</p>
               </div>
             </div>
           </CardContent>
@@ -595,7 +279,7 @@ export default function SalesReports() {
               <Users className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-sm text-gray-600">Active Policies</p>
-                <p className="text-2xl font-bold">{summaryStats.activePolicies}</p>
+                <p className="text-2xl font-bold">{summary.activePolicies}</p>
               </div>
             </div>
           </CardContent>
@@ -619,17 +303,16 @@ export default function SalesReports() {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              {/* Region — derived from actual data */}
               <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Region" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Regions</SelectItem>
-                  <SelectItem value="Philippines">Philippines</SelectItem>
-                  <SelectItem value="Cambodia">Cambodia</SelectItem>
-                  <SelectItem value="Indonesia">Indonesia</SelectItem>
-                  <SelectItem value="Vietnam">Vietnam</SelectItem>
-                  <SelectItem value="Malaysia">Malaysia</SelectItem>
+                  {regions.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -653,11 +336,10 @@ export default function SalesReports() {
                 <SelectContent>
                   <SelectItem value="all">All Products</SelectItem>
                   <SelectItem value="Home Insurance">Home Insurance</SelectItem>
-                  <SelectItem value="Car Insurance">Car Insurance</SelectItem>
-                  <SelectItem value="Travel Insurance">Travel Insurance</SelectItem>
                 </SelectContent>
               </Select>
 
+              {/* Date range — triggers refetch */}
               <DatePickerWithRange date={dateRange} setDate={setDateRange} />
             </div>
           </div>
@@ -672,18 +354,20 @@ export default function SalesReports() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
+        {/* ── Overview ── */}
         <TabsContent value="overview" className="space-y-4">
-          {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Average Premium</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summaryStats.averagePremium.toFixed(2)}</div>
-                <div className="flex items-center text-sm text-green-600">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  +12% from last month
+                <div className="text-2xl font-bold">{formatAmount(summary.averagePremium, sessionCountryCode, true)}</div>
+                <div className={`flex items-center text-sm ${summary.premiumGrowthPct >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {summary.premiumGrowthPct >= 0
+                    ? <TrendingUp className="h-4 w-4 mr-1" />
+                    : <TrendingDown className="h-4 w-4 mr-1" />}
+                  {formatGrowth(summary.premiumGrowthPct)} from last month
                 </div>
               </CardContent>
             </Card>
@@ -692,7 +376,7 @@ export default function SalesReports() {
                 <CardTitle className="text-sm font-medium">Pending Policies</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{summaryStats.pendingPolicies}</div>
+                <div className="text-2xl font-bold">{summary.pendingPolicies}</div>
                 <div className="flex items-center text-sm text-yellow-600">
                   <Calendar className="h-4 w-4 mr-1" />
                   Requires attention
@@ -704,10 +388,10 @@ export default function SalesReports() {
                 <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">87.5%</div>
+                <div className="text-2xl font-bold">{summary.conversionRate.toFixed(1)}%</div>
                 <div className="flex items-center text-sm text-green-600">
                   <TrendingUp className="h-4 w-4 mr-1" />
-                  +5% from last month
+                  Based on selected period
                 </div>
               </CardContent>
             </Card>
@@ -719,31 +403,39 @@ export default function SalesReports() {
               <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {filteredData.slice(0, 5).map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-blue-600" />
+              {filteredData.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No records match the current filters.</p>
+              ) : (
+                <div className="space-y-3">
+                  {filteredData.slice(0, 5).map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleViewReport(record.id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{record.customerName}</p>
+                          <p className="text-sm text-gray-600">{record.policyNumber}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{record.customerName}</p>
-                        <p className="text-sm text-gray-600">{record.policyNumber}</p>
+                      <div className="text-right">
+                        <p className="font-medium">{formatAmount(record.premium, record.region)}</p>
+                        <Badge className={getStatusColor(record.status)}>{record.status}</Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${record.premium.toLocaleString()}</p>
-                      <Badge className={getStatusColor(record.status)}>{record.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Detailed Reports ── */}
         <TabsContent value="detailed" className="space-y-4">
-          {/* Sales Table */}
           <Card>
             <CardHeader>
               <CardTitle>Sales Records ({filteredData.length})</CardTitle>
@@ -782,12 +474,12 @@ export default function SalesReports() {
                         <TableCell>{record.productType}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">${record.premium.toLocaleString()}</p>
+                            <p className="font-medium">{formatAmount(record.premium, record.region)}</p>
                             <p className="text-sm text-gray-600">{record.paymentMethod}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <p className="font-medium text-green-600">${record.commission.toLocaleString()}</p>
+                          <p className="font-medium text-green-600">{formatAmount(record.commission, record.region)}</p>
                         </TableCell>
                         <TableCell>
                           <div>
@@ -822,19 +514,19 @@ export default function SalesReports() {
                 </Table>
               </div>
 
-              {filteredData.length === 0 && (
+              {filteredData.length === 0 && !error && (
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No sales records found</h3>
-                  <p className="text-gray-600">Try adjusting your filters or search terms.</p>
+                  <p className="text-gray-600">Try adjusting your filters or date range.</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Analytics ── */}
         <TabsContent value="analytics" className="space-y-4">
-          {/* Analytics placeholder */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -844,23 +536,27 @@ export default function SalesReports() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {["Philippines", "Cambodia", "Indonesia", "Vietnam", "Malaysia"].map((region) => {
-                    const regionSales = filteredData.filter((record) => record.region === region).length
-                    const percentage = filteredData.length > 0 ? (regionSales / filteredData.length) * 100 : 0
-                    return (
-                      <div key={region} className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{region}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                {regions.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No data available.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {regions.map((region) => {
+                      const regionSales = filteredData.filter((r) => r.region === region).length
+                      const percentage = filteredData.length > 0 ? (regionSales / filteredData.length) * 100 : 0
+                      return (
+                        <div key={region} className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{region}</span>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${percentage}%` }} />
+                            </div>
+                            <span className="text-sm text-gray-600">{regionSales}</span>
                           </div>
-                          <span className="text-sm text-gray-600">{regionSales}</span>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -873,15 +569,15 @@ export default function SalesReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {["Active", "Pending", "Cancelled", "Expired"].map((status) => {
-                    const statusSales = filteredData.filter((record) => record.status === status).length
+                  {(["Active", "Pending", "Cancelled", "Expired"] as const).map((status) => {
+                    const statusSales = filteredData.filter((r) => r.status === status).length
                     const percentage = filteredData.length > 0 ? (statusSales / filteredData.length) * 100 : 0
                     return (
                       <div key={status} className="flex items-center justify-between">
                         <span className="text-sm font-medium">{status}</span>
                         <div className="flex items-center space-x-2">
                           <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div className="bg-green-600 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                            <div className="bg-green-600 h-2 rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
                           <span className="text-sm text-gray-600">{statusSales}</span>
                         </div>
@@ -892,6 +588,35 @@ export default function SalesReports() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Commission summary from API */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Commission Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm text-gray-600">Total Commission</p>
+                  <p className="text-2xl font-bold text-green-600">{formatAmount(summary.totalCommission, sessionCountryCode, true)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Avg Commission / Sale</p>
+                  <p className="text-2xl font-bold">
+                    {formatAmount(
+                      summary.totalSales > 0 ? summary.totalCommission / summary.totalSales : 0,
+                      sessionCountryCode,
+                      true
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Conversion Rate</p>
+                  <p className="text-2xl font-bold">{summary.conversionRate.toFixed(1)}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

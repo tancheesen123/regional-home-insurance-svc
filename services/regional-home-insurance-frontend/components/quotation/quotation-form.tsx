@@ -2,10 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { CalendarIcon, Home, Building, Minus, Plus, CheckCircle } from "lucide-react"
-import { format } from "date-fns"
+import { format, parse, isValid } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
+import { getQuote, saveQuotationId, saveQuotationStartDate } from "@/lib/api"
+import { getSession } from "@/lib/session"
+import { getIdTypeOptions, getDefaultNationality } from "@/lib/id-type-helpers"
+import { markFieldManual, type ScanSessionField } from "@/lib/scan-session"
+import { getMappingsForStep } from "@/lib/scan-field-map"
+import ScanFieldBadge from "@/components/quotation/scan-field-badge"
+import ScanBanner from "@/components/quotation/scan-banner"
 
 interface FormData {
   ownershipType: string
@@ -33,9 +42,35 @@ interface FormData {
   dateOfBirth: string
 }
 
-export default function QuotationForm() {
+// Static data — defined outside component so they're never recreated on re-render
+const PROPERTY_TYPES = [
+  { id: "landed", icon: Home },
+  { id: "non-landed", icon: Building },
+]
+
+const CONSTRUCTION_TYPES = [
+  { id: "full-brick" },
+  { id: "partial-brick" },
+]
+
+const NATIONALITIES = [
+  "MALAYSIAN", "SINGAPOREAN", "INDONESIAN", "THAI", "FILIPINO", "CAMBODIAN", "OTHER",
+]
+
+interface QuotationFormProps {
+  /** Raw scan result passed from DocumentScanner — field mapping handled here */
+  scanResult?: import("@/lib/api/scan-document").ScanDocumentResult | null
+}
+
+export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const router = useRouter()
+  const t = useTranslations("quotation")
+  const countryCode = getSession()?.countryCode ?? "MY"
+  const idTypeOptions = getIdTypeOptions(countryCode)
+
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dobOpen, setDobOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     ownershipType: "owner",
     coverageStartDate: new Date("2025-06-21"),
@@ -47,67 +82,135 @@ export default function QuotationForm() {
     currentFlooding: "no",
     unoccupiedProperty: "no",
     previousLoss: "no",
-    idType: "passport",
+    idType: idTypeOptions[0].value,
     passportNumber: "021217020209",
     nricNumber: "",
-    nationality: "MALAYSIAN",
+    nationality: getDefaultNationality(countryCode),
     dateOfBirth: "17/12/2002",
   })
 
-  const handleInputChange = (field: keyof FormData, value: string | Date | undefined | number) => {
+  // ── Scan result → form field mapping ──────────────────────────────────────
+  // scanResult contains raw document fields (nik, name, birthdate, province…).
+  // Field mapping logic will be added here once the AI key schema is finalised.
+  // For now we just track the result so the banner can reference it.
+
+  const [scanFields, setScanFields] = useState<Record<string, ScanSessionField>>({})
+
+  useEffect(() => {
+    if (!scanResult) return
+    // TODO: map scanResult.fields (nik, name, birthdate…) → formData fields
+    // e.g. scanResult.fields.nik?.value → nricNumber
+    //      scanResult.fields.birthdate?.value → dateOfBirth (reformat)
+    // For now: no auto-fill, just acknowledge scan happened
+    setScanFields({})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanResult])
+
+  // Helper to get badge data for a given AI key
+  const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
+
+  // Mark a field as manually edited when customer changes it
+  const handleInputChange = useCallback((field: keyof FormData, value: string | Date | undefined | number) => {
+    // Find if this form field matches any AI key and mark it manual
+    getMappingsForStep(1).forEach(({ aiKey, formKey }) => {
+      if (formKey === field || (formKey === "idNumber" && (field === "passportNumber" || field === "nricNumber"))) {
+        markFieldManual(aiKey)
+        setScanFields((prev) => {
+          if (!prev[aiKey]) return prev
+          return { ...prev, [aiKey]: { ...prev[aiKey], source: "manual" } }
+        })
+      }
+    })
     setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  }, [])
+
+  const handleIdTypeChange = useCallback((type: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      idType: type,
+      // Snap nationality back to country default when leaving passport
+      ...(type !== "passport" && { nationality: getDefaultNationality(countryCode) }),
+    }))
+  }, [countryCode])
+
+  const handleDobSelect = useCallback((date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({ ...prev, dateOfBirth: format(date, "dd/MM/yyyy") }))
+    }
+    setDobOpen(false)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
     setIsLoading(true)
 
-    setTimeout(() => {
+    const session = getSession()
+    if (!session) {
+      setError(t("common.sessionExpired"))
       setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await getQuote(
+        {
+          customerId: session.customerId,
+          ownershipType: formData.ownershipType,
+          coverageStartDate: formData.coverageStartDate
+            ? format(formData.coverageStartDate, "dd/MM/yyyy")
+            : "",
+          propertyType: formData.propertyType,
+          propertySubType: formData.propertySubType,
+          numberOfStorey: formData.numberOfStorey,
+          constructionType: formData.constructionType,
+          postcode: formData.postcode,
+          currentFlooding: formData.currentFlooding,
+          unoccupiedProperty: formData.unoccupiedProperty,
+          previousLoss: formData.previousLoss,
+          idType: formData.idType,
+          idNumber: formData.idType === "passport" ? formData.passportNumber : formData.nricNumber,
+          nationality: formData.nationality,
+          dateOfBirth: formData.dateOfBirth,
+        },
+        session.countryCode
+      )
+
+      console.log("[GetQuote Response]", response)
+
+      if (!response.succeeded) {
+        setError(response.message ?? t("form.failedToGetQuote"))
+        return
+      }
+
+      saveQuotationId(response.data.quotationId)
+      // Save start date so plan-customization can use it for CalculatePremium live preview
+      if (formData.coverageStartDate) {
+        saveQuotationStartDate(format(formData.coverageStartDate, "dd/MM/yyyy"))
+      }
       router.push("/dashboard/quotation/customize")
-    }, 2000)
+    } catch (err) {
+      console.error("[GetQuote Error]", err)
+      setError(t("common.somethingWentWrong"))
+    } finally {
+      setIsLoading(false)
+    }
   }
-
-  const propertyTypes = [
-    {
-      id: "landed",
-      title: "Landed",
-      description: "Bungalow, terrace, semi-detached house",
-      icon: Home,
-    },
-    {
-      id: "non-landed",
-      title: "Non-Landed",
-      description: "Apartments, flats and condos",
-      icon: Building,
-    },
-  ]
-
-  const constructionTypes = [
-    {
-      id: "full-brick",
-      title: "Full Brick",
-      description: "My house is built with sturdy brick walls and concrete floors",
-    },
-    {
-      id: "partial-brick",
-      title: "Partial Brick",
-      description:
-        "My house has a mixture of brick, concrete, and timber materials such as attap roof, wooden glass walls. The roof is made of non-flammable materials.",
-    },
-  ]
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Get a free quotation in minutes</h1>
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("form.title")}</h1>
       </div>
+
+      {/* Scan banner — shown once field mapping is wired up */}
+      {scanResult && Object.keys(scanFields).length > 0 && null}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Owner/Tenant Selection */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">I'm a</Label>
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.iAmA")}</Label>
             <div className="grid grid-cols-2 bg-gray-100 rounded-lg p-1">
               <Button
                 type="button"
@@ -120,7 +223,7 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("ownershipType", "owner")}
               >
-                Owner
+                {t("form.owner")}
               </Button>
               <Button
                 type="button"
@@ -133,18 +236,18 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("ownershipType", "tenant")}
               >
-                Tenant
+                {t("form.tenant")}
               </Button>
             </div>
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">The coverage starts from</Label>
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.coverageStartsFrom")}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal border-gray-300">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.coverageStartDate ? format(formData.coverageStartDate, "dd/MM/yyyy") : "Select date"}
+                  {formData.coverageStartDate ? format(formData.coverageStartDate, "dd/MM/yyyy") : t("form.selectDate")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -162,7 +265,7 @@ export default function QuotationForm() {
 
         {/* Property Type Dropdown */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">Property Type</Label>
+          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.propertyTypeLabel")}</Label>
           <Select
             value={formData.propertySubType}
             onValueChange={(value) => handleInputChange("propertySubType", value)}
@@ -171,19 +274,19 @@ export default function QuotationForm() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="landed-partial-brick">Landed, Partial Brick</SelectItem>
-              <SelectItem value="landed-full-brick">Landed, Full Brick</SelectItem>
-              <SelectItem value="non-landed-partial-brick">Non-Landed, Partial Brick</SelectItem>
-              <SelectItem value="non-landed-full-brick">Non-Landed, Full Brick</SelectItem>
+              <SelectItem value="landed-partial-brick">{t("form.landedPartialBrick")}</SelectItem>
+              <SelectItem value="landed-full-brick">{t("form.landedFullBrick")}</SelectItem>
+              <SelectItem value="non-landed-partial-brick">{t("form.nonLandedPartialBrick")}</SelectItem>
+              <SelectItem value="non-landed-full-brick">{t("form.nonLandedFullBrick")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Property Type Cards */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-4 block">Property Type</Label>
+          <Label className="text-sm font-medium text-gray-700 mb-4 block">{t("form.propertyTypeLabel")}</Label>
           <div className="grid grid-cols-2 gap-4">
-            {propertyTypes.map((type) => (
+            {PROPERTY_TYPES.map((type) => (
               <Card
                 key={type.id}
                 className={cn(
@@ -199,8 +302,12 @@ export default function QuotationForm() {
                     <type.icon className="h-6 w-6 text-gray-600" />
                     {formData.propertyType === type.id && <CheckCircle className="h-5 w-5 text-green-600" />}
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{type.title}</h3>
-                  <p className="text-sm text-gray-600">{type.description}</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    {type.id === "landed" ? t("form.landedTitle") : t("form.nonLandedTitle")}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {type.id === "landed" ? t("form.landedDesc") : t("form.nonLandedDesc")}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -209,7 +316,7 @@ export default function QuotationForm() {
 
         {/* Number of Storey */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">No. of storey</Label>
+          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.numberOfStorey")}</Label>
           <div className="flex items-center space-x-4">
             <Button
               type="button"
@@ -237,9 +344,9 @@ export default function QuotationForm() {
 
         {/* Construction Type */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-4 block">Construction type</Label>
+          <Label className="text-sm font-medium text-gray-700 mb-4 block">{t("form.constructionType")}</Label>
           <div className="space-y-3">
-            {constructionTypes.map((type) => (
+            {CONSTRUCTION_TYPES.map((type) => (
               <Card
                 key={type.id}
                 className={cn(
@@ -257,9 +364,13 @@ export default function QuotationForm() {
                         <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
                           <div className="w-4 h-4 bg-orange-500 rounded"></div>
                         </div>
-                        <h3 className="font-semibold text-gray-900">{type.title}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {type.id === "full-brick" ? t("form.fullBrickTitle") : t("form.partialBrickTitle")}
+                        </h3>
                       </div>
-                      <p className="text-sm text-gray-600">{type.description}</p>
+                      <p className="text-sm text-gray-600">
+                        {type.id === "full-brick" ? t("form.fullBrickDesc") : t("form.partialBrickDesc")}
+                      </p>
                     </div>
                     {formData.constructionType === type.id && (
                       <CheckCircle className="h-5 w-5 text-green-600 ml-3 flex-shrink-0" />
@@ -273,15 +384,16 @@ export default function QuotationForm() {
 
         {/* Postcode */}
         <div>
-          <Label htmlFor="postcode" className="text-sm font-medium text-gray-700 mb-3 block">
-            Key in your postcode to check for flood risk
+          <Label htmlFor="postcode" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+            {t("form.postcodeLabel")}
+            <ScanFieldBadge field={badge("postcode")} />
           </Label>
           <Input
             id="postcode"
             value={formData.postcode}
             onChange={(e) => handleInputChange("postcode", e.target.value)}
             className="border-gray-300"
-            placeholder="Enter postcode"
+            placeholder={t("form.postcodePlaceholder")}
           />
         </div>
 
@@ -289,7 +401,7 @@ export default function QuotationForm() {
         <div className="space-y-6">
           <div>
             <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              Is your property currently experiencing flooding?
+              {t("form.currentFlooding")}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <Button
@@ -302,7 +414,7 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("currentFlooding", "yes")}
               >
-                Yes
+                {t("common.yes")}
               </Button>
               <Button
                 type="button"
@@ -314,14 +426,14 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("currentFlooding", "no")}
               >
-                No
+                {t("common.no")}
               </Button>
             </div>
           </div>
 
           <div>
             <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              Will this property be unoccupied for 90 days or more?
+              {t("form.unoccupiedProperty")}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <Button
@@ -334,7 +446,7 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("unoccupiedProperty", "yes")}
               >
-                Yes
+                {t("common.yes")}
               </Button>
               <Button
                 type="button"
@@ -346,14 +458,14 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("unoccupiedProperty", "no")}
               >
-                No
+                {t("common.no")}
               </Button>
             </div>
           </div>
 
           <div>
             <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              Have you suffered any loss or damage on this property in the past two years?
+              {t("form.previousLoss")}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <Button
@@ -366,7 +478,7 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("previousLoss", "yes")}
               >
-                Yes
+                {t("common.yes")}
               </Button>
               <Button
                 type="button"
@@ -378,7 +490,7 @@ export default function QuotationForm() {
                 )}
                 onClick={() => handleInputChange("previousLoss", "no")}
               >
-                No
+                {t("common.no")}
               </Button>
             </div>
           </div>
@@ -386,21 +498,21 @@ export default function QuotationForm() {
 
         {/* ID Type Selection */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">ID Type</Label>
-          <div className="grid grid-cols-3 gap-3">
-            {["mykad", "passport", "mypr"].map((type) => (
+          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.idTypeLabel")}</Label>
+          <div className={cn("grid gap-3", idTypeOptions.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+            {idTypeOptions.map((opt) => (
               <Button
-                key={type}
+                key={opt.value}
                 type="button"
-                variant={formData.idType === type ? "default" : "outline"}
+                variant={formData.idType === opt.value ? "default" : "outline"}
                 className={cn(
-                  formData.idType === type
+                  formData.idType === opt.value
                     ? "bg-gray-800 text-white"
                     : "border-gray-300 text-gray-700 hover:bg-gray-50",
                 )}
-                onClick={() => handleInputChange("idType", type)}
+                onClick={() => handleIdTypeChange(opt.value)}
               >
-                {type === "mykad" ? "MyKad" : type === "passport" ? "Passport" : "MyPR"}
+                {opt.label}
               </Button>
             ))}
           </div>
@@ -410,63 +522,100 @@ export default function QuotationForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {formData.idType === "passport" ? (
             <div>
-              <Label htmlFor="passport" className="text-sm font-medium text-gray-700 mb-3 block">
-                Passport no.
+              <Label htmlFor="passport" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                {t("form.passportLabel")}
+                <ScanFieldBadge field={badge("idNumber")} />
               </Label>
               <Input
                 id="passport"
                 value={formData.passportNumber}
                 onChange={(e) => handleInputChange("passportNumber", e.target.value)}
                 className="border-gray-300"
-                placeholder="Enter passport number"
+                placeholder={t("form.passportPlaceholder")}
               />
             </div>
           ) : (
             <div>
-              <Label htmlFor="nric" className="text-sm font-medium text-gray-700 mb-3 block">
-                NRIC no.
+              <Label htmlFor="nric" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                {t("form.nricLabel")}
+                <ScanFieldBadge field={badge("idNumber")} />
               </Label>
               <Input
                 id="nric"
                 value={formData.nricNumber}
                 onChange={(e) => handleInputChange("nricNumber", e.target.value)}
                 className="border-gray-300"
-                placeholder="Enter NRIC number"
+                placeholder={t("form.nricPlaceholder")}
               />
             </div>
           )}
 
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">Nationality</Label>
-            <Select value={formData.nationality} onValueChange={(value) => handleInputChange("nationality", value)}>
-              <SelectTrigger className="border-gray-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MALAYSIAN">MALAYSIAN</SelectItem>
-                <SelectItem value="SINGAPOREAN">SINGAPOREAN</SelectItem>
-                <SelectItem value="INDONESIAN">INDONESIAN</SelectItem>
-                <SelectItem value="THAI">THAI</SelectItem>
-                <SelectItem value="FILIPINO">FILIPINO</SelectItem>
-                <SelectItem value="OTHER">OTHER</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Nationality — only shown when Passport is selected */}
+          {formData.idType === "passport" && (
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.nationalityLabel")}</Label>
+              <Select value={formData.nationality} onValueChange={(value) => handleInputChange("nationality", value)}>
+                <SelectTrigger className="border-gray-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {NATIONALITIES.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Date of Birth */}
         <div>
-          <Label htmlFor="dob" className="text-sm font-medium text-gray-700 mb-3 block">
-            Date of Birth
+          <Label htmlFor="dob" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+            {t("form.dobLabel")}
+            <ScanFieldBadge field={badge("dateOfBirth")} />
           </Label>
-          <Input
-            id="dob"
-            value={formData.dateOfBirth}
-            onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-            className="border-gray-300"
-            placeholder="DD/MM/YYYY"
-          />
+          <Popover open={dobOpen} onOpenChange={setDobOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id="dob"
+                type="button"
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal border-gray-300",
+                  !formData.dateOfBirth && "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                {formData.dateOfBirth || <span className="text-gray-400">DD/MM/YYYY</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={(() => {
+                  if (!formData.dateOfBirth) return undefined
+                  const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                  return isValid(parsed) ? parsed : undefined
+                })()}
+                onSelect={handleDobSelect}
+                disabled={{ after: new Date() }}
+                defaultMonth={(() => {
+                  if (!formData.dateOfBirth) return undefined
+                  const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                  return isValid(parsed) ? parsed : undefined
+                })()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
+
+        {/* Error */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Submit Button */}
         <Button
@@ -474,7 +623,7 @@ export default function QuotationForm() {
           className="w-full bg-[#0056b3] hover:bg-[#004494] text-white font-semibold py-4 text-lg rounded-xl"
           disabled={isLoading}
         >
-          {isLoading ? "Getting Quote..." : "Get a Quote"}
+          {isLoading ? t("form.gettingQuote") : t("form.getQuote")}
         </Button>
       </form>
     </div>

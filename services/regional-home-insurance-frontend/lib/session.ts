@@ -1,10 +1,14 @@
 const SESSION_KEY = "etiqa_session"
 
+export type UserRole = "User" | "Admin"
+
 export interface Session {
   email: string
   userId: string
+  customerId: string
   country: string
   countryCode: string  // e.g. "PH", "ID", "KH"
+  role: UserRole
   token: string
   loginAt: number
   expiresAt: number  // unix ms — sourced from API response
@@ -15,8 +19,10 @@ export function setSession(
   data: {
     email: string
     userId: string
+    customerId: string
     country: string
     countryCode: string
+    role: UserRole
     token: string
     expiresAt: string  // ISO string from API e.g. "2026-04-09T14:21:47Z"
   },
@@ -25,8 +31,10 @@ export function setSession(
   const session: Session = {
     email: data.email,
     userId: data.userId,
+    customerId: data.customerId,
     country: data.country,
     countryCode: data.countryCode,
+    role: data.role,
     token: data.token,
     loginAt: Date.now(),
     expiresAt: new Date(data.expiresAt).getTime(),

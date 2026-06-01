@@ -5,21 +5,30 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, CheckCircle, Mail } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { register } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface FormData {
-  name: string
+  firstName: string
+  lastName: string
   email: string
   contact: string
-  address: string
-  ic_number: string
+  dateOfBirth: string
+  gender: string
+  nationality: string
+  idType: string
+  idNumber: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  postcode: string
+  state: string
   region: string
   password: string
   confirmPassword: string
@@ -39,11 +48,20 @@ export default function RegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
   const [formData, setFormData] = useState<FormData>({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     contact: "",
-    address: "",
-    ic_number: "",
+    dateOfBirth: "",
+    gender: "",
+    nationality: "",
+    idType: "",
+    idNumber: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    postcode: "",
+    state: "",
     region: "",
     password: "",
     confirmPassword: "",
@@ -58,8 +76,48 @@ export default function RegisterForm() {
     { value: "ID", label: t("countries.indonesia") },
   ]
 
+  const genderOptions = [
+    { value: "Male", label: t("register.genderMale") },
+    { value: "Female", label: t("register.genderFemale") },
+  ]
+
+  const getIdTypeOptions = () => {
+    switch (formData.region) {
+      case "KH":
+        return [
+          { value: "NationalID", label: t("register.idTypeNationalID") },
+          { value: "Passport", label: t("register.idTypePassport") },
+        ]
+      case "PH":
+        return [
+          { value: "PhilSys", label: t("register.idTypePhilSys") },
+          { value: "Passport", label: t("register.idTypePassport") },
+          { value: "DriversLicense", label: t("register.idTypeDriversLicense") },
+          { value: "SSS", label: t("register.idTypeSSS") },
+        ]
+      case "ID":
+        return [
+          { value: "KTP", label: t("register.idTypeKTP") },
+          { value: "Passport", label: t("register.idTypePassport") },
+          { value: "SIM", label: t("register.idTypeSIM") },
+        ]
+      default:
+        return [
+          { value: "NationalID", label: t("register.idTypeNationalID") },
+          { value: "Passport", label: t("register.idTypePassport") },
+        ]
+    }
+  }
+
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value }
+      // Reset idType when region changes
+      if (field === "region") {
+        updated.idType = ""
+      }
+      return updated
+    })
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
@@ -68,10 +126,11 @@ export default function RegisterForm() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
 
-    if (!formData.name.trim()) {
-      newErrors.name = t("register.errors.nameRequired")
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = t("register.errors.nameTooShort")
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = t("register.errors.firstNameRequired")
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = t("register.errors.lastNameRequired")
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -81,26 +140,49 @@ export default function RegisterForm() {
       newErrors.email = t("register.errors.emailInvalid")
     }
 
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = t("register.errors.dateOfBirthRequired")
+    }
+
+    if (!formData.gender) {
+      newErrors.gender = t("register.errors.genderRequired")
+    }
+
+    if (!formData.nationality.trim()) {
+      newErrors.nationality = t("register.errors.nationalityRequired")
+    }
+
+    if (!formData.idType) {
+      newErrors.idType = t("register.errors.idTypeRequired")
+    }
+
+    if (!formData.idNumber) {
+      newErrors.idNumber = t("register.errors.idRequired")
+    } else if (formData.idNumber.length < 6) {
+      newErrors.idNumber = t("register.errors.idTooShort")
+    }
+
     if (!formData.contact) {
       newErrors.contact = t("register.errors.contactRequired")
     } else if (formData.contact.length < 8) {
       newErrors.contact = t("register.errors.contactTooShort")
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = t("register.errors.addressRequired")
-    } else if (formData.address.trim().length < 10) {
-      newErrors.address = t("register.errors.addressTooShort")
-    }
-
-    if (!formData.ic_number) {
-      newErrors.ic_number = t("register.errors.idRequired")
-    } else if (formData.ic_number.length < 6) {
-      newErrors.ic_number = t("register.errors.idTooShort")
-    }
-
     if (!formData.region) {
       newErrors.region = t("register.errors.regionRequired")
+    }
+
+    if (!formData.addressLine1.trim()) {
+      newErrors.addressLine1 = t("register.errors.addressRequired")
+    }
+    if (!formData.city.trim()) {
+      newErrors.city = t("register.errors.cityRequired")
+    }
+    if (!formData.postcode.trim()) {
+      newErrors.postcode = t("register.errors.postcodeRequired")
+    }
+    if (!formData.state.trim()) {
+      newErrors.state = t("register.errors.stateRequired")
     }
 
     if (!formData.password) {
@@ -135,24 +217,41 @@ export default function RegisterForm() {
     setIsLoading(true)
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const response = await register(
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          nationality: formData.nationality,
+          idType: formData.idType,
+          idNumber: formData.idNumber,
+          contact: `${getContactPrefix()}${formData.contact}`,
+          region: formData.region,
+          address: {
+            addressLine1: formData.addressLine1,
+            addressLine2: formData.addressLine2,
+            city: formData.city,
+            postcode: formData.postcode,
+            state: formData.state,
+            country: "",
+          },
+        },
+        formData.region
+      )
 
-      const customerId = `CUST_${formData.region}_${Date.now()}`
+      console.log("[Register Response]", response)
 
-      console.log("Registration data:", {
-        customer_id: customerId,
-        name: formData.name,
-        email: formData.email,
-        contact: formData.contact,
-        address: formData.address,
-        ic_number: formData.ic_number,
-        region: formData.region,
-        user_id: `USER_${Date.now()}`,
-      })
+      if (!response.succeeded) {
+        setErrors({ general: response.message ?? t("register.errors.registrationFailed") })
+        return
+      }
 
       setShowVerificationMessage(true)
     } catch (error) {
-      console.error("Registration failed:", error)
+      console.error("[Register Error]", error)
       setErrors({ general: t("register.errors.registrationFailed") })
     } finally {
       setIsLoading(false)
@@ -161,27 +260,19 @@ export default function RegisterForm() {
 
   const getContactPrefix = () => {
     switch (formData.region) {
-      case "KH":
-        return "+855"
-      case "PH":
-        return "+63"
-      case "ID":
-        return "+62"
-      default:
-        return "+60"
+      case "KH": return "+855"
+      case "PH": return "+63"
+      case "ID": return "+62"
+      default: return "+60"
     }
   }
 
   const getIdLabel = () => {
     switch (formData.region) {
-      case "KH":
-        return t("register.idLabelKH")
-      case "PH":
-        return t("register.idLabelPH")
-      case "ID":
-        return t("register.idLabelID")
-      default:
-        return t("register.idLabelDefault")
+      case "KH": return t("register.idLabelKH")
+      case "PH": return t("register.idLabelPH")
+      case "ID": return t("register.idLabelID")
+      default: return t("register.idLabelDefault")
     }
   }
 
@@ -240,18 +331,32 @@ export default function RegisterForm() {
             </Alert>
           )}
 
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">{t("register.fullName")} *</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder={t("register.fullNamePlaceholder")}
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              className={errors.name ? "border-red-500" : ""}
-            />
-            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+          {/* First Name / Last Name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">{t("register.firstName")} *</Label>
+              <Input
+                id="firstName"
+                type="text"
+                placeholder={t("register.firstNamePlaceholder")}
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                className={errors.firstName ? "border-red-500" : ""}
+              />
+              {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">{t("register.lastName")} *</Label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder={t("register.lastNamePlaceholder")}
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                className={errors.lastName ? "border-red-500" : ""}
+              />
+              {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
+            </div>
           </div>
 
           {/* Email */}
@@ -266,6 +371,49 @@ export default function RegisterForm() {
               className={errors.email ? "border-red-500" : ""}
             />
             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+          </div>
+
+          {/* Date of Birth / Gender */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="dateOfBirth">{t("register.dateOfBirth")} *</Label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                className={errors.dateOfBirth ? "border-red-500" : ""}
+              />
+              {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gender">{t("register.gender")} *</Label>
+              <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                <SelectTrigger className={errors.gender ? "border-red-500" : ""}>
+                  <SelectValue placeholder={t("register.selectGender")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {genderOptions.map((g) => (
+                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.gender && <p className="text-sm text-red-500">{errors.gender}</p>}
+            </div>
+          </div>
+
+          {/* Nationality */}
+          <div className="space-y-2">
+            <Label htmlFor="nationality">{t("register.nationality")} *</Label>
+            <Input
+              id="nationality"
+              type="text"
+              placeholder={t("register.nationalityPlaceholder")}
+              value={formData.nationality}
+              onChange={(e) => handleInputChange("nationality", e.target.value)}
+              className={errors.nationality ? "border-red-500" : ""}
+            />
+            {errors.nationality && <p className="text-sm text-red-500">{errors.nationality}</p>}
           </div>
 
           {/* Region Selection */}
@@ -284,6 +432,36 @@ export default function RegisterForm() {
               </SelectContent>
             </Select>
             {errors.region && <p className="text-sm text-red-500">{errors.region}</p>}
+          </div>
+
+          {/* ID Type / ID Number */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="idType">{t("register.idType")} *</Label>
+              <Select value={formData.idType} onValueChange={(value) => handleInputChange("idType", value)}>
+                <SelectTrigger className={errors.idType ? "border-red-500" : ""}>
+                  <SelectValue placeholder={t("register.selectIdType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {getIdTypeOptions().map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.idType && <p className="text-sm text-red-500">{errors.idType}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="idNumber">{getIdLabel()} *</Label>
+              <Input
+                id="idNumber"
+                type="text"
+                placeholder={t("register.idLabelDefault")}
+                value={formData.idNumber}
+                onChange={(e) => handleInputChange("idNumber", e.target.value)}
+                className={errors.idNumber ? "border-red-500" : ""}
+              />
+              {errors.idNumber && <p className="text-sm text-red-500">{errors.idNumber}</p>}
+            </div>
           </div>
 
           {/* Contact Number */}
@@ -305,31 +483,50 @@ export default function RegisterForm() {
             {errors.contact && <p className="text-sm text-red-500">{errors.contact}</p>}
           </div>
 
-          {/* ID/Passport Number */}
-          <div className="space-y-2">
-            <Label htmlFor="ic_number">{getIdLabel()} *</Label>
-            <Input
-              id="ic_number"
-              type="text"
-              placeholder={t("register.idLabelDefault")}
-              value={formData.ic_number}
-              onChange={(e) => handleInputChange("ic_number", e.target.value)}
-              className={errors.ic_number ? "border-red-500" : ""}
-            />
-            {errors.ic_number && <p className="text-sm text-red-500">{errors.ic_number}</p>}
-          </div>
-
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">{t("register.address")} *</Label>
-            <Textarea
-              id="address"
-              placeholder={t("register.addressPlaceholder")}
-              value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
-              className={`min-h-[80px] ${errors.address ? "border-red-500" : ""}`}
+            <Label>{t("register.address")} *</Label>
+            <Input
+              placeholder="Address Line 1 *"
+              value={formData.addressLine1}
+              onChange={(e) => handleInputChange("addressLine1", e.target.value)}
+              className={errors.addressLine1 ? "border-red-500" : ""}
             />
-            {errors.address && <p className="text-sm text-red-500">{errors.address}</p>}
+            {errors.addressLine1 && <p className="text-sm text-red-500">{errors.addressLine1}</p>}
+            <Input
+              placeholder="Address Line 2"
+              value={formData.addressLine2}
+              onChange={(e) => handleInputChange("addressLine2", e.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Input
+                  placeholder="City *"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange("city", e.target.value)}
+                  className={errors.city ? "border-red-500" : ""}
+                />
+                {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
+              </div>
+              <div>
+                <Input
+                  placeholder="Postcode *"
+                  value={formData.postcode}
+                  onChange={(e) => handleInputChange("postcode", e.target.value)}
+                  className={errors.postcode ? "border-red-500" : ""}
+                />
+                {errors.postcode && <p className="text-sm text-red-500">{errors.postcode}</p>}
+              </div>
+            </div>
+            <div>
+              <Input
+                placeholder="State *"
+                value={formData.state}
+                onChange={(e) => handleInputChange("state", e.target.value)}
+                className={errors.state ? "border-red-500" : ""}
+              />
+              {errors.state && <p className="text-sm text-red-500">{errors.state}</p>}
+            </div>
           </div>
 
           {/* Password */}

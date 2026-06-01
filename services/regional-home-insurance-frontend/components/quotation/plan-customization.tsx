@@ -1,249 +1,530 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Check, Home, Package, Shield } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { Check, Home, Package, Shield, Calculator } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import CalculationSummary from "./calculation-summary"
+import QuotationStepper from "./quotation-stepper"
+import ContentCalculator, {
+  type RoomAmounts,
+  EMPTY_ROOM_AMOUNTS,
+} from "./content-calculator"
+import BuildingCalculator from "./building-calculator"
+import {
+  customizePlan,
+  calculatePremium,
+  getQuotationId,
+  getQuotationStartDate,
+  toCalculateDateFormat,
+  type PremiumData,
+} from "@/lib/api"
+import { getSession } from "@/lib/session"
+import { getRegionConfig, fmtAmount, clampAndRound } from "@/lib/region"
 
-interface PlanData {
+// ── Static constants ──────────────────────────────────────────────────────────
+
+const PLAN_TYPE_INT: Record<string, 1 | 2 | 3> = {
+  "building-only":     1,
+  "content-only":      2,
+  "building-contents": 3,
+}
+
+const ADD_ON_CODES: Record<string, string> = {
+  riotStrike:               "E008",
+  extendedTheft:            "E005",
+  alternativeAccommodation: "E006",
+  publicLiability:          "E007",
+}
+
+const PLAN_IDS = ["building-contents", "building-only", "content-only"] as const
+type PlanId = typeof PLAN_IDS[number]
+
+const ADD_ON_IDS = [
+  "riotStrike",
+  "extendedTheft",
+  "alternativeAccommodation",
+  "publicLiability",
+] as const
+type AddOnId = typeof ADD_ON_IDS[number]
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface AddOns {
+  riotStrike: boolean
+  extendedTheft: boolean
+  alternativeAccommodation: boolean
+  publicLiability: boolean
+}
+
+interface PlanState {
   selectedPlan: string
   buildingAmount: number
   contentAmount: number
-  addOns: {
-    riotStrike: boolean
-    extendedTheft: boolean
-  }
+  addOns: AddOns
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PlanCustomization() {
   const router = useRouter()
-  const [planData, setPlanData] = useState<PlanData>({
-    selectedPlan: "building-contents",
-    buildingAmount: 500000,
-    contentAmount: 60000,
+  const t = useTranslations("quotation")
+  const region = getRegionConfig(getSession()?.countryCode ?? "")
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Plan state — initialised with building-contents defaults
+  const [planState, setPlanState] = useState<PlanState>({
+    selectedPlan:   "building-contents",
+    buildingAmount: region.defaultBuilding,
+    contentAmount:  region.defaultContent,
     addOns: {
-      riotStrike: false,
-      extendedTheft: false,
+      riotStrike:               false,
+      extendedTheft:            false,
+      alternativeAccommodation: false,
+      publicLiability:          false,
     },
   })
 
-  const plans = [
-    {
-      id: "building-contents",
-      title: "Building + Contents",
-      description: "Covers both home's structure and the contents inside it.",
-      icon: [Home, Package],
-    },
-    {
-      id: "building-only",
-      title: "Building only",
-      description: "Covers home's structure.",
-      icon: [Home],
-    },
-    {
-      id: "content-only",
-      title: "Content only",
-      description: "Covers home contents and valuables.",
-      icon: [Package],
-    },
-  ]
+  // Live premium
+  const [premiumData, setPremiumData]         = useState<PremiumData | null>(null)
+  const [isPremiumLoading, setIsPremiumLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const addOns = [
-    {
-      id: "riotStrike",
-      title: "Riot, Strike and Malicious Damage",
-      category: "Home Building",
-      price: 50.0,
-      description: "Additional protection against civil unrest and malicious acts",
+  // Content calculator
+  const [showContentCalculator, setShowContentCalculator] = useState(false)
+  const [savedRoomAmounts, setSavedRoomAmounts] = useState<RoomAmounts>(EMPTY_ROOM_AMOUNTS)
+
+  // Building calculator full-page swap
+  const [showBuildingCalculator, setShowBuildingCalculator] = useState(false)
+  // True while the building amount was last set by the calculator (cleared on manual edit)
+  const [buildingFromCalc, setBuildingFromCalc] = useState(false)
+
+  // ── Live preview ──────────────────────────────────────────────────────────
+
+  const runLiveCalculation = useCallback(async (state: PlanState) => {
+    const session = getSession()
+    if (!session) return
+
+    const selectedCodes = Object.entries(state.addOns)
+      .filter(([, checked]) => checked)
+      .map(([key]) => ADD_ON_CODES[key])
+      .filter(Boolean)
+
+    const startDate = toCalculateDateFormat(getQuotationStartDate())
+
+    setIsPremiumLoading(true)
+    try {
+      const res = await calculatePremium(
+        {
+          planType: PLAN_TYPE_INT[state.selectedPlan] ?? 3,
+          buildingSumInsured:
+            state.selectedPlan === "content-only" ? 0 : state.buildingAmount,
+          contentSumInsured:
+            state.selectedPlan === "building-only" ? 0 : state.contentAmount,
+          addOnCodes: selectedCodes,
+          startDate,
+          discountAmount: 0,
+        },
+        session.countryCode,
+      )
+      if (res.succeeded) setPremiumData(res.data)
+    } catch {
+      // Non-fatal — leave previous data in place
+    } finally {
+      setIsPremiumLoading(false)
+    }
+  }, [])
+
+  // Debounced recalc on relevant state changes
+  useEffect(() => {
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      runLiveCalculation(planState)
+    }, 600)
+    return () => clearTimeout(debounceRef.current)
+  }, [
+    planState.selectedPlan,
+    planState.buildingAmount,
+    planState.contentAmount,
+    planState.addOns.riotStrike,
+    planState.addOns.extendedTheft,
+    planState.addOns.alternativeAccommodation,
+    planState.addOns.publicLiability,
+    runLiveCalculation,
+  ])
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  /** Switch plan and reset sum-insured to sensible plan-specific defaults. */
+  const handlePlanSelect = useCallback(
+    (planId: string) => {
+      setPlanState((prev) => ({
+        ...prev,
+        selectedPlan: planId,
+        buildingAmount:
+          planId === "building-only"
+            ? region.defaultBuildingOnly
+            : region.defaultBuilding,
+        contentAmount:
+          planId === "content-only"
+            ? region.defaultContentOnly
+            : region.defaultContent,
+      }))
     },
-    {
-      id: "extendedTheft",
-      title: "Extended Theft Cover",
-      category: "Home Content",
-      price: 150.0,
-      description: "Enhanced coverage for theft-related losses",
+    [region],
+  )
+
+  /** Parse raw input value and update state immediately (raw, un-rounded). */
+  const handleAmountChange = useCallback(
+    (field: "buildingAmount" | "contentAmount", value: string) => {
+      const num = parseInt(value.replace(/,/g, ""), 10) || 0
+      setPlanState((prev) => ({ ...prev, [field]: num }))
+      // Clear the "from calculator" badge when the user manually edits the building field
+      if (field === "buildingAmount") setBuildingFromCalc(false)
     },
-  ]
+    [],
+  )
 
-  const handlePlanSelect = (planId: string) => {
-    setPlanData((prev) => ({ ...prev, selectedPlan: planId }))
-  }
+  /**
+   * On blur: clamp to region min/max and snap to the nearest rounding unit.
+   * This gives the same UX as Unity's `roundToNearestThousand` on blur.
+   */
+  const handleAmountBlur = useCallback(
+    (field: "buildingAmount" | "contentAmount") => {
+      setPlanState((prev) => {
+        const raw = prev[field]
+        const min = field === "buildingAmount" ? region.buildingMin : region.contentMin
+        const max = field === "buildingAmount" ? region.buildingMax : region.contentMax
+        const snapped = clampAndRound(raw, min, max, region.roundingUnit)
+        return { ...prev, [field]: snapped }
+      })
+    },
+    [region],
+  )
 
-  const handleAmountChange = (field: "buildingAmount" | "contentAmount", value: string) => {
-    const numValue = Number.parseInt(value.replace(/,/g, "")) || 0
-    setPlanData((prev) => ({ ...prev, [field]: numValue }))
-  }
-
-  const handleAddOnChange = (addOnId: keyof PlanData["addOns"], checked: boolean) => {
-    setPlanData((prev) => ({
+  const handleAddOnChange = useCallback((id: keyof AddOns, checked: boolean) => {
+    setPlanState((prev) => ({
       ...prev,
-      addOns: { ...prev.addOns, [addOnId]: checked },
+      addOns: { ...prev.addOns, [id]: checked },
     }))
+  }, [])
+
+  /** Called when the user confirms a total in the content calculator. */
+  const handleCalculatorConfirm = useCallback(
+    (total: number, roomAmounts: RoomAmounts) => {
+      setSavedRoomAmounts(roomAmounts)
+      setPlanState((prev) => ({ ...prev, contentAmount: total }))
+      setShowContentCalculator(false)
+    },
+    [],
+  )
+
+  /** Called when the user confirms a total in the building calculator. */
+  const handleBuildingConfirm = useCallback(
+    (total: number) => {
+      const snapped = clampAndRound(total, region.buildingMin, region.buildingMax, region.roundingUnit)
+      setPlanState((prev) => ({ ...prev, buildingAmount: snapped }))
+      setShowBuildingCalculator(false)
+      setBuildingFromCalc(true)
+    },
+    [region],
+  )
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  const handleProceed = async () => {
+    setError(null)
+
+    const session = getSession()
+    const quotationId = getQuotationId()
+
+    if (!session) { setError(t("common.sessionExpired")); return }
+    if (!quotationId) { setError(t("common.quotationNotFound")); return }
+
+    setIsLoading(true)
+    try {
+      const response = await customizePlan(
+        {
+          quotationId,
+          planType: planState.selectedPlan,
+          buildingSum:
+            planState.selectedPlan === "content-only"  ? 0 : planState.buildingAmount,
+          contentsSum:
+            planState.selectedPlan === "building-only" ? 0 : planState.contentAmount,
+          discountAmount: 0,
+          addOns: planState.addOns,
+        },
+        session.countryCode,
+      )
+
+      console.log("[CustomizePlan Response]", response)
+
+      if (!response.succeeded) {
+        setError(response.message ?? t("customize.failedToSave"))
+        return
+      }
+
+      router.push("/dashboard/quotation/declare-valuables")
+    } catch (err) {
+      console.error("[CustomizePlan Error]", err)
+      setError(t("common.somethingWentWrong"))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleProceed = () => {
-    router.push("/dashboard/quotation/declare-valuables")
+  // ── Derived / helpers ─────────────────────────────────────────────────────
+
+  const summaryPlanData = {
+    selectedPlan:   planState.selectedPlan,
+    buildingAmount: planState.buildingAmount,
+    contentAmount:  planState.contentAmount,
   }
+
+  const planTitle = (id: string) => {
+    if (id === "building-contents") return t("customize.buildingContentsTitle")
+    if (id === "building-only")     return t("customize.buildingOnlyTitle")
+    return t("customize.contentOnlyTitle")
+  }
+
+  const planDesc = (id: string) => {
+    if (id === "building-contents") return t("customize.buildingContentsDesc")
+    if (id === "building-only")     return t("customize.buildingOnlyDesc")
+    return t("customize.contentOnlyDesc")
+  }
+
+  const planIcons = (id: string) => {
+    if (id === "building-contents") return [Home, Package]
+    if (id === "building-only")     return [Home]
+    return [Package]
+  }
+
+  const addOnTitle = (id: AddOnId) =>
+    ({
+      riotStrike:               t("customize.riotStrikeTitle"),
+      extendedTheft:            t("customize.extendedTheftTitle"),
+      alternativeAccommodation: t("customize.altAccommodationTitle"),
+      publicLiability:          t("customize.publicLiabilityTitle"),
+    })[id]
+
+  const addOnCategory = (id: AddOnId) =>
+    ({
+      riotStrike:               t("customize.riotStrikeCategory"),
+      extendedTheft:            t("customize.extendedTheftCategory"),
+      alternativeAccommodation: t("customize.altAccommodationCategory"),
+      publicLiability:          t("customize.publicLiabilityCategory"),
+    })[id]
+
+  const addOnDesc = (id: AddOnId) =>
+    ({
+      riotStrike:               t("customize.riotStrikeDesc"),
+      extendedTheft:            t("customize.extendedTheftDesc"),
+      alternativeAccommodation: t("customize.altAccommodationDesc"),
+      publicLiability:          t("customize.publicLiabilityDesc"),
+    })[id]
+
+  // ── Render — Building Calculator full-page swap ────────────────────────────
+
+  if (showBuildingCalculator) {
+    return (
+      <BuildingCalculator
+        onBack={() => setShowBuildingCalculator(false)}
+        onConfirm={handleBuildingConfirm}
+        symbol={region.symbol}
+        countryCode={getSession()?.countryCode ?? "MY"}
+      />
+    )
+  }
+
+  // ── Render — Content Calculator full-page swap ─────────────────────────────
+
+  if (showContentCalculator) {
+    return (
+      <ContentCalculator
+        onBack={() => setShowContentCalculator(false)}
+        onConfirm={handleCalculatorConfirm}
+        minAmount={region.contentMin}
+        maxAmount={region.contentMax}
+        roundingUnit={region.roundingUnit}
+        symbol={region.symbol}
+        initialAmounts={savedRoomAmounts}
+      />
+    )
+  }
+
+  // ── Render — Main plan customization ──────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-center space-x-8">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-              1
-            </div>
-            <span className="ml-2 text-sm font-medium">Choose Plan</span>
-          </div>
-          <div className="w-16 h-0.5 bg-gray-300"></div>
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
-              2
-            </div>
-            <span className="ml-2 text-sm text-gray-600">Declare Valuables</span>
-          </div>
-          <div className="w-16 h-0.5 bg-gray-300"></div>
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
-              3
-            </div>
-            <span className="ml-2 text-sm text-gray-600">Fill Up Details</span>
-          </div>
-          <div className="w-16 h-0.5 bg-gray-300"></div>
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
-              4
-            </div>
-            <span className="ml-2 text-sm text-gray-600">Summary & Payment</span>
-          </div>
-        </div>
-      </div>
+
+      <QuotationStepper currentStep={1} />
 
       <div className="space-y-8">
-        {/* Plan Selection */}
+
+        {/* ── Plan Selection ── */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Customise your protection</h2>
+            <h2 className="text-2xl font-bold">{t("customize.title")}</h2>
             <Button variant="link" className="text-blue-600">
-              Product and coverage comparison
+              {t("customize.productComparison")}
             </Button>
           </div>
 
           <div className="mb-6">
-            <p className="text-lg font-medium mb-4">I would like to protect my</p>
+            <p className="text-lg font-medium mb-4">{t("customize.iWouldLikeToProtect")}</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plans.map((plan) => (
-                <Card
-                  key={plan.id}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    planData.selectedPlan === plan.id
-                      ? "border-green-500 bg-green-50 ring-2 ring-green-500"
-                      : "border-gray-200",
-                  )}
-                  onClick={() => handlePlanSelect(plan.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        {plan.icon.map((Icon, index) => (
-                          <Icon key={index} className="h-6 w-6 text-gray-600" />
-                        ))}
+              {PLAN_IDS.map((id) => {
+                const icons = planIcons(id)
+                return (
+                  <Card
+                    key={id}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      planState.selectedPlan === id
+                        ? "border-green-500 bg-green-50 ring-2 ring-green-500"
+                        : "border-gray-200",
+                    )}
+                    onClick={() => handlePlanSelect(id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {icons.map((Icon, i) => (
+                            <Icon key={i} className="h-6 w-6 text-gray-600" />
+                          ))}
+                        </div>
+                        {planState.selectedPlan === id && (
+                          <Check className="h-5 w-5 text-green-600" />
+                        )}
                       </div>
-                      {planData.selectedPlan === plan.id && <Check className="h-5 w-5 text-green-600" />}
-                    </div>
-                    <h3 className="font-semibold mb-1">{plan.title}</h3>
-                    <p className="text-sm text-gray-600">{plan.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
+                      <h3 className="font-semibold mb-1">{planTitle(id)}</h3>
+                      <p className="text-sm text-gray-600">{planDesc(id)}</p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        {/* Coverage Amounts */}
-        {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "building-only") && (
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-2">Home Building</h3>
-            <p className="text-gray-600 mb-4">
-              Key in the total costs to repair or rebuild any damaged part of your building from unexpected incidents.
-            </p>
-            <div className="flex items-center space-x-4">
-              <Label htmlFor="building-amount" className="text-sm font-medium">
-                RM
+        {/* ── Building Sum Insured ── */}
+        {(planState.selectedPlan === "building-contents" ||
+          planState.selectedPlan === "building-only") && (
+          <div className={cn(
+            "border p-6 rounded-lg transition-colors duration-300",
+            buildingFromCalc
+              ? "bg-green-50 border-green-200"
+              : "bg-blue-50 border-blue-100",
+          )}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xl font-semibold">{t("customize.homeBuildingTitle")}</h3>
+              {buildingFromCalc && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 border border-green-200 px-2.5 py-1 rounded-full">
+                  <Calculator className="h-3 w-3" />
+                  {t("customize.estimateApplied")}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-600 mb-4 text-sm">{t("customize.homeBuildingDesc")}</p>
+
+            <div className="flex items-center space-x-3 mb-2">
+              <Label htmlFor="building-amount" className="text-sm font-medium text-gray-600 w-10 text-right shrink-0">
+                {region.symbol}
               </Label>
               <Input
                 id="building-amount"
-                value={planData.buildingAmount.toLocaleString()}
+                value={planState.buildingAmount.toLocaleString("en")}
                 onChange={(e) => handleAmountChange("buildingAmount", e.target.value)}
-                className="w-32 text-right"
+                onBlur={() => handleAmountBlur("buildingAmount")}
+                className={cn(
+                  "w-44 text-right transition-colors duration-300",
+                  buildingFromCalc && "border-green-400 ring-1 ring-green-300 bg-white",
+                )}
+                inputMode="numeric"
               />
-              <Button variant="link" className="text-blue-600 text-sm">
-                Get estimate cost here
+              <Button
+                variant="link"
+                className="text-blue-600 text-sm p-0 h-auto"
+                onClick={() => setShowBuildingCalculator(true)}
+              >
+                {t("customize.getEstimate")}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Min RM 67,000 to Max RM 5,000,000</p>
+
+            <p className="text-xs text-gray-400 ml-13">
+              Min {region.symbol} {fmtAmount(region.buildingMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.buildingMax)}
+            </p>
           </div>
         )}
 
-        {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "content-only") && (
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-2">Home Content</h3>
-            <p className="text-gray-600 mb-2">Key in the total cost of replacing your contents at today's prices.</p>
-            <p className="text-sm text-gray-600 mb-4">
-              Example: Your furniture, electronic appliances, jewellery, collectibles, sports equipment and more.
-            </p>
-            <div className="flex items-center space-x-4">
-              <Label htmlFor="content-amount" className="text-sm font-medium">
-                RM
+        {/* ── Content Sum Insured ── */}
+        {(planState.selectedPlan === "building-contents" ||
+          planState.selectedPlan === "content-only") && (
+          <div className="bg-amber-50 border border-amber-100 p-6 rounded-lg">
+            <h3 className="text-xl font-semibold mb-1">{t("customize.homeContentTitle")}</h3>
+            <p className="text-gray-600 mb-1 text-sm">{t("customize.homeContentDesc")}</p>
+            <p className="text-xs text-gray-500 mb-4 italic">{t("customize.homeContentExample")}</p>
+
+            <div className="flex items-center space-x-3 mb-2">
+              <Label htmlFor="content-amount" className="text-sm font-medium text-gray-600 w-10 text-right shrink-0">
+                {region.symbol}
               </Label>
               <Input
                 id="content-amount"
-                value={planData.contentAmount.toLocaleString()}
+                value={planState.contentAmount.toLocaleString("en")}
                 onChange={(e) => handleAmountChange("contentAmount", e.target.value)}
-                className="w-32 text-right"
+                onBlur={() => handleAmountBlur("contentAmount")}
+                className="w-44 text-right"
+                inputMode="numeric"
               />
-              <Button variant="link" className="text-blue-600 text-sm">
-                Get estimate cost here
+              {/* Opens the in-app room-by-room content calculator */}
+              <Button
+                variant="link"
+                className="text-blue-600 text-sm p-0 h-auto"
+                onClick={() => setShowContentCalculator(true)}
+              >
+                {t("customize.getEstimate")}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Min RM 18,000 to Max RM 1,000,000</p>
+
+            <p className="text-xs text-gray-400">
+              Min {region.symbol} {fmtAmount(region.contentMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.contentMax)}
+            </p>
           </div>
         )}
 
-        {/* Optional Add-ons */}
+        {/* ── Optional Add-ons ── */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Optional add-ons</h3>
+          <h3 className="text-xl font-semibold mb-4">{t("customize.optionalAddons")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {addOns.map((addOn) => (
-              <Card key={addOn.id} className="border-gray-200">
+            {ADD_ON_IDS.map((id) => (
+              <Card key={id} className="border-gray-200">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <Shield className="h-8 w-8 text-gray-400 mt-1" />
-                    <div className="text-right">
-                      <p className="font-semibold">+ RM {addOn.price.toFixed(2)}</p>
-                      <p className="text-sm text-gray-500">/yr</p>
-                    </div>
                   </div>
                   <div className="mb-3">
-                    <p className="text-xs text-gray-500 mb-1">{addOn.category}</p>
-                    <h4 className="font-semibold text-sm">{addOn.title}</h4>
+                    <p className="text-xs text-gray-500 mb-1">{addOnCategory(id)}</p>
+                    <h4 className="font-semibold text-sm">{addOnTitle(id)}</h4>
+                    <p className="text-xs text-gray-500 mt-1">{addOnDesc(id)}</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <Button variant="link" className="text-blue-600 text-sm p-0 h-auto">
-                      Show More
+                      {t("customize.showMore")}
                     </Button>
                     <Checkbox
-                      checked={planData.addOns[addOn.id as keyof PlanData["addOns"]]}
+                      checked={planState.addOns[id]}
                       onCheckedChange={(checked) =>
-                        handleAddOnChange(addOn.id as keyof PlanData["addOns"], checked as boolean)
+                        handleAddOnChange(id, checked as boolean)
                       }
                     />
                   </div>
@@ -253,19 +534,40 @@ export default function PlanCustomization() {
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* ── Error ── */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* ── Proceed ── */}
         <div className="flex justify-center pt-6">
           <Button
             className="bg-[#0056b3] hover:bg-[#004494] text-white font-semibold px-12 py-3"
             onClick={handleProceed}
+            disabled={isLoading}
           >
-            Proceed
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t("customize.saving")}</span>
+              </div>
+            ) : (
+              t("customize.proceed")
+            )}
           </Button>
         </div>
       </div>
 
-      {/* Calculation Summary */}
-      <CalculationSummary step="customize" planData={planData} />
+      {/* ── Calculation Summary sidebar ── */}
+      <CalculationSummary
+        step="customize"
+        planData={summaryPlanData}
+        premiumData={premiumData}
+        isPremiumLoading={isPremiumLoading}
+      />
+
     </div>
   )
 }
