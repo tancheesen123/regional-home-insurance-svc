@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.routers import health, docs_meta, scan
+from app.routers import health, docs_meta, scan, scan_random, scan_content
 
 app = FastAPI(
     title="doc-scanner-svc",
@@ -24,6 +24,8 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(docs_meta.router)
 app.include_router(scan.router)
+app.include_router(scan_random.router)
+app.include_router(scan_content.router)
 
 
 # ── Global error handler ──────────────────────────────────────────────────────
