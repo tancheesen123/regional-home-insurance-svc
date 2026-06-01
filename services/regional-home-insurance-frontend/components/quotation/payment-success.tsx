@@ -95,8 +95,8 @@ function DocumentCard({
           <FileText className="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <p className="font-medium text-sm text-gray-900">{labelForFileType(doc.fileType)}</p>
-          <p className="text-xs text-gray-500">{doc.fileName}</p>
+          <p className="font-medium text-sm text-[#1A1A1A]">{labelForFileType(doc.fileType)}</p>
+          <p className="text-xs text-[#555555]">{doc.fileName}</p>
         </div>
       </div>
       <Button
@@ -312,7 +312,7 @@ export default function PaymentSuccess() {
   if (isLoadingData) {
     return (
       <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+        <div className="flex flex-col items-center gap-3 text-[#555555]">
           <Loader2 className="w-8 h-8 animate-spin text-[#0056b3]" />
           <p className="text-sm">{t("summary.loadingProposal")}</p>
         </div>
@@ -343,8 +343,8 @@ export default function PaymentSuccess() {
         <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
           <CheckCircle className="h-12 w-12 text-green-600" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("success.title")}</h1>
-        <p className="text-lg text-gray-600 mb-4">{t("success.subtitle")}</p>
+        <h1 className="text-3xl font-bold text-[#1A1A1A] mb-2">{t("success.title")}</h1>
+        <p className="text-lg text-[#555555] mb-4">{t("success.subtitle")}</p>
         {q && (
           <Badge variant="default" className="bg-green-600 text-white px-4 py-2">
             {t("success.policyActiveFrom")} {q.coverageStartDate}
@@ -378,7 +378,7 @@ export default function PaymentSuccess() {
         <CardContent>
           {docStatus === "polling" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 mb-4 text-gray-600">
+              <div className="flex items-center gap-3 mb-4 text-[#555555]">
                 <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                 <p className="text-sm">Preparing your policy documents… This usually takes about 30 seconds.</p>
               </div>
@@ -427,7 +427,7 @@ export default function PaymentSuccess() {
           {(docStatus === "error" || docStatus === "timeout") && (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
               <AlertTriangle className="h-8 w-8 text-yellow-500" />
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-[#555555]">
                 {docStatus === "timeout"
                   ? "Document generation is taking longer than expected. Please refresh or contact support."
                   : "Could not load documents. Please try again or contact support."}
@@ -452,21 +452,21 @@ export default function PaymentSuccess() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("success.policyNumber")}</span>
+                <span className="text-[#555555]">{t("success.policyNumber")}</span>
                 <span className="font-medium">{displayPolicyNumber}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("success.coverageType")}</span>
+                <span className="text-[#555555]">{t("success.coverageType")}</span>
                 <span className="font-medium">{q ? formatPlanType(q.planType) : "—"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("success.policyPeriod")}</span>
+                <span className="text-[#555555]">{t("success.policyPeriod")}</span>
                 <span className="font-medium">
                   {q ? `${q.coverageStartDate} ${t("success.to")} ${q.expiryDate}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("success.annualPremium")}</span>
+                <span className="text-[#555555]">{t("success.annualPremium")}</span>
                 <span className="font-medium">{q ? fmtCurrency(q.annualPremium) : "—"}</span>
               </div>
             </div>
@@ -474,25 +474,25 @@ export default function PaymentSuccess() {
             <div className="space-y-3">
               {q && q.buildingSum > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t("success.buildingCoverage")}</span>
+                  <span className="text-[#555555]">{t("success.buildingCoverage")}</span>
                   <span className="font-medium">{fmtCurrency(q.buildingSum)}</span>
                 </div>
               )}
               {q && q.contentsSum > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t("success.contentsCoverage")}</span>
+                  <span className="text-[#555555]">{t("success.contentsCoverage")}</span>
                   <span className="font-medium">{fmtCurrency(q.contentsSum)}</span>
                 </div>
               )}
               {paymentResult && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t("success.paymentMethod")}</span>
+                  <span className="text-[#555555]">{t("success.paymentMethod")}</span>
                   <span className="font-medium">{paymentResult.gatewayName || paymentResult.paymentMethod}</span>
                 </div>
               )}
               {paymentResult && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t("success.transactionId")}</span>
+                  <span className="text-[#555555]">{t("success.transactionId")}</span>
                   <span className="font-medium text-sm">{paymentResult.referenceNumber}</span>
                 </div>
               )}
@@ -512,19 +512,19 @@ export default function PaymentSuccess() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-gray-600">{t("success.name")}</p>
+              <p className="text-sm text-[#555555]">{t("success.name")}</p>
               <p className="font-medium">{pd?.name ?? "—"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t("success.email")}</p>
+              <p className="text-sm text-[#555555]">{t("success.email")}</p>
               <p className="font-medium">{pd?.email ?? "—"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t("success.phone")}</p>
+              <p className="text-sm text-[#555555]">{t("success.phone")}</p>
               <p className="font-medium">{pd?.mobileNumber ?? "—"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t("success.propertyAddress")}</p>
+              <p className="text-sm text-[#555555]">{t("success.propertyAddress")}</p>
               <p className="font-medium text-sm">{pa ? formatAddress(pa) : "—"}</p>
             </div>
           </CardContent>
@@ -549,7 +549,7 @@ export default function PaymentSuccess() {
                 </div>
                 <div>
                   <p className="font-medium">{title}</p>
-                  <p className="text-sm text-gray-600">{desc}</p>
+                  <p className="text-sm text-[#555555]">{desc}</p>
                 </div>
               </div>
             ))}
@@ -578,20 +578,20 @@ export default function PaymentSuccess() {
             <div className="text-center">
               <Phone className="h-8 w-8 mx-auto mb-2 text-blue-600" />
               <h4 className="font-semibold mb-1">{t("success.customerService")}</h4>
-              <p className="text-sm text-gray-600">1-300-13-8420</p>
-              <p className="text-xs text-gray-500">{t("success.available247")}</p>
+              <p className="text-sm text-[#555555]">1-300-13-8420</p>
+              <p className="text-xs text-[#555555]">{t("success.available247")}</p>
             </div>
             <div className="text-center">
               <Mail className="h-8 w-8 mx-auto mb-2 text-blue-600" />
               <h4 className="font-semibold mb-1">{t("success.emailSupport")}</h4>
-              <p className="text-sm text-gray-600">support@etiqa.com</p>
-              <p className="text-xs text-gray-500">{t("success.responseTime")}</p>
+              <p className="text-sm text-[#555555]">support@etiqa.com</p>
+              <p className="text-xs text-[#555555]">{t("success.responseTime")}</p>
             </div>
             <div className="text-center">
               <FileText className="h-8 w-8 mx-auto mb-2 text-blue-600" />
               <h4 className="font-semibold mb-1">{t("success.claimsHotline")}</h4>
-              <p className="text-sm text-gray-600">1-800-22-3372</p>
-              <p className="text-xs text-gray-500">{t("success.emergencyClaims")}</p>
+              <p className="text-sm text-[#555555]">1-800-22-3372</p>
+              <p className="text-xs text-[#555555]">{t("success.emergencyClaims")}</p>
             </div>
           </div>
         </CardContent>
@@ -612,7 +612,7 @@ export default function PaymentSuccess() {
             <DialogTitle className="flex items-center gap-2 text-lg">
               🎉 Your Policy is Ready
               {policyNumber && (
-                <span className="text-sm font-normal text-gray-500">— {policyNumber}</span>
+                <span className="text-sm font-normal text-[#555555]">— {policyNumber}</span>
               )}
             </DialogTitle>
           </DialogHeader>

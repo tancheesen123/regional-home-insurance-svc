@@ -124,7 +124,7 @@ function CalculationSummary({
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Plan Type</span>
+                  <span className="text-[#555555]">Plan Type</span>
                   <span className="font-medium capitalize">
                     {planData.selectedPlan.replace("building-contents", "Building + Contents")
                       .replace("building-only", "Building Only")
@@ -134,7 +134,7 @@ function CalculationSummary({
 
                 {/* Coverage dates from API when available */}
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Coverage Period</span>
+                  <span className="text-[#555555]">Coverage Period</span>
                   <span className="text-right text-xs">
                     {premiumData
                       ? `${premiumData.startDate} – ${premiumData.endDate}`
@@ -144,13 +144,13 @@ function CalculationSummary({
 
                 {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "building-only") && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Building Sum</span>
+                    <span className="text-[#555555]">Building Sum</span>
                     <span>{symbol} {planData.buildingAmount.toLocaleString()}</span>
                   </div>
                 )}
                 {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "content-only") && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Contents Sum</span>
+                    <span className="text-[#555555]">Contents Sum</span>
                     <span>{symbol} {planData.contentAmount.toLocaleString()}</span>
                   </div>
                 )}
@@ -169,17 +169,17 @@ function CalculationSummary({
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Max Declarable</span>
+                  <span className="text-[#555555]">Max Declarable</span>
                   <span>{symbol} {valuablesData.maxDeclarableAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Declared</span>
+                  <span className="text-[#555555]">Total Declared</span>
                   <span className="font-medium text-orange-600">
                     {symbol} {valuablesData.totalDeclaredAmount.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Undeclared Amount</span>
+                  <span className="text-[#555555]">Undeclared Amount</span>
                   <span className="font-medium text-green-600">
                     {symbol} {valuablesData.undeclaredAmount.toLocaleString()}
                   </span>
@@ -198,7 +198,7 @@ function CalculationSummary({
                     Cost Breakdown
                   </span>
                   {isPremiumLoading && (
-                    <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                    <Loader2 className="h-3 w-3 animate-spin text-[#9E9E9E]" />
                   )}
                 </CardTitle>
               </CardHeader>
@@ -208,24 +208,24 @@ function CalculationSummary({
                     {/* Building / Content split */}
                     {premiumData.buildingPremium > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Building Premium</span>
+                        <span className="text-[#555555]">Building Premium</span>
                         <span>{symbol} {fmt(premiumData.buildingPremium)}</span>
                       </div>
                     )}
                     {premiumData.contentPremium > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Content Premium</span>
+                        <span className="text-[#555555]">Content Premium</span>
                         <span>{symbol} {fmt(premiumData.contentPremium)}</span>
                       </div>
                     )}
                     {premiumData.addOnsPremium > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Add-ons Premium</span>
+                        <span className="text-[#555555]">Add-ons Premium</span>
                         <span>{symbol} {fmt(premiumData.addOnsPremium)}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-medium">
-                      <span className="text-gray-700">Gross Premium</span>
+                      <span className="text-[#555555]">Gross Premium</span>
                       <span>{symbol} {fmt(premiumData.grossPremium)}</span>
                     </div>
                     {premiumData.discountAmount > 0 && (
@@ -235,20 +235,20 @@ function CalculationSummary({
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">
+                      <span className="text-[#555555]">
                         Service Tax ({premiumData.serviceTaxRate}%)
                       </span>
                       <span>{symbol} {fmt(premiumData.serviceTaxAmount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Stamp Duty</span>
+                      <span className="text-[#555555]">Stamp Duty</span>
                       <span>{symbol} {fmt(premiumData.stampDutyAmount)}</span>
                     </div>
                     <Separator className="my-3" />
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-semibold">Total Premium</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[#555555]">
                           {symbol} {fmt(premiumData.monthlyPremium)} / month
                         </p>
                       </div>
@@ -259,7 +259,7 @@ function CalculationSummary({
                   </>
                 ) : (
                   // Placeholder while waiting for first calculation
-                  <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
+                  <div className="flex items-center justify-center py-6 text-[#9E9E9E] text-sm">
                     {isPremiumLoading
                       ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Calculating…</span>
                       : "Adjust your plan to see a breakdown"}
@@ -278,7 +278,7 @@ function CalculationSummary({
               <CardContent className="space-y-2 text-sm">
                 {premiumData.addOnBreakdown.map((item) => (
                   <div key={item.code} className="flex justify-between">
-                    <span className="text-gray-600">{item.name}</span>
+                    <span className="text-[#555555]">{item.name}</span>
                     <span>+ {symbol} {fmt(item.premium)}</span>
                   </div>
                 ))}

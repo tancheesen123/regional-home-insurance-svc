@@ -67,9 +67,12 @@ interface Props {
 export default function ContentCalculator({
   onBack, onConfirm, minAmount, maxAmount, roundingUnit, symbol, initialAmounts,
 }: Props) {
-  const t             = useTranslations("quotation")
-  const countryCode   = getSession()?.countryCode ?? "MY"
-  const { state: sidebarState } = useSidebar()
+  const t           = useTranslations("quotation")
+  const countryCode = getSession()?.countryCode ?? "MY"
+
+  // ── Sidebar state → dynamic sticky-bar left offset ────────────────────────
+  const { state: sidebarState, isMobile } = useSidebar()
+  const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "16rem" : "3rem"
 
   const [amounts, setAmounts] = useState<RoomAmounts>(initialAmounts ?? EMPTY_ROOM_AMOUNTS)
 
@@ -99,7 +102,7 @@ export default function ContentCalculator({
   const progressPct  = Math.min((totalAmount / maxAmount) * 100, 100)
   const belowMinPct  = (minAmount / maxAmount) * 100
   const progressColor =
-    totalAmount === 0 ? "bg-[#E0E0E0]"
+    totalAmount === 0     ? "bg-[#E0E0E0]"
     : !isAboveMin || !isBelowMax ? "bg-[#D32F2F]"
     : "bg-[#00A651]"
 
@@ -129,14 +132,14 @@ export default function ContentCalculator({
   return (
     <div className="max-w-4xl mx-auto pb-40">
 
-      {/* ── Hero header ──────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl bg-[#1A1A1A] p-6 mb-6 shadow-sm">
+      {/* ── Hero header — warm gradient matching building calculator ─────────── */}
+      <div className="rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-6 mb-6 text-white shadow-lg">
 
         {/* Nav row */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-sm text-amber-100 hover:text-white transition-colors"
             aria-label="Back"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -144,7 +147,7 @@ export default function ContentCalculator({
           </button>
           <button
             onClick={onBack}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
             aria-label="Exit calculator"
           >
             <X className="h-4 w-4" />
@@ -152,16 +155,20 @@ export default function ContentCalculator({
         </div>
 
         {/* Title */}
-        <div className="flex items-start gap-4 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-[#F5A623] flex items-center justify-center shrink-0 mt-0.5">
-            <Info className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white leading-tight">{t("calculator.title")}</h1>
-            <p className="text-sm text-white/60 mt-1 leading-relaxed">
-              {t("calculator.description")}
-            </p>
-          </div>
+        <h1 className="text-2xl font-bold mb-1">{t("calculator.title")}</h1>
+        <p className="text-amber-100 text-sm leading-relaxed mb-4">
+          {t("calculator.description")}
+        </p>
+
+        {/* Info pill */}
+        <div className="inline-flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1 mb-5">
+          <Info className="h-3.5 w-3.5 text-amber-100 shrink-0" />
+          <span className="text-xs text-amber-100">
+            {t("calculator.infoText", {
+              minAmount: `${symbol} ${fmtAmount(minAmount)}`,
+              maxAmount: `${symbol} ${fmtAmount(maxAmount)}`,
+            })}
+          </span>
         </div>
 
         {/* Room progress pills */}
@@ -174,13 +181,13 @@ export default function ContentCalculator({
                   key={key}
                   className={cn(
                     "h-1.5 w-5 rounded-full transition-all duration-300",
-                    done ? "bg-[#F5A623]" : "bg-white/20",
+                    done ? "bg-white" : "bg-white/30",
                   )}
                 />
               )
             })}
           </div>
-          <span className="text-xs text-white/50">
+          <span className="text-xs text-amber-100">
             {filled} / {ROOM_KEYS.length} {filled === 1 ? "room" : "rooms"} filled
           </span>
         </div>
@@ -193,29 +200,18 @@ export default function ContentCalculator({
         onApply={handleScanApply}
       />
 
-      {/* ── Info banner ──────────────────────────────────────────────────────── */}
-      <div className="flex gap-3 bg-[#E1F5FE] border border-[#0288D1]/25 rounded-xl p-4 mb-5">
-        <Info className="h-4 w-4 text-[#0288D1] shrink-0 mt-0.5" />
-        <p className="text-sm text-[#0288D1] leading-relaxed">
-          {t("calculator.infoText", {
-            minAmount: `${symbol} ${fmtAmount(minAmount)}`,
-            maxAmount: `${symbol} ${fmtAmount(maxAmount)}`,
-          })}
-        </p>
-      </div>
-
       {/* ── Room cards ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {ROOM_KEYS.map((room) => {
-          const roomVal  = parseRoomValue(amounts[room], roundingUnit)
-          const filled   = roomVal > 0
+          const roomVal = parseRoomValue(amounts[room], roundingUnit)
+          const isFilled = roomVal > 0
 
           return (
             <div
               key={room}
               className={cn(
                 "rounded-xl border border-l-4 overflow-hidden transition-all duration-150",
-                filled
+                isFilled
                   ? "border-[#E0E0E0] border-l-[#F5A623] shadow-sm"
                   : "border-[#E0E0E0] border-l-[#E0E0E0] hover:border-l-[#F5A623] hover:shadow-sm",
               )}
@@ -223,18 +219,18 @@ export default function ContentCalculator({
               {/* Card header */}
               <div className={cn(
                 "px-4 pt-4 pb-3 transition-colors",
-                filled ? "bg-[#FEF3DC]" : "bg-white",
+                isFilled ? "bg-[#FEF3DC]" : "bg-white",
               )}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-semibold text-[#1A1A1A] text-sm leading-tight">
                       {roomTitle(room)}
                     </p>
-                    <p className="text-xs text-[#9E9E9E] mt-0.5 leading-snug line-clamp-2">
+                    <p className="text-xs text-[#555555] mt-0.5 leading-snug line-clamp-2">
                       {roomItems(room)}
                     </p>
                   </div>
-                  {filled && (
+                  {isFilled && (
                     <CheckCircle2 className="h-4 w-4 text-[#00A651] shrink-0 mt-0.5" />
                   )}
                 </div>
@@ -242,7 +238,7 @@ export default function ContentCalculator({
 
               {/* Amount input */}
               <div className="px-4 pb-4 pt-2.5 bg-white border-t border-[#F5F5F5]">
-                <p className="text-xs text-[#9E9E9E] mb-1.5">{t("calculator.estimatedAmount")}</p>
+                <p className="text-xs font-medium text-[#555555] mb-1.5">{t("calculator.estimatedAmount")}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-[#555555] shrink-0">{symbol}</span>
                   <Input
@@ -252,12 +248,12 @@ export default function ContentCalculator({
                     placeholder="0"
                     inputMode="numeric"
                     className={cn(
-                      "text-right border-[#E0E0E0] text-[#1A1A1A] placeholder:text-[#9E9E9E]",
+                      "text-right bg-white border-[#E0E0E0] rounded-lg h-10 text-[#1A1A1A] placeholder:text-[#9E9E9E]",
                       "focus-visible:border-[#F5A623] focus-visible:ring-[#F5A623]/20",
                     )}
                   />
                 </div>
-                {filled && (
+                {isFilled && (
                   <p className="text-xs text-[#00A651] font-medium mt-1.5 text-right">
                     {symbol} {roomVal.toLocaleString()}
                   </p>
@@ -269,17 +265,15 @@ export default function ContentCalculator({
       </div>
 
       {/* ── Sticky bottom bar ────────────────────────────────────────────────── */}
-      {/* left offset mirrors sidebar width and transitions with it */}
-      <div className={cn(
-        "fixed bottom-0 right-0 bg-white border-t border-[#E0E0E0] shadow-lg z-50",
-        "transition-[left] duration-200 ease-linear",
-        sidebarState === "collapsed" ? "left-12" : "left-64",
-      )}>
+      <div
+        className="fixed bottom-0 right-0 bg-white border-t border-[#E0E0E0] shadow-2xl z-50 transition-[left] duration-200 ease-linear"
+        style={{ left: stickyLeft }}
+      >
         <div className="max-w-4xl mx-auto px-5 pt-3 pb-4">
 
           {/* Range progress bar */}
           <div className="mb-3">
-            <div className="flex justify-between text-xs text-[#9E9E9E] mb-1.5">
+            <div className="flex justify-between text-xs text-[#555555] mb-1.5">
               <span>{symbol} {fmtAmount(minAmount)} min</span>
               <span>{symbol} {fmtAmount(maxAmount)} max</span>
             </div>
@@ -308,7 +302,7 @@ export default function ContentCalculator({
           {/* Total + actions */}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs text-[#9E9E9E] mb-0.5">{t("calculator.totalAmount")}</p>
+              <p className="text-xs text-[#555555] mb-0.5">{t("calculator.totalAmount")}</p>
               <p className={cn(
                 "text-2xl font-bold leading-tight",
                 isValid          ? "text-[#1A1A1A]"
@@ -323,22 +317,25 @@ export default function ContentCalculator({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {/* Reset */}
               <button
                 onClick={handleReset}
-                className="flex items-center gap-1.5 text-sm text-[#9E9E9E] hover:text-[#555555] transition-colors px-2.5 py-1.5 rounded-lg hover:bg-[#FAFAFA]"
+                className="flex items-center gap-1.5 text-sm text-[#555555] hover:text-[#1A1A1A] transition-colors duration-150 px-2.5 py-1.5 rounded-lg hover:bg-[#FAFAFA] border border-[#E0E0E0]"
                 title={t("calculator.reset")}
               >
                 <RotateCcw className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("calculator.reset")}</span>
               </button>
+
+              {/* Confirm */}
               <button
                 onClick={handleConfirm}
                 disabled={!isValid}
                 className={cn(
-                  "flex items-center gap-1.5 px-5 h-10 rounded-xl text-sm font-semibold text-white transition-colors",
+                  "flex items-center gap-1.5 px-5 h-10 rounded-lg text-sm font-semibold text-white transition-colors duration-150",
                   isValid
                     ? "bg-[#F5A623] hover:bg-[#D4891A]"
-                    : "bg-[#F5A623]/40 cursor-not-allowed",
+                    : "bg-[#E0E0E0] text-[#9E9E9E] cursor-not-allowed",
                 )}
               >
                 {t("calculator.confirm")}

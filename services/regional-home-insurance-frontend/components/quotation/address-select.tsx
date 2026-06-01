@@ -66,7 +66,7 @@ function SelectRow({
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <Select value={value} onValueChange={onChange} disabled={disabled || loading}>
-          <SelectTrigger id={id} className={loading ? "text-gray-400" : ""}>
+          <SelectTrigger id={id} className={loading ? "text-[#9E9E9E]" : ""}>
             <SelectValue placeholder={loading ? "Loading…" : placeholder} />
           </SelectTrigger>
           <SelectContent className="max-h-72 overflow-y-auto">
@@ -78,7 +78,7 @@ function SelectRow({
           </SelectContent>
         </Select>
         {loading && (
-          <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-gray-400 pointer-events-none" />
+          <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-[#9E9E9E] pointer-events-none" />
         )}
       </div>
     </div>
@@ -283,7 +283,7 @@ function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
               disabled={disabled || loading.post}
             />
             {loading.post && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-gray-400 pointer-events-none" />
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-[#9E9E9E] pointer-events-none" />
             )}
           </div>
         </div>

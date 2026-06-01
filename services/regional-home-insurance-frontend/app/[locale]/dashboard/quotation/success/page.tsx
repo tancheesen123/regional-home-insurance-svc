@@ -12,7 +12,7 @@ export default function PaymentSuccessPage() {
     <>
       <PageHeader />
 
-      <div className="flex-1 overflow-y-auto bg-[#FAFAFA]">
+      <div className="flex-1 overflow-y-auto bg-transparent">
         <div className="max-w-3xl mx-auto px-6 py-8">
           <PaymentSuccess />
         </div>
