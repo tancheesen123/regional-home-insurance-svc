@@ -1,0 +1,206 @@
+{
+  "common": {
+    "appName": "Etiqa Home Insurance",
+    "regionalPortal": "Portal Asuransi Rumah Regional",
+    "copyright": "Etiqa Insurance © 2025",
+    "needAssistance": "Butuh bantuan? Hubungi tim dukungan kami",
+    "learnMore": "Pelajari lebih lanjut tentang Etiqa Home Insurance",
+    "comingSoon": "Segera Hadir",
+    "viewProductInfo": "Lihat Info Produk",
+    "applyOnline": "Daftar Online",
+    "benefits": "Manfaat:"
+  },
+  "language": {
+    "en": "English",
+    "fil": "Filipino",
+    "id": "Bahasa Indonesia",
+    "km": "ភាសាខ្មែរ",
+    "selectLanguage": "Pilih Bahasa"
+  },
+  "countries": {
+    "cambodia": "🇰🇭 Kamboja",
+    "philippines": "🇵🇭 Filipina",
+    "indonesia": "🇮🇩 Indonesia",
+    "selectCountry": "Pilih Negara"
+  },
+  "home": {
+    "headline": "Lindungi Rumah Anda di Seluruh Asia Tenggara",
+    "subheadline": "Asuransi rumah komprehensif di Kamboja, Filipina, dan Indonesia dengan penerbitan polis instan.",
+    "propertyProtection": "Perlindungan Properti",
+    "propertyProtectionDesc": "Perlindungan untuk struktur rumah dan barang-barang Anda",
+    "instantCoverage": "Perlindungan Instan",
+    "instantCoverageDesc": "Penerbitan polis segera setelah pembayaran",
+    "liabilityCoverage": "Perlindungan Tanggung Jawab",
+    "liabilityCoverageDesc": "Perlindungan dari klaim pihak ketiga",
+    "regionalSupport": "Dukungan Regional",
+    "regionalSupportDesc": "Bantuan lokal di semua negara yang dicakup"
+  },
+  "auth": {
+    "signIn": "Masuk",
+    "signInDesc": "Akses akun Etiqa Home Insurance Anda",
+    "signingIn": "Sedang masuk...",
+    "email": "Email",
+    "emailPlaceholder": "nama@contoh.com",
+    "password": "Kata Sandi",
+    "forgotPassword": "Lupa kata sandi?",
+    "rememberMe": "Ingat saya",
+    "noAccount": "Belum punya akun?",
+    "createAccount": "Buat di sini",
+    "createAccountTitle": "Buat Akun",
+    "createAccountDesc": "Bergabunglah dengan Etiqa Home Insurance untuk perlindungan regional yang komprehensif",
+    "creatingAccount": "Membuat Akun...",
+    "alreadyHaveAccount": "Sudah punya akun?",
+    "signInHere": "Masuk di sini"
+  },
+  "register": {
+    "headline": "Bergabunglah dengan Jaringan Asuransi Regional Kami",
+    "subheadline": "Buat akun Anda untuk mengakses asuransi rumah komprehensif di Kamboja, Filipina, dan Indonesia.",
+    "instantPolicy": "Penerbitan polis instan",
+    "multiRegion": "Perlindungan multi-wilayah",
+    "support247": "Dukungan pelanggan 24/7",
+    "onlineClaims": "Pemrosesan klaim online",
+    "fullName": "Nama Lengkap",
+    "fullNamePlaceholder": "Masukkan nama lengkap Anda",
+    "emailAddress": "Alamat Email",
+    "emailPlaceholder": "Masukkan alamat email Anda",
+    "region": "Wilayah",
+    "selectRegion": "Pilih wilayah Anda",
+    "contactNumber": "Nomor Kontak",
+    "contactPlaceholder": "Masukkan nomor kontak Anda",
+    "address": "Alamat",
+    "addressPlaceholder": "Masukkan alamat lengkap Anda",
+    "password": "Kata Sandi",
+    "passwordPlaceholder": "Buat kata sandi yang kuat",
+    "passwordHint": "Kata sandi harus minimal 8 karakter dengan huruf besar, huruf kecil, dan angka",
+    "confirmPassword": "Konfirmasi Kata Sandi",
+    "confirmPasswordPlaceholder": "Konfirmasi kata sandi Anda",
+    "agreeToTerms": "Saya setuju dengan",
+    "termsAndConditions": "Syarat dan Ketentuan",
+    "and": "dan",
+    "privacyPolicy": "Kebijakan Privasi",
+    "marketingConsent": "Saya ingin menerima komunikasi pemasaran dan pembaruan produk (Opsional)",
+    "idLabelKH": "KTP / Nomor Paspor",
+    "idLabelPH": "KTP / Nomor Paspor",
+    "idLabelID": "KTP / Nomor Paspor",
+    "idLabelDefault": "KTP / Nomor Paspor",
+    "errors": {
+      "nameRequired": "Nama lengkap diperlukan",
+      "nameTooShort": "Nama harus minimal 2 karakter",
+      "emailRequired": "Email diperlukan",
+      "emailInvalid": "Masukkan alamat email yang valid",
+      "contactRequired": "Nomor kontak diperlukan",
+      "contactTooShort": "Nomor kontak harus minimal 8 digit",
+      "addressRequired": "Alamat diperlukan",
+      "addressTooShort": "Berikan alamat yang lengkap",
+      "idRequired": "Nomor KTP/Paspor diperlukan",
+      "idTooShort": "Nomor KTP/Paspor harus minimal 6 karakter",
+      "regionRequired": "Pilih wilayah Anda",
+      "passwordRequired": "Kata sandi diperlukan",
+      "passwordTooShort": "Kata sandi harus minimal 8 karakter",
+      "passwordWeak": "Kata sandi harus mengandung setidaknya satu huruf besar, huruf kecil, dan angka",
+      "confirmPasswordRequired": "Konfirmasi kata sandi Anda",
+      "passwordMismatch": "Kata sandi tidak cocok",
+      "termsRequired": "Anda harus menyetujui syarat dan ketentuan",
+      "registrationFailed": "Pendaftaran gagal. Silakan coba lagi."
+    },
+    "verification": {
+      "checkEmail": "Periksa Email Anda",
+      "sentTo": "Email verifikasi telah dikirim ke",
+      "nextSteps": "Langkah Selanjutnya:",
+      "step1": "Periksa kotak masuk dan folder spam Anda",
+      "step2": "Klik tautan verifikasi di email",
+      "step3": "Selesaikan pengaturan akun Anda",
+      "step4": "Mulai jelajahi produk asuransi kami",
+      "registerAnother": "Daftarkan Akun Lain",
+      "returnToLogin": "Kembali ke Login",
+      "didntReceive": "Tidak menerima email? Periksa folder spam Anda atau hubungi dukungan."
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "dashboard": "Dasbor",
+      "policies": "Polis",
+      "sales": "Penjualan",
+      "profile": "Profil",
+      "settings": "Pengaturan"
+    },
+    "header": {
+      "notifications": "Notifikasi",
+      "help": "Bantuan",
+      "toggleMenu": "Tampilkan menu",
+      "userMenu": "Menu pengguna",
+      "myAccount": "Akun Saya",
+      "profileItem": "Profil",
+      "settingsItem": "Pengaturan",
+      "logOut": "Keluar"
+    },
+    "overview": {
+      "signUpOnline": "Daftar Online",
+      "showAll": "Tampilkan Semua",
+      "insurance": "Asuransi",
+      "takaful": "Takaful",
+      "cheapBudget": "Anggaran Hemat",
+      "mortgageProtection": "Perlindungan KPR",
+      "comingSoonMessage": "produk asuransi akan segera tersedia. Nantikan pembaruannya!",
+      "exploreHome": "Jelajahi Asuransi Rumah",
+      "categories": {
+        "car": "Mobil",
+        "motorcycle": "Motor",
+        "travel": "Perjalanan",
+        "personal": "Kecelakaan Diri",
+        "home": "Rumah",
+        "medical": "Medis",
+        "life": "Jiwa & Keluarga"
+      },
+      "products": {
+        "houseowner": {
+          "title": "Asuransi Pemilik dan Penghuni Rumah",
+          "subtitle": "Asuransi",
+          "description": "Asuransikan bangunan rumah Anda beserta isinya sehingga Anda tidak perlu membayar kerusakan dan kerugian.",
+          "feature1": "Diskon 15% saat membeli online",
+          "feature2": "Perlindungan terhadap kerusakan akibat kebakaran, petir, dan ledakan domestik",
+          "feature3": "Perlindungan terhadap kerusakan akibat banjir dan tanah longsor",
+          "feature4": "Perlindungan untuk pemilik yang menyewakan"
+        },
+        "houseownerTakaful": {
+          "title": "Takaful Pemilik dan Penghuni Rumah",
+          "subtitle": "Takaful",
+          "description": "Lindungi bangunan rumah Anda beserta isinya dengan rencana yang sesuai Syariah sehingga Anda tidak perlu membayar kerusakan dan kerugian.",
+          "feature1": "Diskon 15% saat mendaftar online",
+          "feature2": "Perlindungan terhadap kerusakan akibat kebakaran, petir, dan ledakan domestik",
+          "feature3": "Perlindungan terhadap kerusakan akibat banjir dan tanah longsor",
+          "feature4": "Perlindungan untuk pemilik yang menyewakan",
+          "feature5": "Uang kembali jika tidak ada klaim"
+        },
+        "myRumah": {
+          "title": "MyRumah Asuransi",
+          "subtitle": "Asuransi",
+          "description": "Lindungi rumah Anda, isinya dan lainnya.",
+          "feature1": "Dapatkan diskon 15% saat membeli online",
+          "feature2": "Perlindungan terhadap kerusakan akibat kebakaran, petir, dan ledakan domestik",
+          "feature3": "Perlindungan terhadap kerusakan akibat banjir, badai dan lainnya"
+        },
+        "myRumahTakaful": {
+          "title": "MyRumah Takaful",
+          "subtitle": "Takaful",
+          "description": "Lindungi rumah Anda, isinya dan lainnya.",
+          "feature1": "Diskon 15% saat mendaftar online",
+          "feature2": "Perlindungan terhadap kerusakan akibat kebakaran, petir, dan ledakan domestik",
+          "feature3": "Perlindungan terhadap kerusakan akibat banjir, badai dan lainnya"
+        },
+        "mrta": {
+          "title": "Asuransi Jiwa Kredit Menurun (MRTA)",
+          "description": "Perlindungan asuransi yang membantu menanggung sisa pinjaman rumah Anda jika terjadi hal yang tidak diinginkan.",
+          "benefit1": "Manfaat Kematian",
+          "benefit2": "Manfaat Cacat Total dan Tetap (TPD)"
+        },
+        "mrtt": {
+          "title": "Takaful Jiwa Kredit Menurun (MRTT)",
+          "description": "Perlindungan takaful yang membantu menanggung sisa pembiayaan rumah Anda jika terjadi hal yang tidak diinginkan.",
+          "benefit1": "Manfaat Kematian",
+          "benefit2": "Manfaat Cacat Total dan Tetap (TPD)"
+        }
+      }
+    }
+  }
+}
