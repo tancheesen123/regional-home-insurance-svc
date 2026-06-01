@@ -10,6 +10,28 @@
   }
 }
 
+/* ── Spotlight hover effect ───────────────────────────────────────────────────
+   Uses CSS custom properties set by SpotlightBackground component via direct
+   DOM writes (no React re-renders). The radial-gradient repaints only the
+   composited layer — no layout or paint thrashing.
+   ─────────────────────────────────────────────────────────────────────────── */
+.spotlight-layer {
+  background: radial-gradient(
+    var(--sl-size, 520px) circle at var(--sl-x, -9999px) var(--sl-y, -9999px),
+    rgba(245, 166, 35, var(--sl-intensity, 0.18)),            /* warm amber core */
+    rgba(245, 166, 35, calc(var(--sl-intensity, 0.18) * 0.4)) 40%,  /* mid halo  */
+    transparent 68%
+  );
+  /* Promote to its own GPU compositing layer — repaints never touch the DOM tree */
+  will-change: background;
+}
+
+/* Dot-grid overlay — subtle dark dots on light dashboard background */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 @layer base {
   :root {
     --font-sans: var(--font-geist-sans);

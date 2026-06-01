@@ -218,7 +218,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 className={cn(
                   "rounded-md text-sm font-medium transition-all duration-150",
                   formData.ownershipType === "owner"
-                    ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                    ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                     : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                 )}
                 onClick={() => handleInputChange("ownershipType", "owner")}
@@ -231,7 +231,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 className={cn(
                   "rounded-md text-sm font-medium transition-all duration-150",
                   formData.ownershipType === "tenant"
-                    ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                    ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                     : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                 )}
                 onClick={() => handleInputChange("ownershipType", "tenant")}
@@ -419,7 +419,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                     className={cn(
                       "rounded-md text-sm font-medium transition-all duration-150",
                       formData[field] === val
-                        ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                        ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                         : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                     )}
                     onClick={() => handleInputChange(field, val)}
@@ -450,7 +450,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   className={cn(
                     "rounded-md text-sm font-medium transition-all duration-150 h-9",
                     formData.idType === opt.value
-                      ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                      ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                       : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                   )}
                   onClick={() => handleIdTypeChange(opt.value)}

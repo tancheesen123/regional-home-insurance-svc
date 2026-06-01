@@ -265,7 +265,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                 className={cn(
                   data.gender === "MALE"
                     ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
+                    : "border-gray-300 text-[#555555] hover:bg-gray-50",
                 )}
                 onClick={() => onChange("gender", "MALE")}
               >
@@ -277,7 +277,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                 className={cn(
                   data.gender === "FEMALE"
                     ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
+                    : "border-gray-300 text-[#555555] hover:bg-gray-50",
                 )}
                 onClick={() => onChange("gender", "FEMALE")}
               >
@@ -305,7 +305,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                    {data.dateOfBirth || <span className="text-gray-400">DD/MM/YYYY</span>}
+                    {data.dateOfBirth || <span className="text-[#9E9E9E]">DD/MM/YYYY</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -324,7 +324,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             <div>
               <Label htmlFor="mobile">{t("fillDetails.mobileLabel")}</Label>
               <div className="flex">
-                <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
+                <span className="inline-flex items-center px-3 text-sm text-[#1A1A1A] bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
                   +60
                 </span>
                 <Input
@@ -613,7 +613,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
       </CardHeader>
       {isExpanded && (
         <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">{t("fillDetails.bankDetailsDesc")}</p>
+          <p className="text-sm text-[#555555]">{t("fillDetails.bankDetailsDesc")}</p>
 
           <div>
             <Label>{t("fillDetails.bankName")}</Label>

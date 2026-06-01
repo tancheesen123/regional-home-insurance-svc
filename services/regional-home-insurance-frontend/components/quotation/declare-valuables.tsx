@@ -1,9 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Plus, Minus, Edit, Trash2 } from "lucide-react"
+import {
+  Plus, Minus, Edit, Trash2,
+  Medal, Gem, Coins, Diamond, Shirt, Dumbbell, Archive,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +29,7 @@ interface ValuableCategory {
   id: string
   nameKey: string
   descKey?: string
-  icon: string
+  Icon: React.ElementType
   items: ValuableItem[]
   isExpanded: boolean
 }
@@ -39,13 +42,13 @@ export default function DeclareValuables() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<ValuableCategory[]>([
-    { id: "gold",       nameKey: "declare.gold",       icon: "🏅", items: [], isExpanded: false },
-    { id: "platinum",   nameKey: "declare.platinum",   icon: "🥈", items: [], isExpanded: false },
-    { id: "silver",     nameKey: "declare.silver",     icon: "🥉", items: [], isExpanded: false },
-    { id: "jewellery",  nameKey: "declare.jewellery",  descKey: "declare.jewelleryDesc",   icon: "💎", items: [], isExpanded: false },
-    { id: "animal-fur", nameKey: "declare.animalFur",  descKey: "declare.animalFurDesc",   icon: "🧥", items: [], isExpanded: false },
-    { id: "sports",     nameKey: "declare.sports",     descKey: "declare.sportsDesc",      icon: "🚴", items: [], isExpanded: false },
-    { id: "collectibles", nameKey: "declare.collectibles", descKey: "declare.collectiblesDesc", icon: "🏺", items: [], isExpanded: false },
+    { id: "gold",         nameKey: "declare.gold",         Icon: Medal,   items: [], isExpanded: false },
+    { id: "platinum",     nameKey: "declare.platinum",     Icon: Gem,     items: [], isExpanded: false },
+    { id: "silver",       nameKey: "declare.silver",       Icon: Coins,   items: [], isExpanded: false },
+    { id: "jewellery",    nameKey: "declare.jewellery",    descKey: "declare.jewelleryDesc",   Icon: Diamond, items: [], isExpanded: false },
+    { id: "animal-fur",   nameKey: "declare.animalFur",    descKey: "declare.animalFurDesc",   Icon: Shirt,   items: [], isExpanded: false },
+    { id: "sports",       nameKey: "declare.sports",       descKey: "declare.sportsDesc",      Icon: Dumbbell,items: [], isExpanded: false },
+    { id: "collectibles", nameKey: "declare.collectibles", descKey: "declare.collectiblesDesc", Icon: Archive, items: [], isExpanded: false },
   ])
 
   const [newItem, setNewItem] = useState({ description: "", value: "" })
@@ -178,13 +181,15 @@ export default function DeclareValuables() {
             {t("declare.ownMoreThan", { symbol })}
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
             {categories.map((category) => (
-              <div key={category.id} className="text-center">
-                <div className="text-4xl mb-2">{category.icon}</div>
-                <h3 className="font-semibold text-[#1A1A1A] mb-1">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
+              <div key={category.id} className="group flex flex-col items-center text-center p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:border-[#F5A623] hover:bg-[#FEF3DC] hover:shadow-md transition-all duration-150 cursor-pointer">
+                <div className="w-12 h-12 rounded-xl bg-white group-hover:bg-[#F5A623] flex items-center justify-center mb-3 transition-colors duration-150">
+                  <category.Icon className="h-6 w-6 text-[#F5A623] group-hover:text-white transition-colors duration-150" />
+                </div>
+                <h3 className="font-semibold text-[#1A1A1A] text-sm mb-0.5">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
                 {category.descKey && (
-                  <p className="text-sm text-[#555555]">({t(category.descKey as Parameters<typeof t>[0])})</p>
+                  <p className="text-xs text-[#555555] leading-snug">({t(category.descKey as Parameters<typeof t>[0])})</p>
                 )}
               </div>
             ))}
@@ -199,7 +204,7 @@ export default function DeclareValuables() {
             </Button>
             <Button
               onClick={handleSkipDeclaration}
-              className="flex-1 bg-white border-[1.5px] border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] h-12 rounded-lg transition-all duration-150"
+              className="flex-1 bg-white border-[1.5px] border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC] h-12 rounded-lg transition-all duration-150"
             >
               {t("declare.noSkip")}
             </Button>
@@ -249,7 +254,7 @@ export default function DeclareValuables() {
                 "border-[1.5px] rounded-xl transition-all duration-150",
                 category.isExpanded
                   ? "border-[#F5A623] shadow-sm"
-                  : "border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-sm",
+                  : "border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
               )}
             >
               <CardContent className="p-4">
@@ -257,8 +262,16 @@ export default function DeclareValuables() {
                   className="flex items-center justify-between cursor-pointer"
                   onClick={() => toggleCategory(category.id)}
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{category.icon}</span>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                      category.isExpanded ? "bg-[#FEF3DC]" : "bg-[#F5F5F5]",
+                    )}>
+                      <category.Icon className={cn(
+                        "h-5 w-5",
+                        category.isExpanded ? "text-[#F5A623]" : "text-[#9E9E9E]",
+                      )} />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-[#1A1A1A]">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
                       {category.descKey && (

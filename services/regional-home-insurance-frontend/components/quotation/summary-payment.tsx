@@ -96,7 +96,7 @@ export default function SummaryPayment() {
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+        <div className="flex flex-col items-center gap-3 text-[#555555]">
           <Loader2 className="w-8 h-8 animate-spin text-[#0056b3]" />
           <p className="text-sm">{t("summary.loadingProposal")}</p>
         </div>
@@ -126,14 +126,14 @@ export default function SummaryPayment() {
               <CardHeader><CardTitle>{t("summary.personalDetails")}</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="grid grid-cols-2 gap-2">
-                  <span className="text-gray-500">Name</span><span>{proposal.personalDetails.name}</span>
-                  <span className="text-gray-500">ID Type</span><span>{proposal.personalDetails.idType}</span>
-                  <span className="text-gray-500">ID Number</span><span>{proposal.personalDetails.idNumber}</span>
-                  <span className="text-gray-500">Nationality</span><span>{proposal.personalDetails.nationality}</span>
-                  <span className="text-gray-500">Gender</span><span>{proposal.personalDetails.gender}</span>
-                  <span className="text-gray-500">Date of Birth</span><span>{proposal.personalDetails.dateOfBirth}</span>
-                  <span className="text-gray-500">Mobile</span><span>{proposal.personalDetails.mobileNumber}</span>
-                  <span className="text-gray-500">Email</span><span>{proposal.personalDetails.email}</span>
+                  <span className="text-[#555555]">Name</span><span>{proposal.personalDetails.name}</span>
+                  <span className="text-[#555555]">ID Type</span><span>{proposal.personalDetails.idType}</span>
+                  <span className="text-[#555555]">ID Number</span><span>{proposal.personalDetails.idNumber}</span>
+                  <span className="text-[#555555]">Nationality</span><span>{proposal.personalDetails.nationality}</span>
+                  <span className="text-[#555555]">Gender</span><span>{proposal.personalDetails.gender}</span>
+                  <span className="text-[#555555]">Date of Birth</span><span>{proposal.personalDetails.dateOfBirth}</span>
+                  <span className="text-[#555555]">Mobile</span><span>{proposal.personalDetails.mobileNumber}</span>
+                  <span className="text-[#555555]">Email</span><span>{proposal.personalDetails.email}</span>
                 </div>
               </CardContent>
             </Card>
@@ -174,7 +174,7 @@ export default function SummaryPayment() {
                   </Label>
                 </div>
               </div>
-              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+              <div className="text-sm text-[#555555] bg-gray-50 p-3 rounded">
                 {t("summary.pidmText")}{" "}
                 <a href="#" className="text-blue-600 underline">{t("summary.pidmBrochure")}</a>{" "}
                 {t("summary.pidmContact")}
@@ -186,7 +186,7 @@ export default function SummaryPayment() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {t("summary.marketingConsent")} <span className="text-sm font-normal text-gray-500">{t("summary.marketingOptional")}</span>
+                {t("summary.marketingConsent")} <span className="text-sm font-normal text-[#555555]">{t("summary.marketingOptional")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -239,18 +239,18 @@ export default function SummaryPayment() {
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">{t("summary.coveragePeriod")}</span>
+                      <span className="text-[#555555]">{t("summary.coveragePeriod")}</span>
                       <span>{q.coverageStartDate} – {q.expiryDate}</span>
                     </div>
                     {q.buildingSum > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500">{t("summary.buildingSum")}</span>
+                        <span className="text-[#555555]">{t("summary.buildingSum")}</span>
                         <span>{symbol} {q.buildingSum.toLocaleString()}</span>
                       </div>
                     )}
                     {q.contentsSum > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500">{t("summary.contentsSum")}</span>
+                        <span className="text-[#555555]">{t("summary.contentsSum")}</span>
                         <span>{symbol} {q.contentsSum.toLocaleString()}</span>
                       </div>
                     )}
@@ -262,10 +262,10 @@ export default function SummaryPayment() {
                   <div className="border-t pt-3">
                     <p className="text-sm font-medium mb-2">{t("summary.addons")}</p>
                     <div className="space-y-1 text-sm">
-                      {q.addOns.riotStrike && <p className="text-gray-600">{t("summary.riotStrikeAddon")}</p>}
-                      {q.addOns.extendedTheft && <p className="text-gray-600">{t("summary.extendedTheftAddon")}</p>}
-                      {q.addOns.alternativeAccommodation && <p className="text-gray-600">{t("summary.altAccommodationAddon")}</p>}
-                      {q.addOns.publicLiability && <p className="text-gray-600">{t("summary.publicLiabilityAddon")}</p>}
+                      {q.addOns.riotStrike && <p className="text-[#555555]">{t("summary.riotStrikeAddon")}</p>}
+                      {q.addOns.extendedTheft && <p className="text-[#555555]">{t("summary.extendedTheftAddon")}</p>}
+                      {q.addOns.alternativeAccommodation && <p className="text-[#555555]">{t("summary.altAccommodationAddon")}</p>}
+                      {q.addOns.publicLiability && <p className="text-[#555555]">{t("summary.publicLiabilityAddon")}</p>}
                     </div>
                   </div>
                 )}
@@ -277,7 +277,7 @@ export default function SummaryPayment() {
                     <div className="space-y-1 text-sm">
                       {q.valuableItems.map((item) => (
                         <div key={item.itemId} className="flex justify-between">
-                          <span className="text-gray-600">{item.description}</span>
+                          <span className="text-[#555555]">{item.description}</span>
                           <span>{symbol} {item.value.toLocaleString()}</span>
                         </div>
                       ))}
