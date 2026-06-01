@@ -1,0 +1,206 @@
+{
+  "common": {
+    "appName": "Etiqa Home Insurance",
+    "regionalPortal": "Regional na Portal ng Home Insurance",
+    "copyright": "Etiqa Insurance © 2025",
+    "needAssistance": "Kailangan ng tulong? Makipag-ugnayan sa aming koponan ng suporta",
+    "learnMore": "Matuto pa tungkol sa Etiqa Home Insurance",
+    "comingSoon": "Malapit na",
+    "viewProductInfo": "Tingnan ang Impormasyon ng Produkto",
+    "applyOnline": "Mag-apply Online",
+    "benefits": "Mga Benepisyo:"
+  },
+  "language": {
+    "en": "English",
+    "fil": "Filipino",
+    "id": "Bahasa Indonesia",
+    "km": "ភាសាខ្មែរ",
+    "selectLanguage": "Pumili ng Wika"
+  },
+  "countries": {
+    "cambodia": "🇰🇭 Cambodia",
+    "philippines": "🇵🇭 Pilipinas",
+    "indonesia": "🇮🇩 Indonesia",
+    "selectCountry": "Pumili ng Bansa"
+  },
+  "home": {
+    "headline": "Protektahan ang Iyong Tahanan sa Buong Timog-Silangang Asya",
+    "subheadline": "Komprehensibong insurance para sa tahanan sa Cambodia, Pilipinas, at Indonesia na may agarang pag-isyu ng polisiya.",
+    "propertyProtection": "Proteksyon ng Ari-arian",
+    "propertyProtectionDesc": "Saklaw para sa istruktura ng iyong tahanan at mga gamit",
+    "instantCoverage": "Agarang Saklaw",
+    "instantCoverageDesc": "Agarang pag-isyu ng polisiya pagkatapos ng bayad",
+    "liabilityCoverage": "Saklaw ng Pananagutan",
+    "liabilityCoverageDesc": "Proteksyon laban sa mga third-party na paghahabol",
+    "regionalSupport": "Rehiyonal na Suporta",
+    "regionalSupportDesc": "Lokal na tulong sa lahat ng saklaw na bansa"
+  },
+  "auth": {
+    "signIn": "Mag-sign In",
+    "signInDesc": "I-access ang iyong Etiqa Home Insurance account",
+    "signingIn": "Nag-sign in...",
+    "email": "Email",
+    "emailPlaceholder": "pangalan@halimbawa.com",
+    "password": "Password",
+    "forgotPassword": "Nakalimutan ang password?",
+    "rememberMe": "Alalahanin ako",
+    "noAccount": "Wala pang account?",
+    "createAccount": "Gumawa ng isa dito",
+    "createAccountTitle": "Gumawa ng Account",
+    "createAccountDesc": "Sumali sa Etiqa Home Insurance para sa komprehensibong rehiyonal na saklaw",
+    "creatingAccount": "Ginagawa ang Account...",
+    "alreadyHaveAccount": "May account na?",
+    "signInHere": "Mag-sign in dito"
+  },
+  "register": {
+    "headline": "Sumali sa Aming Rehiyonal na Network ng Insurance",
+    "subheadline": "Gumawa ng account para ma-access ang komprehensibong home insurance sa Cambodia, Pilipinas, at Indonesia.",
+    "instantPolicy": "Agarang pag-isyu ng polisiya",
+    "multiRegion": "Multi-region na saklaw",
+    "support247": "24/7 na serbisyo sa customer",
+    "onlineClaims": "Online na pagproseso ng mga claim",
+    "fullName": "Buong Pangalan",
+    "fullNamePlaceholder": "Ilagay ang iyong buong pangalan",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "Ilagay ang iyong email address",
+    "region": "Rehiyon",
+    "selectRegion": "Piliin ang iyong rehiyon",
+    "contactNumber": "Numero ng Kontak",
+    "contactPlaceholder": "Ilagay ang iyong numero ng kontak",
+    "address": "Address",
+    "addressPlaceholder": "Ilagay ang iyong kumpletong address",
+    "password": "Password",
+    "passwordPlaceholder": "Gumawa ng malakas na password",
+    "passwordHint": "Ang password ay dapat may hindi bababa sa 8 karakter na may malaki, maliit na titik, at numero",
+    "confirmPassword": "Kumpirmahin ang Password",
+    "confirmPasswordPlaceholder": "Kumpirmahin ang iyong password",
+    "agreeToTerms": "Sumasang-ayon ako sa",
+    "termsAndConditions": "Mga Tuntunin at Kundisyon",
+    "and": "at",
+    "privacyPolicy": "Patakaran sa Privacy",
+    "marketingConsent": "Nais kong makatanggap ng mga komunikasyon sa marketing at mga update ng produkto (Opsyonal)",
+    "idLabelKH": "National ID / Passport Number",
+    "idLabelPH": "National ID / Passport Number",
+    "idLabelID": "KTP / Passport Number",
+    "idLabelDefault": "IC / Passport Number",
+    "errors": {
+      "nameRequired": "Kinakailangan ang buong pangalan",
+      "nameTooShort": "Ang pangalan ay dapat may hindi bababa sa 2 karakter",
+      "emailRequired": "Kinakailangan ang email",
+      "emailInvalid": "Mangyaring maglagay ng wastong email address",
+      "contactRequired": "Kinakailangan ang numero ng kontak",
+      "contactTooShort": "Ang numero ng kontak ay dapat may hindi bababa sa 8 digit",
+      "addressRequired": "Kinakailangan ang address",
+      "addressTooShort": "Mangyaring magbigay ng kumpletong address",
+      "idRequired": "Kinakailangan ang ID/Passport number",
+      "idTooShort": "Ang ID/Passport number ay dapat may hindi bababa sa 6 na karakter",
+      "regionRequired": "Mangyaring pumili ng rehiyon",
+      "passwordRequired": "Kinakailangan ang password",
+      "passwordTooShort": "Ang password ay dapat may hindi bababa sa 8 karakter",
+      "passwordWeak": "Ang password ay dapat may hindi bababa sa isang malaking titik, maliit na titik, at numero",
+      "confirmPasswordRequired": "Mangyaring kumpirmahin ang iyong password",
+      "passwordMismatch": "Hindi magkatugma ang mga password",
+      "termsRequired": "Dapat kang sumang-ayon sa mga tuntunin at kundisyon",
+      "registrationFailed": "Nabigo ang pagpaparehistro. Subukan muli."
+    },
+    "verification": {
+      "checkEmail": "Suriin ang Iyong Email",
+      "sentTo": "Ang verification email ay naipadala sa",
+      "nextSteps": "Mga Susunod na Hakbang:",
+      "step1": "Suriin ang iyong inbox at spam folder",
+      "step2": "I-click ang verification link sa email",
+      "step3": "Kumpletuhin ang setup ng iyong account",
+      "step4": "Simulan ang paggalugad ng aming mga produktong insurance",
+      "registerAnother": "Magrehistro ng Isa Pang Account",
+      "returnToLogin": "Bumalik sa Login",
+      "didntReceive": "Hindi natanggap ang email? Suriin ang iyong spam folder o makipag-ugnayan sa suporta."
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "policies": "Mga Polisiya",
+      "sales": "Benta",
+      "profile": "Profile",
+      "settings": "Mga Setting"
+    },
+    "header": {
+      "notifications": "Mga Abiso",
+      "help": "Tulong",
+      "toggleMenu": "I-toggle ang menu",
+      "userMenu": "Menu ng user",
+      "myAccount": "Aking Account",
+      "profileItem": "Profile",
+      "settingsItem": "Mga Setting",
+      "logOut": "Mag-sign out"
+    },
+    "overview": {
+      "signUpOnline": "Mag-sign Up Online",
+      "showAll": "Ipakita Lahat",
+      "insurance": "Insurance",
+      "takaful": "Takaful",
+      "cheapBudget": "Murang Badyet",
+      "mortgageProtection": "Proteksyon ng Mortgage",
+      "comingSoonMessage": "na mga produktong insurance ay malapit nang maging available. Manatiling nakakonekta para sa mga update!",
+      "exploreHome": "I-explore ang Home Insurance",
+      "categories": {
+        "car": "Kotse",
+        "motorcycle": "Motorsiklo",
+        "travel": "Paglalakbay",
+        "personal": "Personal na Aksidente",
+        "home": "Tahanan",
+        "medical": "Medikal",
+        "life": "Buhay at Pamilya"
+      },
+      "products": {
+        "houseowner": {
+          "title": "Houseowner and Householder Insurance",
+          "subtitle": "Insurance",
+          "description": "I-insure ang gusali ng iyong tahanan at ang mga nilalaman nito upang hindi ka na kailangang magbayad para sa pinsala at pagkawala.",
+          "feature1": "15% na rabat kapag bumili ka online",
+          "feature2": "Saklaw laban sa mga pinsalang sanhi ng sunog, kidlat, at domestic na pagsabog",
+          "feature3": "Saklaw laban sa pinsalang sanhi ng baha at landslide",
+          "feature4": "Saklaw para sa mga nagpapaupa"
+        },
+        "houseownerTakaful": {
+          "title": "Houseowner and Householder Takaful",
+          "subtitle": "Takaful",
+          "description": "Protektahan ang gusali ng iyong tahanan at ang mga nilalaman nito gamit ang planong sumusunod sa Shariah upang hindi ka na kailangang magbayad para sa pinsala at pagkawala.",
+          "feature1": "15% na rabat kapag mag-apply ka online",
+          "feature2": "Saklaw laban sa mga pinsalang sanhi ng sunog, kidlat, at domestic na pagsabog",
+          "feature3": "Saklaw laban sa pinsalang sanhi ng baha at landslide",
+          "feature4": "Saklaw para sa mga nagpapaupa",
+          "feature5": "Cash back kapag walang mga claim"
+        },
+        "myRumah": {
+          "title": "MyRumah Insurance",
+          "subtitle": "Insurance",
+          "description": "Protektahan ang iyong tahanan, ang mga nilalaman nito at higit pa.",
+          "feature1": "Makakuha ng 15% na diskwento kapag bumili ka online",
+          "feature2": "Saklaw laban sa mga pinsalang sanhi ng sunog, kidlat, at domestic na pagsabog",
+          "feature3": "Saklaw laban sa mga pinsalang sanhi ng baha, bagyo at higit pa"
+        },
+        "myRumahTakaful": {
+          "title": "MyRumah Takaful",
+          "subtitle": "Takaful",
+          "description": "Protektahan ang iyong tahanan, ang mga nilalaman nito at higit pa.",
+          "feature1": "15% na rabat kapag nag-sign-up ka online",
+          "feature2": "Saklaw laban sa mga pinsalang sanhi ng sunog, kidlat, at domestic na pagsabog",
+          "feature3": "Saklaw laban sa mga pinsalang sanhi ng baha, bagyo at higit pa"
+        },
+        "mrta": {
+          "title": "Mortgage Reducing Term Assurance (MRTA)",
+          "description": "Isang insurance coverage na tumutulong na alagaan ang iyong natitirang halaga ng housing loan kung sakaling may masamang mangyari sa iyo.",
+          "benefit1": "Benepisyo sa Kamatayan",
+          "benefit2": "Kabuuan at Permanenteng Kapansanang Benepisyo (TPD)"
+        },
+        "mrtt": {
+          "title": "Mortgage Reducing Term Takaful (MRTT)",
+          "description": "Isang takaful coverage na tumutulong na alagaan ang iyong natitirang halaga ng home financing kung sakaling may masamang mangyari sa iyo.",
+          "benefit1": "Benepisyo sa Kamatayan",
+          "benefit2": "Kabuuan at Permanenteng Kapansanang Benepisyo (TPD)"
+        }
+      }
+    }
+  }
+}

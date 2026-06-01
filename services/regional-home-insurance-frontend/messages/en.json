@@ -1,0 +1,206 @@
+{
+  "common": {
+    "appName": "Etiqa Home Insurance",
+    "regionalPortal": "Regional Home Insurance Portal",
+    "copyright": "Etiqa Insurance © 2025",
+    "needAssistance": "Need assistance? Contact our support team",
+    "learnMore": "Learn more about Etiqa Home Insurance",
+    "comingSoon": "Coming Soon",
+    "viewProductInfo": "View Product Info",
+    "applyOnline": "Apply Online",
+    "benefits": "Benefits:"
+  },
+  "language": {
+    "en": "English",
+    "fil": "Filipino",
+    "id": "Bahasa Indonesia",
+    "km": "ភាសាខ្មែរ",
+    "selectLanguage": "Select Language"
+  },
+  "countries": {
+    "cambodia": "🇰🇭 Cambodia",
+    "philippines": "🇵🇭 Philippines",
+    "indonesia": "🇮🇩 Indonesia",
+    "selectCountry": "Select Country"
+  },
+  "home": {
+    "headline": "Protect Your Home Across Southeast Asia",
+    "subheadline": "Comprehensive home insurance coverage in Cambodia, Philippines, and Indonesia with instant policy issuance.",
+    "propertyProtection": "Property Protection",
+    "propertyProtectionDesc": "Coverage for your home structure and belongings",
+    "instantCoverage": "Instant Coverage",
+    "instantCoverageDesc": "Immediate policy issuance after payment",
+    "liabilityCoverage": "Liability Coverage",
+    "liabilityCoverageDesc": "Protection against third-party claims",
+    "regionalSupport": "Regional Support",
+    "regionalSupportDesc": "Local assistance in all covered countries"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signInDesc": "Access your Etiqa Home Insurance account",
+    "signingIn": "Signing in...",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create one here",
+    "createAccountTitle": "Create Account",
+    "createAccountDesc": "Join Etiqa Home Insurance for comprehensive regional coverage",
+    "creatingAccount": "Creating Account...",
+    "alreadyHaveAccount": "Already have an account?",
+    "signInHere": "Sign in here"
+  },
+  "register": {
+    "headline": "Join Our Regional Insurance Network",
+    "subheadline": "Create your account to access comprehensive home insurance coverage across Cambodia, Philippines, and Indonesia.",
+    "instantPolicy": "Instant policy issuance",
+    "multiRegion": "Multi-region coverage",
+    "support247": "24/7 customer support",
+    "onlineClaims": "Online claims processing",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "Enter your email address",
+    "region": "Region",
+    "selectRegion": "Select your region",
+    "contactNumber": "Contact Number",
+    "contactPlaceholder": "Enter your contact number",
+    "address": "Address",
+    "addressPlaceholder": "Enter your complete address",
+    "password": "Password",
+    "passwordPlaceholder": "Create a strong password",
+    "passwordHint": "Password must be at least 8 characters with uppercase, lowercase, and number",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "agreeToTerms": "I agree to the",
+    "termsAndConditions": "Terms and Conditions",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "marketingConsent": "I would like to receive marketing communications and product updates (Optional)",
+    "idLabelKH": "National ID / Passport Number",
+    "idLabelPH": "National ID / Passport Number",
+    "idLabelID": "KTP / Passport Number",
+    "idLabelDefault": "IC / Passport Number",
+    "errors": {
+      "nameRequired": "Full name is required",
+      "nameTooShort": "Name must be at least 2 characters",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "contactRequired": "Contact number is required",
+      "contactTooShort": "Contact number must be at least 8 digits",
+      "addressRequired": "Address is required",
+      "addressTooShort": "Please provide a complete address",
+      "idRequired": "ID/Passport number is required",
+      "idTooShort": "ID/Passport number must be at least 6 characters",
+      "regionRequired": "Please select your region",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordWeak": "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordMismatch": "Passwords do not match",
+      "termsRequired": "You must agree to the terms and conditions",
+      "registrationFailed": "Registration failed. Please try again."
+    },
+    "verification": {
+      "checkEmail": "Check Your Email",
+      "sentTo": "A verification email has been sent to",
+      "nextSteps": "Next Steps:",
+      "step1": "Check your email inbox and spam folder",
+      "step2": "Click the verification link in the email",
+      "step3": "Complete your account setup",
+      "step4": "Start exploring our insurance products",
+      "registerAnother": "Register Another Account",
+      "returnToLogin": "Return to Login",
+      "didntReceive": "Didn't receive the email? Check your spam folder or contact support."
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "policies": "Policies",
+      "sales": "Sales",
+      "profile": "Profile",
+      "settings": "Settings"
+    },
+    "header": {
+      "notifications": "Notifications",
+      "help": "Help",
+      "toggleMenu": "Toggle menu",
+      "userMenu": "User menu",
+      "myAccount": "My Account",
+      "profileItem": "Profile",
+      "settingsItem": "Settings",
+      "logOut": "Log out"
+    },
+    "overview": {
+      "signUpOnline": "Sign-Up Online",
+      "showAll": "Show All",
+      "insurance": "Insurance",
+      "takaful": "Takaful",
+      "cheapBudget": "Cheap Budget",
+      "mortgageProtection": "Mortgage Protection",
+      "comingSoonMessage": "insurance products will be available soon. Stay tuned for updates!",
+      "exploreHome": "Explore Home Insurance",
+      "categories": {
+        "car": "Car",
+        "motorcycle": "Motorcycle",
+        "travel": "Travel",
+        "personal": "Personal Accident",
+        "home": "Home",
+        "medical": "Medical",
+        "life": "Life & Family"
+      },
+      "products": {
+        "houseowner": {
+          "title": "Houseowner and Householder Insurance",
+          "subtitle": "Insurance",
+          "description": "Insure the building of your home and its contents so that you don't have to pay for damage and losses.",
+          "feature1": "15% rebate when you buy online",
+          "feature2": "Coverage against damages caused by fire lightning, and domestic explosions",
+          "feature3": "Coverage against damage caused by floods and landslides",
+          "feature4": "Coverage for landlords"
+        },
+        "houseownerTakaful": {
+          "title": "Houseowner and Householder Takaful",
+          "subtitle": "Takaful",
+          "description": "Protect the building of your home and its contents with a Shariah-compliant plan so that you don't have to pay for damage and losses.",
+          "feature1": "15% rebate when you apply online",
+          "feature2": "Coverage against damages caused by fire lightning, and domestic explosions",
+          "feature3": "Coverage against damage caused by floods and landslides",
+          "feature4": "Coverage for landlords",
+          "feature5": "Cash back when you make no claims"
+        },
+        "myRumah": {
+          "title": "MyRumah Insurance",
+          "subtitle": "Insurance",
+          "description": "Protect your home, its contents and more.",
+          "feature1": "Get 15% off when you purchase online",
+          "feature2": "Coverage against damages caused by fire lightning, and domestic explosion",
+          "feature3": "Coverage against damages caused by flood, storm and more"
+        },
+        "myRumahTakaful": {
+          "title": "MyRumah Takaful",
+          "subtitle": "Takaful",
+          "description": "Protect your home, its contents and more.",
+          "feature1": "15% rebate when you sign-up online",
+          "feature2": "Coverage against damages caused by fire lightning, and domestic explosions",
+          "feature3": "Coverage against damages caused by floods, storm and more"
+        },
+        "mrta": {
+          "title": "Mortgage Reducing Term Assurance (MRTA)",
+          "description": "An insurance coverage that helps to take care of your outstanding housing loan amount in case of any unfortunate event happen to you.",
+          "benefit1": "Death Benefit",
+          "benefit2": "Total and Permanent Disability Benefit (TPD)"
+        },
+        "mrtt": {
+          "title": "Mortgage Reducing Term Takaful (MRTT)",
+          "description": "A takaful coverage that helps to take care of your outstanding home financing amount in case of any unfortunate event happen to you.",
+          "benefit1": "Death Benefit",
+          "benefit2": "Total and Permanent Disability Benefit (TPD)"
+        }
+      }
+    }
+  }
+}

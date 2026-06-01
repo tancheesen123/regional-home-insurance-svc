@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0056b3"/>
+  <!-- Shield shape -->
+  <path
+    d="M16 5L7 8.5V15.5C7 20.4 11 25 16 27C21 25 25 20.4 25 15.5V8.5L16 5Z"
+    fill="white"
+    opacity="0.95"
+  />
+  <!-- Home silhouette inside shield -->
+  <path
+    d="M16 12L11.5 16H13V21H15V18H17V21H19V16H20.5L16 12Z"
+    fill="#0056b3"
+  />
+</svg>

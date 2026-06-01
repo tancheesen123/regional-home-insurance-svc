@@ -1,0 +1,71 @@
+const SESSION_KEY = "etiqa_session"
+
+export interface Session {
+  email: string
+  userId: string
+  country: string
+  countryCode: string  // e.g. "PH", "ID", "KH"
+  token: string
+  loginAt: number
+  expiresAt: number  // unix ms — sourced from API response
+  rememberMe: boolean
+}
+
+export function setSession(
+  data: {
+    email: string
+    userId: string
+    country: string
+    countryCode: string
+    token: string
+    expiresAt: string  // ISO string from API e.g. "2026-04-09T14:21:47Z"
+  },
+  rememberMe: boolean
+): void {
+  const session: Session = {
+    email: data.email,
+    userId: data.userId,
+    country: data.country,
+    countryCode: data.countryCode,
+    token: data.token,
+    loginAt: Date.now(),
+    expiresAt: new Date(data.expiresAt).getTime(),
+    rememberMe,
+  }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+}
+
+export function getSession(): Session | null {
+  if (typeof window === "undefined") return null
+
+  const raw = localStorage.getItem(SESSION_KEY)
+  if (!raw) return null
+
+  try {
+    const session: Session = JSON.parse(raw)
+    if (Date.now() > session.expiresAt) {
+      clearSession()
+      return null
+    }
+    return session
+  } catch {
+    clearSession()
+    return null
+  }
+}
+
+export function clearSession(): void {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(SESSION_KEY)
+}
+
+export function isSessionValid(): boolean {
+  return getSession() !== null
+}
+
+/** Returns milliseconds until session expires, or 0 if already expired */
+export function getTimeUntilExpiry(): number {
+  const session = getSession()
+  if (!session) return 0
+  return Math.max(0, session.expiresAt - Date.now())
+}
