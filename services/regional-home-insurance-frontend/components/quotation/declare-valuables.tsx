@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Plus, Minus, Edit, Trash2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -172,8 +173,8 @@ export default function DeclareValuables() {
       <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
         <QuotationStepper currentStep={2} />
 
-        <div className="bg-white rounded-lg p-8">
-          <h2 className="text-2xl font-bold mb-8">
+        <div className="bg-white rounded-2xl p-8 shadow-sm">
+          <h2 className="text-2xl font-bold text-[#1A1A1A] mb-8">
             {t("declare.ownMoreThan", { symbol })}
           </h2>
 
@@ -181,9 +182,9 @@ export default function DeclareValuables() {
             {categories.map((category) => (
               <div key={category.id} className="text-center">
                 <div className="text-4xl mb-2">{category.icon}</div>
-                <h3 className="font-semibold text-gray-900 mb-1">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
+                <h3 className="font-semibold text-[#1A1A1A] mb-1">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
                 {category.descKey && (
-                  <p className="text-sm text-gray-600">({t(category.descKey as Parameters<typeof t>[0])})</p>
+                  <p className="text-sm text-[#555555]">({t(category.descKey as Parameters<typeof t>[0])})</p>
                 )}
               </div>
             ))}
@@ -192,28 +193,28 @@ export default function DeclareValuables() {
           <div className="flex gap-4 mb-8">
             <Button
               onClick={handleWantToDeclare}
-              className="flex-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 py-4"
+              className="flex-1 bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 rounded-lg transition-all duration-150"
             >
               {t("declare.yesWantToDeclare")}
             </Button>
             <Button
               onClick={handleSkipDeclaration}
-              className="flex-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 py-4"
+              className="flex-1 bg-white border-[1.5px] border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] h-12 rounded-lg transition-all duration-150"
             >
               {t("declare.noSkip")}
             </Button>
           </div>
 
-          <Alert className="bg-gray-50 border-gray-200">
+          <Alert className="bg-[#FAFAFA] border-[#E0E0E0]">
             <AlertDescription>
               <div className="space-y-2">
-                <p className="font-semibold text-gray-900">{t("declare.itemsNotNeededTitle")}</p>
-                <p className="text-sm text-gray-600">
-                  <span className="text-blue-600">
+                <p className="font-semibold text-[#1A1A1A]">{t("declare.itemsNotNeededTitle")}</p>
+                <p className="text-sm text-[#555555]">
+                  <span className="text-[#0066CC]">
                     {t("declare.coverageUpTo", { symbol })}
                   </span>
                 </p>
-                <p className="text-sm text-gray-600">{t("declare.furnitureDesc")}</p>
+                <p className="text-sm text-[#555555]">{t("declare.furnitureDesc")}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -228,17 +229,29 @@ export default function DeclareValuables() {
     <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
       <QuotationStepper currentStep={2} />
 
-      <div className="bg-white rounded-lg p-6">
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">{t("declare.fillDetailsTitle")}</h2>
-          <Button variant="link" className="text-blue-600" onClick={handleSkipDeclaration}>
+          <h2 className="text-2xl font-bold text-[#1A1A1A]">{t("declare.fillDetailsTitle")}</h2>
+          <Button
+            variant="link"
+            className="text-[#0066CC] hover:text-[#004EA8] p-0 h-auto"
+            onClick={handleSkipDeclaration}
+          >
             {t("declare.skipDeclaration")}
           </Button>
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="space-y-3 mb-8">
           {categories.map((category) => (
-            <Card key={category.id} className="border border-gray-200">
+            <Card
+              key={category.id}
+              className={cn(
+                "border-[1.5px] rounded-xl transition-all duration-150",
+                category.isExpanded
+                  ? "border-[#F5A623] shadow-sm"
+                  : "border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-sm",
+              )}
+            >
               <CardContent className="p-4">
                 <div
                   className="flex items-center justify-between cursor-pointer"
@@ -247,74 +260,82 @@ export default function DeclareValuables() {
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{category.icon}</span>
                     <div>
-                      <h3 className="font-semibold">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
+                      <h3 className="font-semibold text-[#1A1A1A]">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
                       {category.descKey && (
-                        <p className="text-sm text-gray-600">({t(category.descKey as Parameters<typeof t>[0])})</p>
+                        <p className="text-sm text-[#555555]">({t(category.descKey as Parameters<typeof t>[0])})</p>
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-[#9E9E9E] hover:text-[#1A1A1A]">
                     {category.isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                   </Button>
                 </div>
 
                 {category.isExpanded && (
-                  <div className="mt-4 space-y-4">
+                  <div className="mt-4 space-y-4 pt-4 border-t border-[#F5F5F5]">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="description">{t("declare.descriptionLabel")}</Label>
+                        <Label htmlFor="description" className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
+                          {t("declare.descriptionLabel")}
+                        </Label>
                         <Input
                           id="description"
                           placeholder={t("declare.descriptionPlaceholder")}
                           value={newItem.description}
                           onChange={(e) => setNewItem((prev) => ({ ...prev, description: e.target.value }))}
+                          className="border-[#E0E0E0] rounded-lg h-10"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="value">{t("declare.valueLabel")}</Label>
+                        <Label htmlFor="value" className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
+                          {t("declare.valueLabel")}
+                        </Label>
                         <div className="flex">
-                          <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
+                          <span className="inline-flex items-center px-3 text-sm text-[#1A1A1A] bg-[#FAFAFA] border border-r-0 border-[#E0E0E0] rounded-l-lg">
                             {symbol}
                           </span>
                           <Input
                             id="value"
                             type="number"
-                            className="rounded-l-none"
+                            className="rounded-l-none border-[#E0E0E0] h-10"
                             value={newItem.value}
                             onChange={(e) => setNewItem((prev) => ({ ...prev, value: e.target.value }))}
                           />
                         </div>
-                        <p className="text-xs text-red-500 mt-1">{t("declare.minMax", { symbol })}</p>
+                        <p className="text-xs text-[#9E9E9E] mt-1.5">{t("declare.minMax", { symbol })}</p>
                       </div>
                     </div>
 
                     <Button
                       onClick={() => addItem(category.id)}
-                      className="text-blue-600 bg-transparent hover:bg-blue-50 p-0 h-auto"
+                      className="text-[#0066CC] hover:text-[#004EA8] bg-transparent hover:bg-transparent hover:underline p-0 h-auto font-medium transition-colors duration-150"
                       disabled={!newItem.description || !newItem.value}
                     >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
                       {t("declare.addItem")}
                     </Button>
 
                     {category.items.length > 0 && (
                       <div className="space-y-2">
                         {category.items.map((item, index) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm">
-                              {index + 1}. {item.description} | {symbol} {item.value.toLocaleString()}
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg">
+                            <span className="text-sm text-[#1A1A1A]">
+                              {index + 1}. {item.description}
+                              <span className="text-[#9E9E9E] mx-1">·</span>
+                              <span className="font-medium">{symbol} {item.value.toLocaleString()}</span>
                             </span>
-                            <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm" className="text-blue-600">
-                                <Edit className="h-4 w-4" />
-                                {t("declare.edit")}
+                            <div className="flex items-center space-x-1">
+                              <Button variant="ghost" size="sm" className="text-[#0066CC] hover:text-[#004EA8] hover:bg-[#E0F0FF] h-8 px-2">
+                                <Edit className="h-3.5 w-3.5" />
+                                <span className="ml-1 text-xs">{t("declare.edit")}</span>
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-600"
+                                className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#FFEBEE] h-8 px-2"
                                 onClick={() => deleteItem(category.id, item.id)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -329,13 +350,17 @@ export default function DeclareValuables() {
         </div>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-6">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         <div className="flex justify-center">
-          <Button onClick={handleContinue} className="bg-[#0056b3] hover:bg-[#004494] text-white px-12 py-3" disabled={isLoading}>
+          <Button
+            onClick={handleContinue}
+            className="bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 px-12 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E] transition-all duration-150"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

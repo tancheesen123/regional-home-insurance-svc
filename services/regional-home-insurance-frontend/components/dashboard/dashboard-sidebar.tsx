@@ -148,7 +148,7 @@ export default function DashboardSidebar() {
                 <>
                   {[1, 2, 3, 4].map((i) => (
                     <SidebarMenuItem key={i}>
-                      <SidebarMenuSkeleton showIcon />
+                      <SidebarMenuSkeleton showIcon className={`skeleton-item-${i}`} />
                     </SidebarMenuItem>
                   ))}
                 </>

@@ -11,7 +11,7 @@ export function getIdTypeOptions(
   switch (cc.toUpperCase()) {
     case "ID":
       return [
-        { value: "ktp",      label: "KTP (Kartu Tanda Penduduk)" },
+        { value: "ktp",      label: "KTP" },
         { value: "passport", label: "Passport" },
       ]
     case "PH":

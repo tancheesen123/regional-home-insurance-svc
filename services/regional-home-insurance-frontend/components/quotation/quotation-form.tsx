@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CalendarIcon, Home, Building, Minus, Plus, CheckCircle } from "lucide-react"
+import { CalendarIcon, Home, Building, Minus, Plus, Check } from "lucide-react"
 import { format, parse, isValid } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -198,9 +198,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm p-8">
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("form.title")}</h1>
+        <h1 className="text-2xl font-bold text-[#1A1A1A] mb-2">{t("form.title")}</h1>
       </div>
 
       {/* Scan banner — shown once field mapping is wired up */}
@@ -210,16 +210,16 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         {/* Owner/Tenant Selection */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.iAmA")}</Label>
-            <div className="grid grid-cols-2 bg-gray-100 rounded-lg p-1">
+            <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.iAmA")}</Label>
+            <div className="grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1">
               <Button
                 type="button"
-                variant={formData.ownershipType === "owner" ? "default" : "ghost"}
+                variant="ghost"
                 className={cn(
-                  "rounded-md transition-all",
+                  "rounded-md text-sm font-medium transition-all duration-150",
                   formData.ownershipType === "owner"
-                    ? "bg-gray-800 text-white shadow-sm"
-                    : "bg-transparent text-gray-600 hover:bg-gray-200",
+                    ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                    : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                 )}
                 onClick={() => handleInputChange("ownershipType", "owner")}
               >
@@ -227,12 +227,12 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               </Button>
               <Button
                 type="button"
-                variant={formData.ownershipType === "tenant" ? "default" : "ghost"}
+                variant="ghost"
                 className={cn(
-                  "rounded-md transition-all",
+                  "rounded-md text-sm font-medium transition-all duration-150",
                   formData.ownershipType === "tenant"
-                    ? "bg-gray-800 text-white shadow-sm"
-                    : "bg-transparent text-gray-600 hover:bg-gray-200",
+                    ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                    : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
                 )}
                 onClick={() => handleInputChange("ownershipType", "tenant")}
               >
@@ -242,10 +242,10 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.coverageStartsFrom")}</Label>
+            <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.coverageStartsFrom")}</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal border-gray-300">
+                <Button variant="outline" className="w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.coverageStartDate ? format(formData.coverageStartDate, "dd/MM/yyyy") : t("form.selectDate")}
                 </Button>
@@ -265,12 +265,12 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* Property Type Dropdown */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.propertyTypeLabel")}</Label>
+          <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.propertyTypeLabel")}</Label>
           <Select
             value={formData.propertySubType}
             onValueChange={(value) => handleInputChange("propertySubType", value)}
           >
-            <SelectTrigger className="w-full border-gray-300">
+            <SelectTrigger className="w-full border-[#E0E0E0]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -284,28 +284,28 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* Property Type Cards */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-4 block">{t("form.propertyTypeLabel")}</Label>
+          <Label className="text-sm font-medium text-[#1A1A1A] mb-4 block">{t("form.propertyTypeLabel")}</Label>
           <div className="grid grid-cols-2 gap-4">
             {PROPERTY_TYPES.map((type) => (
               <Card
                 key={type.id}
                 className={cn(
-                  "cursor-pointer transition-all border-2",
+                  "cursor-pointer transition-all duration-150",
                   formData.propertyType === type.id
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200 hover:border-gray-300",
+                    ? "border-2 border-[#00A651] bg-[#E6F7EE]"
+                    : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
                 )}
                 onClick={() => handleInputChange("propertyType", type.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <type.icon className="h-6 w-6 text-gray-600" />
-                    {formData.propertyType === type.id && <CheckCircle className="h-5 w-5 text-green-600" />}
+                    <type.icon className="h-8 w-8 text-[#F5A623]" />
+                    {formData.propertyType === type.id && <div className="w-5 h-5 rounded-full bg-[#00A651] flex items-center justify-center"><Check className="h-3 w-3 text-white" strokeWidth={2.5} /></div>}
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">
+                  <h3 className="font-semibold text-[#1A1A1A] mb-1">
                     {type.id === "landed" ? t("form.landedTitle") : t("form.nonLandedTitle")}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[#555555]">
                     {type.id === "landed" ? t("form.landedDesc") : t("form.nonLandedDesc")}
                   </p>
                 </CardContent>
@@ -316,13 +316,13 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* Number of Storey */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.numberOfStorey")}</Label>
+          <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.numberOfStorey")}</Label>
           <div className="flex items-center space-x-4">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-10 w-10 rounded-full border-gray-300"
+              className="h-10 w-10 rounded-lg border-[#E0E0E0] disabled:opacity-60"
               onClick={() => handleInputChange("numberOfStorey", Math.max(1, formData.numberOfStorey - 1))}
               disabled={formData.numberOfStorey <= 1}
             >
@@ -333,7 +333,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               type="button"
               variant="outline"
               size="icon"
-              className="h-10 w-10 rounded-full border-gray-300"
+              className="h-10 w-10 rounded-lg border-[#E0E0E0] disabled:opacity-60"
               onClick={() => handleInputChange("numberOfStorey", Math.min(5, formData.numberOfStorey + 1))}
               disabled={formData.numberOfStorey >= 5}
             >
@@ -344,16 +344,16 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* Construction Type */}
         <div>
-          <Label className="text-sm font-medium text-gray-700 mb-4 block">{t("form.constructionType")}</Label>
+          <Label className="text-sm font-medium text-[#1A1A1A] mb-4 block">{t("form.constructionType")}</Label>
           <div className="space-y-3">
             {CONSTRUCTION_TYPES.map((type) => (
               <Card
                 key={type.id}
                 className={cn(
-                  "cursor-pointer transition-all border-2",
+                  "cursor-pointer transition-all duration-150",
                   formData.constructionType === type.id
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200 hover:border-gray-300",
+                    ? "border-2 border-[#00A651] bg-[#E6F7EE]"
+                    : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
                 )}
                 onClick={() => handleInputChange("constructionType", type.id)}
               >
@@ -361,19 +361,19 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
-                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
-                          <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                        <div className="w-8 h-8 bg-[#FEF3DC] rounded-lg flex items-center justify-center mr-3">
+                          <div className="w-4 h-4 bg-[#F5A623] rounded"></div>
                         </div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-[#1A1A1A]">
                           {type.id === "full-brick" ? t("form.fullBrickTitle") : t("form.partialBrickTitle")}
                         </h3>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-[#555555]">
                         {type.id === "full-brick" ? t("form.fullBrickDesc") : t("form.partialBrickDesc")}
                       </p>
                     </div>
                     {formData.constructionType === type.id && (
-                      <CheckCircle className="h-5 w-5 text-green-600 ml-3 flex-shrink-0" />
+                      <div className="w-5 h-5 rounded-full bg-[#00A651] flex items-center justify-center ml-3 flex-shrink-0"><Check className="h-3 w-3 text-white" strokeWidth={2.5} /></div>
                     )}
                   </div>
                 </CardContent>
@@ -384,7 +384,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* Postcode */}
         <div>
-          <Label htmlFor="postcode" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+          <Label htmlFor="postcode" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
             {t("form.postcodeLabel")}
             <ScanFieldBadge field={badge("postcode")} />
           </Label>
@@ -392,170 +392,116 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             id="postcode"
             value={formData.postcode}
             onChange={(e) => handleInputChange("postcode", e.target.value)}
-            className="border-gray-300"
+            className="border-[#E0E0E0]"
             placeholder={t("form.postcodePlaceholder")}
           />
         </div>
 
         {/* Risk Assessment Questions */}
         <div className="space-y-6">
+          {(
+            [
+              { field: "currentFlooding",    labelKey: "form.currentFlooding"    },
+              { field: "unoccupiedProperty", labelKey: "form.unoccupiedProperty" },
+              { field: "previousLoss",       labelKey: "form.previousLoss"       },
+            ] as const
+          ).map(({ field, labelKey }) => (
+            <div key={field}>
+              <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">
+                {t(labelKey)}
+              </Label>
+              <div className="grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1">
+                {(["yes", "no"] as const).map((val) => (
+                  <Button
+                    key={val}
+                    type="button"
+                    variant="ghost"
+                    className={cn(
+                      "rounded-md text-sm font-medium transition-all duration-150",
+                      formData[field] === val
+                        ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                        : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
+                    )}
+                    onClick={() => handleInputChange(field, val)}
+                  >
+                    {t(val === "yes" ? "common.yes" : "common.no")}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── ID Type + ID Number (same row) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+
+          {/* ID Type toggle pill */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              {t("form.currentFlooding")}
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={formData.currentFlooding === "yes" ? "default" : "outline"}
-                className={cn(
-                  formData.currentFlooding === "yes"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("currentFlooding", "yes")}
-              >
-                {t("common.yes")}
-              </Button>
-              <Button
-                type="button"
-                variant={formData.currentFlooding === "no" ? "default" : "outline"}
-                className={cn(
-                  formData.currentFlooding === "no"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("currentFlooding", "no")}
-              >
-                {t("common.no")}
-              </Button>
+            <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.idTypeLabel")}</Label>
+            <div className={cn(
+              "grid bg-[#F5F5F5] rounded-lg p-1 gap-0",
+              idTypeOptions.length === 2 ? "grid-cols-2" : "grid-cols-3",
+            )}>
+              {idTypeOptions.map((opt) => (
+                <Button
+                  key={opt.value}
+                  type="button"
+                  variant="ghost"
+                  className={cn(
+                    "rounded-md text-sm font-medium transition-all duration-150 h-9",
+                    formData.idType === opt.value
+                      ? "bg-[#1A1A1A] text-white shadow-sm hover:bg-[#333333] hover:text-white"
+                      : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
+                  )}
+                  onClick={() => handleIdTypeChange(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
             </div>
           </div>
 
+          {/* ID Number — changes based on selected type */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              {t("form.unoccupiedProperty")}
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={formData.unoccupiedProperty === "yes" ? "default" : "outline"}
-                className={cn(
-                  formData.unoccupiedProperty === "yes"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("unoccupiedProperty", "yes")}
-              >
-                {t("common.yes")}
-              </Button>
-              <Button
-                type="button"
-                variant={formData.unoccupiedProperty === "no" ? "default" : "outline"}
-                className={cn(
-                  formData.unoccupiedProperty === "no"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("unoccupiedProperty", "no")}
-              >
-                {t("common.no")}
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              {t("form.previousLoss")}
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={formData.previousLoss === "yes" ? "default" : "outline"}
-                className={cn(
-                  formData.previousLoss === "yes"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("previousLoss", "yes")}
-              >
-                {t("common.yes")}
-              </Button>
-              <Button
-                type="button"
-                variant={formData.previousLoss === "no" ? "default" : "outline"}
-                className={cn(
-                  formData.previousLoss === "no"
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleInputChange("previousLoss", "no")}
-              >
-                {t("common.no")}
-              </Button>
-            </div>
+            {formData.idType === "passport" ? (
+              <>
+                <Label htmlFor="passport" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
+                  {t("form.passportLabel")}
+                  <ScanFieldBadge field={badge("idNumber")} />
+                </Label>
+                <Input
+                  id="passport"
+                  value={formData.passportNumber}
+                  onChange={(e) => handleInputChange("passportNumber", e.target.value)}
+                  className="border-[#E0E0E0] rounded-lg h-10"
+                  placeholder={t("form.passportPlaceholder")}
+                />
+              </>
+            ) : (
+              <>
+                <Label htmlFor="nric" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
+                  {t("form.nricLabel")}
+                  <ScanFieldBadge field={badge("idNumber")} />
+                </Label>
+                <Input
+                  id="nric"
+                  value={formData.nricNumber}
+                  onChange={(e) => handleInputChange("nricNumber", e.target.value)}
+                  className="border-[#E0E0E0] rounded-lg h-10"
+                  placeholder={t("form.nricPlaceholder")}
+                />
+              </>
+            )}
           </div>
         </div>
 
-        {/* ID Type Selection */}
-        <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.idTypeLabel")}</Label>
-          <div className={cn("grid gap-3", idTypeOptions.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
-            {idTypeOptions.map((opt) => (
-              <Button
-                key={opt.value}
-                type="button"
-                variant={formData.idType === opt.value ? "default" : "outline"}
-                className={cn(
-                  formData.idType === opt.value
-                    ? "bg-gray-800 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
-                )}
-                onClick={() => handleIdTypeChange(opt.value)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* ID Number Input */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {formData.idType === "passport" ? (
+        {/* ── Passport extras: Nationality + Date of Birth (same row) ── */}
+        {formData.idType === "passport" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="passport" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                {t("form.passportLabel")}
-                <ScanFieldBadge field={badge("idNumber")} />
-              </Label>
-              <Input
-                id="passport"
-                value={formData.passportNumber}
-                onChange={(e) => handleInputChange("passportNumber", e.target.value)}
-                className="border-gray-300"
-                placeholder={t("form.passportPlaceholder")}
-              />
-            </div>
-          ) : (
-            <div>
-              <Label htmlFor="nric" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                {t("form.nricLabel")}
-                <ScanFieldBadge field={badge("idNumber")} />
-              </Label>
-              <Input
-                id="nric"
-                value={formData.nricNumber}
-                onChange={(e) => handleInputChange("nricNumber", e.target.value)}
-                className="border-gray-300"
-                placeholder={t("form.nricPlaceholder")}
-              />
-            </div>
-          )}
-
-          {/* Nationality — only shown when Passport is selected */}
-          {formData.idType === "passport" && (
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-3 block">{t("form.nationalityLabel")}</Label>
+              <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.nationalityLabel")}</Label>
               <Select value={formData.nationality} onValueChange={(value) => handleInputChange("nationality", value)}>
-                <SelectTrigger className="border-gray-300">
+                <SelectTrigger className="border-[#E0E0E0] rounded-lg h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -565,50 +511,93 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 </SelectContent>
               </Select>
             </div>
-          )}
-        </div>
 
-        {/* Date of Birth */}
-        <div>
-          <Label htmlFor="dob" className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-            {t("form.dobLabel")}
-            <ScanFieldBadge field={badge("dateOfBirth")} />
-          </Label>
-          <Popover open={dobOpen} onOpenChange={setDobOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                id="dob"
-                type="button"
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal border-gray-300",
-                  !formData.dateOfBirth && "text-muted-foreground",
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                {formData.dateOfBirth || <span className="text-gray-400">DD/MM/YYYY</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={(() => {
-                  if (!formData.dateOfBirth) return undefined
-                  const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
-                  return isValid(parsed) ? parsed : undefined
-                })()}
-                onSelect={handleDobSelect}
-                disabled={{ after: new Date() }}
-                defaultMonth={(() => {
-                  if (!formData.dateOfBirth) return undefined
-                  const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
-                  return isValid(parsed) ? parsed : undefined
-                })()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+            <div>
+              <Label htmlFor="dob-passport" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
+                {t("form.dobLabel")}
+                <ScanFieldBadge field={badge("dateOfBirth")} />
+              </Label>
+              <Popover open={dobOpen} onOpenChange={setDobOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="dob-passport"
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg h-10",
+                      !formData.dateOfBirth && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                    {formData.dateOfBirth || <span className="text-[#9E9E9E]">DD/MM/YYYY</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={(() => {
+                      if (!formData.dateOfBirth) return undefined
+                      const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                      return isValid(parsed) ? parsed : undefined
+                    })()}
+                    onSelect={handleDobSelect}
+                    disabled={{ after: new Date() }}
+                    defaultMonth={(() => {
+                      if (!formData.dateOfBirth) return undefined
+                      const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                      return isValid(parsed) ? parsed : undefined
+                    })()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        )}
+
+        {/* ── Date of Birth — non-passport only ── */}
+        {formData.idType !== "passport" && (
+          <div>
+            <Label htmlFor="dob" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
+              {t("form.dobLabel")}
+              <ScanFieldBadge field={badge("dateOfBirth")} />
+            </Label>
+            <Popover open={dobOpen} onOpenChange={setDobOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="dob"
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg h-10",
+                    !formData.dateOfBirth && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                  {formData.dateOfBirth || <span className="text-[#9E9E9E]">DD/MM/YYYY</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={(() => {
+                    if (!formData.dateOfBirth) return undefined
+                    const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                    return isValid(parsed) ? parsed : undefined
+                  })()}
+                  onSelect={handleDobSelect}
+                  disabled={{ after: new Date() }}
+                  defaultMonth={(() => {
+                    if (!formData.dateOfBirth) return undefined
+                    const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
+                    return isValid(parsed) ? parsed : undefined
+                  })()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -620,7 +609,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full bg-[#0056b3] hover:bg-[#004494] text-white font-semibold py-4 text-lg rounded-xl"
+          className="w-full bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 text-base rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E]"
           disabled={isLoading}
         >
           {isLoading ? t("form.gettingQuote") : t("form.getQuote")}

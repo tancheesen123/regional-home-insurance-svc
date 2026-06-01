@@ -62,18 +62,18 @@ export default function QuotationStepper({ currentStep }: Props) {
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-1 py-0.5 transition-all",
                   clickable
-                    ? "cursor-pointer hover:bg-green-50 group"
+                    ? "cursor-pointer hover:bg-[#E6F7EE] group"
                     : "cursor-default",
                 )}
               >
                 {/* Circle */}
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-colors",
-                    isDone   && "bg-green-500 text-white",
-                    isActive && "bg-[#0056b3] text-white",
-                    !isDone && !isActive && "bg-gray-200 text-gray-400",
-                    clickable && "group-hover:bg-green-600",
+                    "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-all duration-150",
+                    isDone   && "bg-[#00A651] text-white",
+                    isActive && "bg-[#F5A623] text-white",
+                    !isDone && !isActive && "bg-[#E0E0E0] text-[#9E9E9E]",
+                    clickable && "group-hover:bg-[#00A651]",
                   )}
                 >
                   {isDone ? <Check className="h-4 w-4" strokeWidth={2.5} /> : step}
@@ -82,11 +82,11 @@ export default function QuotationStepper({ currentStep }: Props) {
                 {/* Label */}
                 <span
                   className={cn(
-                    "text-sm font-medium whitespace-nowrap transition-colors",
-                    isDone   && "text-green-600",
-                    isActive && "text-gray-900",
-                    !isDone && !isActive && "text-gray-400",
-                    clickable && "group-hover:text-green-700 group-hover:underline underline-offset-2",
+                    "text-sm font-medium whitespace-nowrap transition-all duration-150",
+                    isDone   && "text-[#00A651]",
+                    isActive && "text-[#1A1A1A]",
+                    !isDone && !isActive && "text-[#9E9E9E]",
+                    clickable && "group-hover:text-[#00A651] group-hover:underline underline-offset-2",
                   )}
                 >
                   {label}
@@ -97,8 +97,8 @@ export default function QuotationStepper({ currentStep }: Props) {
               {!isLast && (
                 <div
                   className={cn(
-                    "w-12 h-0.5 mx-3 rounded-full transition-colors",
-                    isDone ? "bg-green-400" : "bg-gray-200",
+                    "w-12 h-0.5 mx-3 rounded-full transition-all duration-150",
+                    isDone ? "bg-[#00A651]" : "bg-[#E0E0E0]",
                   )}
                 />
               )}
@@ -114,7 +114,7 @@ export default function QuotationStepper({ currentStep }: Props) {
           <button
             type="button"
             onClick={() => handleClick(currentStep - 1)}
-            className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 mb-2 transition-colors"
+            className="flex items-center gap-1 text-xs text-[#00A651] hover:text-[#00A651] mb-2 transition-all duration-150"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span>{steps[currentStep - 2]}</span>
@@ -122,10 +122,10 @@ export default function QuotationStepper({ currentStep }: Props) {
         )}
 
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-400 font-medium">
+          <span className="text-xs text-[#9E9E9E] font-medium">
             Step {currentStep} of {steps.length}
           </span>
-          <span className="text-xs font-semibold text-[#0056b3]">
+          <span className="text-xs font-semibold text-[#F5A623]">
             {steps[currentStep - 1]}
           </span>
         </div>
@@ -146,10 +146,10 @@ export default function QuotationStepper({ currentStep }: Props) {
                 disabled={!clickable}
                 title={clickable ? `Go back to ${steps[idx]}` : undefined}
                 className={cn(
-                  "flex-1 h-1.5 rounded-full transition-colors",
-                  isDone   && "bg-green-500",
-                  isActive && "bg-[#0056b3]",
-                  !isDone && !isActive && "bg-gray-200",
+                  "flex-1 h-1.5 rounded-full transition-all duration-150",
+                  isDone   && "bg-[#00A651]",
+                  isActive && "bg-[#F5A623]",
+                  !isDone && !isActive && "bg-[#E0E0E0]",
                   clickable && "cursor-pointer hover:brightness-90",
                   !clickable && "cursor-default",
                 )}

@@ -75,7 +75,7 @@ interface BankData {
 function getIdTypeOptions(cc: string): { value: string; label: string }[] {
   switch (cc.toUpperCase()) {
     case "ID": return [
-      { value: "KTP",      label: "KTP (Kartu Tanda Penduduk)" },
+      { value: "KTP",      label: "KTP" },
       { value: "PASSPORT", label: "PASSPORT" },
     ]
     case "PH": return [
