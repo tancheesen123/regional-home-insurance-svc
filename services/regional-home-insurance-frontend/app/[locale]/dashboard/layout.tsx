@@ -1,7 +1,7 @@
 import type React from "react"
-import DashboardHeader from "@/components/dashboard/dashboard-header"
 import DashboardSidebar from "@/components/dashboard/dashboard-sidebar"
 import SessionGuard from "@/components/session-guard"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export default function DashboardLayout({
   children,
@@ -10,13 +10,12 @@ export default function DashboardLayout({
 }) {
   return (
     <SessionGuard>
-      <div className="min-h-screen bg-gray-50">
-        <DashboardHeader />
-        <div className="flex h-[calc(100vh-64px)]">
-          <DashboardSidebar />
-          <main className="flex-1 overflow-auto">{children}</main>
-        </div>
-      </div>
+      <SidebarProvider className="h-screen overflow-hidden">
+        <DashboardSidebar />
+        <SidebarInset className="flex flex-col h-full min-h-0 overflow-hidden bg-gray-50">
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
     </SessionGuard>
   )
 }

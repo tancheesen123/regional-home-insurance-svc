@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import axios from "axios"
+import { useState, useEffect, useMemo } from "react"
 import {
   Search,
   Filter,
@@ -14,6 +13,8 @@ import {
   CheckCircle,
   Clock,
   X,
+  Loader2,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,364 +37,340 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { log } from "console"
+import {
+  fetchCustomerProposals,
+  type CustomerProposal,
+} from "@/lib/api"
+import { downloadPolicyDocuments, DocumentDownloadError } from "@/lib/api"
+import { getSession } from "@/lib/session"
+import { getRegionConfig } from "@/lib/region"
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const REGION_COUNTRY: Record<string, string> = {
+  MY: "Malaysia",
+  PH: "Philippines",
+  ID: "Indonesia",
+  KH: "Cambodia",
+}
+
+function formatPlanType(planType: string): string {
+  switch (planType.toLowerCase()) {
+    case "building-contents": return "Building + Contents"
+    case "building":          return "Building Only"
+    case "contents":          return "Contents Only"
+    default:
+      return planType.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" + ")
+  }
+}
+
+function deriveStatus(endDate: string): "Active" | "Expired" {
+  return new Date(endDate) >= new Date() ? "Active" : "Expired"
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+  })
+}
+
+function fmtAmount(region: string, amount: number): string {
+  const cfg = getRegionConfig(region)
+  const symbol = cfg?.symbol ?? ""
+  return `${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+}
+
+// ── Internal display shape ────────────────────────────────────────────────────
+// Only proposals with a non-null policy are shown as "policies".
 
 interface Policy {
-  id: string
-  policyNumber: string
-  type: string
-  status: "Active" | "Expired" | "Pending" | "Cancelled"
-  premium: number
-  startDate: string
-  endDate: string
-  coverageType: string
-  buildingAmount?: number
-  contentAmount?: number
-  country: string
-  paymentFrequency: "Annual" | "Monthly"
-  nextPayment?: string
-  claimsCount: number
+  proposalId:      string
+  policyId:        string
+  policyNumber:    string
+  coverageType:    string
+  status:          "Active" | "Expired"
+  region:          string
+  country:         string
+  coverageAmount:  number
+  startDate:       string
+  endDate:         string
+  endDateRaw:      Date
+  issuedAt:        string
+  isDocumentReady: boolean
 }
 
-const mockPolicies: Policy[] = [
-  {
-    id: "1",
-    policyNumber: "HI-2025-001234",
-    type: "Home Insurance",
-    status: "Active",
-    premium: 1333.76,
-    startDate: "2025-01-21",
-    endDate: "2026-01-20",
-    coverageType: "Building + Contents",
-    buildingAmount: 500000,
-    contentAmount: 60000,
-    country: "Malaysia",
-    paymentFrequency: "Annual",
-    nextPayment: "2026-01-21",
-    claimsCount: 0,
-  },
-  {
-    id: "2",
-    policyNumber: "HI-2024-001235",
-    type: "Home Insurance",
-    status: "Expired",
-    premium: 1250.0,
-    startDate: "2024-01-21",
-    endDate: "2025-01-20",
-    coverageType: "Building Only",
-    buildingAmount: 450000,
-    country: "Malaysia",
-    paymentFrequency: "Annual",
-    claimsCount: 1,
-  },
-  {
-    id: "3",
-    policyNumber: "HI-2025-001236",
-    type: "Home Insurance",
-    status: "Active",
-    premium: 156.25,
-    startDate: "2025-01-15",
-    endDate: "2026-01-14",
-    coverageType: "Contents Only",
-    contentAmount: 40000,
-    country: "Philippines",
-    paymentFrequency: "Monthly",
-    nextPayment: "2025-02-15",
-    claimsCount: 0,
-  },
-  {
-    id: "4",
-    policyNumber: "HI-2024-001237",
-    type: "Home Insurance",
-    status: "Cancelled",
-    premium: 980.5,
-    startDate: "2024-06-01",
-    endDate: "2025-05-31",
-    coverageType: "Building + Contents",
-    buildingAmount: 300000,
-    contentAmount: 35000,
-    country: "Indonesia",
-    paymentFrequency: "Annual",
-    claimsCount: 2,
-  },
-  {
-    id: "5",
-    policyNumber: "HI-2025-001238",
-    type: "Home Insurance",
-    status: "Pending",
-    premium: 1450.0,
-    startDate: "2025-02-01",
-    endDate: "2026-01-31",
-    coverageType: "Building + Contents",
-    buildingAmount: 600000,
-    contentAmount: 80000,
-    country: "Malaysia",
-    paymentFrequency: "Annual",
-    claimsCount: 0,
-  },
-]
+function mapProposal(p: CustomerProposal): Policy {
+  const pol = p.policy!                             // only called when policy !== null
+  return {
+    proposalId:      p.proposalId,
+    policyId:        pol.policyId,
+    policyNumber:    pol.policyNumber,
+    coverageType:    formatPlanType(p.planType),
+    status:          deriveStatus(pol.endDate),
+    region:          p.region.toUpperCase(),
+    country:         REGION_COUNTRY[p.region.toUpperCase()] ?? p.region,
+    coverageAmount:  pol.coverageAmount,
+    startDate:       fmtDate(pol.startDate),
+    endDate:         fmtDate(pol.endDate),
+    endDateRaw:      new Date(pol.endDate),
+    issuedAt:        fmtDate(pol.issuedAt),
+    isDocumentReady: pol.isDocumentReady,
+  }
+}
+
+// ── Filter state ──────────────────────────────────────────────────────────────
 
 interface FilterState {
-  search: string
-  status: string[]
+  search:       string
+  status:       string[]
   coverageType: string[]
-  country: string[]
-  paymentFrequency: string[]
-  dateRange: string
+  country:      string[]
 }
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+
+function StatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case "Active":  return <CheckCircle className="h-4 w-4 text-green-600" />
+    case "Expired": return <Clock       className="h-4 w-4 text-gray-500"  />
+    default:        return <AlertCircle className="h-4 w-4 text-yellow-600" />
+  }
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "Active":  return "bg-green-100 text-green-800"
+    case "Expired": return "bg-gray-100  text-gray-700"
+    default:        return "bg-gray-100  text-gray-700"
+  }
+}
+
+// ── Row skeleton ──────────────────────────────────────────────────────────────
+
+function TableRowSkeleton() {
+  return (
+    <TableRow>
+      {[...Array(5)].map((_, i) => (
+        <TableCell key={i}>
+          <div className="space-y-1.5">
+            <div className="h-3 bg-gray-200 rounded animate-pulse w-32" />
+            <div className="h-2.5 bg-gray-200 rounded animate-pulse w-20" />
+          </div>
+        </TableCell>
+      ))}
+    </TableRow>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function PoliciesManagement() {
-  const [activeTab, setActiveTab] = useState("all")
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    status: [],
-    coverageType: [],
-    country: [],
-    paymentFrequency: [],
-    dateRange: "",
+  const [policies,      setPolicies]      = useState<Policy[]>([])
+  const [isLoading,     setIsLoading]     = useState(true)
+  const [loadError,     setLoadError]     = useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [activeTab,     setActiveTab]     = useState("all")
+  const [filters,       setFilters]       = useState<FilterState>({
+    search: "", status: [], coverageType: [], country: [],
   })
-  const [terminatingPolicy, setTerminatingPolicy] = useState<string | null>(null)
 
-  const statusOptions = ["Active", "Expired", "Pending", "Cancelled"]
-  const coverageOptions = ["Building + Contents", "Building Only", "Contents Only"]
-  const countryOptions = ["Malaysia", "Philippines", "Indonesia"]
-  const paymentOptions = ["Annual", "Monthly"]
+  // ── Fetch ─────────────────────────────────────────────────────────────────
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case "Expired":
-        return <Clock className="h-4 w-4 text-gray-600" />
-      case "Pending":
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />
-      case "Cancelled":
-        return <X className="h-4 w-4 text-red-600" />
-      default:
-        return null
+  const load = () => {
+    const session = getSession()
+    if (!session?.customerId) {
+      setLoadError("Session expired. Please log in again.")
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setLoadError(null)
+
+    fetchCustomerProposals(session.customerId)
+      .then((proposals) => {
+        // Only surface proposals that have an issued policy
+        const withPolicy = proposals
+          .filter((p) => p.policy !== null)
+          .map(mapProposal)
+        setPolicies(withPolicy)
+      })
+      .catch((err: Error) => setLoadError(err.message))
+      .finally(() => setIsLoading(false))
+  }
+
+  useEffect(load, [])
+
+  // ── Download ──────────────────────────────────────────────────────────────
+
+  const handleDownload = async (policy: Policy) => {
+    setDownloadError(null)
+    setDownloadingId(policy.proposalId)
+    try {
+      await downloadPolicyDocuments(policy.proposalId, policy.policyNumber)
+    } catch (err) {
+      setDownloadError(
+        err instanceof DocumentDownloadError ? err.message : "Download failed. Please try again.",
+      )
+    } finally {
+      setDownloadingId(null)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800"
-      case "Expired":
-        return "bg-gray-100 text-gray-800"
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "Cancelled":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  // ── Filter options derived from real data ─────────────────────────────────
+
+  const coverageTypeOptions = useMemo(
+    () => [...new Set(policies.map((p) => p.coverageType))].sort(),
+    [policies],
+  )
+  const countryOptions = useMemo(
+    () => [...new Set(policies.map((p) => p.country))].sort(),
+    [policies],
+  )
+
+  // ── Filtered list ─────────────────────────────────────────────────────────
 
   const filteredPolicies = useMemo(() => {
-    let filtered = mockPolicies
+    let list = policies
 
-    // Filter by tab
-    if (activeTab === "active") {
-      filtered = filtered.filter((policy) => policy.status === "Active")
-    } else if (activeTab === "expired") {
-      filtered = filtered.filter((policy) => policy.status === "Expired")
-    }
+    if (activeTab === "active")  list = list.filter((p) => p.status === "Active")
+    if (activeTab === "expired") list = list.filter((p) => p.status === "Expired")
 
-    // Apply search filter
     if (filters.search) {
-      filtered = filtered.filter(
-        (policy) =>
-          policy.policyNumber.toLowerCase().includes(filters.search.toLowerCase()) ||
-          policy.type.toLowerCase().includes(filters.search.toLowerCase()) ||
-          policy.coverageType.toLowerCase().includes(filters.search.toLowerCase()),
+      const q = filters.search.toLowerCase()
+      list = list.filter(
+        (p) =>
+          p.policyNumber.toLowerCase().includes(q) ||
+          p.coverageType.toLowerCase().includes(q)  ||
+          p.country.toLowerCase().includes(q),
       )
     }
+    if (filters.status.length)       list = list.filter((p) => filters.status.includes(p.status))
+    if (filters.coverageType.length) list = list.filter((p) => filters.coverageType.includes(p.coverageType))
+    if (filters.country.length)      list = list.filter((p) => filters.country.includes(p.country))
 
-    // Apply status filter
-    if (filters.status.length > 0) {
-      filtered = filtered.filter((policy) => filters.status.includes(policy.status))
-    }
+    return list
+  }, [policies, activeTab, filters])
 
-    // Apply coverage type filter
-    if (filters.coverageType.length > 0) {
-      filtered = filtered.filter((policy) => filters.coverageType.includes(policy.coverageType))
-    }
+  // ── Summary values ────────────────────────────────────────────────────────
 
-    // Apply country filter
-    if (filters.country.length > 0) {
-      filtered = filtered.filter((policy) => filters.country.includes(policy.country))
-    }
+  const activePolicies = policies.filter((p) => p.status === "Active")
+  const expiredCount   = policies.filter((p) => p.status === "Expired").length
+  const nextRenewal    = activePolicies
+    .map((p) => p.endDateRaw)
+    .sort((a, b) => a.getTime() - b.getTime())[0]
+  const nextRenewalStr = nextRenewal
+    ? nextRenewal.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    : "—"
 
-    // Apply payment frequency filter
-    if (filters.paymentFrequency.length > 0) {
-      filtered = filtered.filter((policy) => filters.paymentFrequency.includes(policy.paymentFrequency))
-    }
+  // ── Filter helpers ────────────────────────────────────────────────────────
 
-    return filtered
-  }, [mockPolicies, activeTab, filters])
-
-  const handleFilterChange = (key: keyof FilterState, value: string | string[]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const handleCheckboxFilter = (key: keyof FilterState, value: string, checked: boolean) => {
+  const toggleFilter = (key: keyof FilterState, value: string, checked: boolean) => {
     setFilters((prev) => {
-      const currentValues = prev[key] as string[]
-      if (checked) {
-        return { ...prev, [key]: [...currentValues, value] }
-      } else {
-        return { ...prev, [key]: currentValues.filter((v) => v !== value) }
-      }
+      const arr = prev[key] as string[]
+      return { ...prev, [key]: checked ? [...arr, value] : arr.filter((v) => v !== value) }
     })
   }
 
-  const testFetchData = async () => {
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/application`,
-      {
-        headers: {
-          "X-Country-Code": "PH"
-        }
-      }
-    )
-    console.log("Success:", response.data)
-  } catch (error) {
-    console.error("Failed:", error)
-  }
-}
-  const clearAllFilters = () => {
-    setFilters({
-      search: "",
-      status: [],
-      coverageType: [],
-      country: [],
-      paymentFrequency: [],
-      dateRange: "",
-    })
-  }
+  const clearFilters = () =>
+    setFilters({ search: "", status: [], coverageType: [], country: [] })
 
-  const handleTerminatePolicy = (policyId: string) => {
-    // In a real app, this would make an API call to terminate the policy
-    console.log(`Terminating policy: ${policyId}`)
+  const activeFiltersCount =
+    filters.status.length + filters.coverageType.length + filters.country.length +
+    (filters.search ? 1 : 0)
 
-    // Update the policy status to "Cancelled"
-    const updatedPolicies = mockPolicies.map((policy) =>
-      policy.id === policyId ? { ...policy, status: "Cancelled" as const } : policy,
-    )
-
-    // In a real app, you would update the state or refetch data
-    // For now, we'll just log the action
-    setTerminatingPolicy(null)
-
-    // You could add a toast notification here
-    console.log("Policy terminated successfully")
-  }
-
-  const activeFiltersCount = Object.values(filters).reduce((count, filter) => {
-    if (Array.isArray(filter)) {
-      return count + filter.length
-    }
-    return count + (filter ? 1 : 0)
-  }, 0)
-
-  const activePolicies = mockPolicies.filter((p) => p.status === "Active").length
-  const expiredPolicies = mockPolicies.filter((p) => p.status === "Expired").length
-  const totalPremium = mockPolicies.filter((p) => p.status === "Active").reduce((sum, p) => sum + p.premium, 0)
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">My Policies</h1>
           <p className="text-gray-600">Manage and view all your insurance policies</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button>
-            <FileText className="h-4 w-4 mr-2" />
-            New Policy
-          </Button>
-           <Button onClick={testFetchData}>
-            <FileText className="h-4 w-4 mr-2" />
-            test
-          </Button>
-        </div>
+        <Button variant="outline" onClick={load} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
+
+      {/* Alerts */}
+      {loadError && (
+        <Alert variant="destructive">
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
+      )}
+      {downloadError && (
+        <Alert variant="destructive">
+          <AlertDescription>{downloadError}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Active Policies</p>
-                <p className="text-2xl font-bold">{activePolicies}</p>
+        {[
+          {
+            icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+            label: "Active Policies",
+            value: isLoading ? null : activePolicies.length,
+          },
+          {
+            icon: <Clock className="h-5 w-5 text-gray-600" />,
+            label: "Expired Policies",
+            value: isLoading ? null : expiredCount,
+          },
+          {
+            icon: <Shield className="h-5 w-5 text-blue-600" />,
+            label: "Total Policies",
+            value: isLoading ? null : policies.length,
+          },
+          {
+            icon: <Calendar className="h-5 w-5 text-purple-600" />,
+            label: "Next Renewal",
+            value: isLoading ? null : nextRenewalStr,
+            wide: true,
+          },
+        ].map(({ icon, label, value, wide }) => (
+          <Card key={label}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                {icon}
+                <div>
+                  <p className="text-sm text-gray-600">{label}</p>
+                  {value === null ? (
+                    <div className="h-7 w-16 bg-gray-200 rounded animate-pulse mt-0.5" />
+                  ) : (
+                    <p className={`font-bold ${wide ? "text-lg" : "text-2xl"}`}>{value}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <div>
-                <p className="text-sm text-gray-600">Expired Policies</p>
-                <p className="text-2xl font-bold">{expiredPolicies}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Coverage</p>
-                <p className="text-2xl font-bold">RM {totalPremium.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm text-gray-600">Next Renewal</p>
-                <p className="text-lg font-bold">Jan 21, 2026</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search policies by number, type, or coverage..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by policy number, coverage type or country…"
+                value={filters.search}
+                onChange={(e) => setFilters((p) => ({ ...p, search: e.target.value }))}
+                className="pl-10"
+              />
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {/* Status Filter */}
+              {/* Status filter */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative bg-transparent">
+                  <Button variant="outline" className="bg-transparent">
                     <Filter className="h-4 w-4 mr-2" />
                     Status
                     {filters.status.length > 0 && (
@@ -402,19 +380,18 @@ export default function PoliciesManagement() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56">
+                <PopoverContent className="w-44">
                   <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Status</h4>
-                    {statusOptions.map((status) => (
-                      <div key={status} className="flex items-center space-x-2">
+                    <h4 className="font-medium text-sm">Filter by Status</h4>
+                    {["Active", "Expired"].map((s) => (
+                      <div key={s} className="flex items-center gap-2">
                         <Checkbox
-                          id={`status-${status}`}
-                          checked={filters.status.includes(status)}
-                          onCheckedChange={(checked) => handleCheckboxFilter("status", status, checked as boolean)}
+                          id={`status-${s}`}
+                          checked={filters.status.includes(s)}
+                          onCheckedChange={(c) => toggleFilter("status", s, c as boolean)}
                         />
-                        <Label htmlFor={`status-${status}`} className="flex items-center space-x-2">
-                          {getStatusIcon(status)}
-                          <span>{status}</span>
+                        <Label htmlFor={`status-${s}`} className="flex items-center gap-1.5 cursor-pointer">
+                          <StatusIcon status={s} /> {s}
                         </Label>
                       </div>
                     ))}
@@ -422,100 +399,71 @@ export default function PoliciesManagement() {
                 </PopoverContent>
               </Popover>
 
-              {/* Coverage Type Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative bg-transparent">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Coverage
-                    {filters.coverageType.length > 0 && (
-                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                        {filters.coverageType.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Coverage</h4>
-                    {coverageOptions.map((coverage) => (
-                      <div key={coverage} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`coverage-${coverage}`}
-                          checked={filters.coverageType.includes(coverage)}
-                          onCheckedChange={(checked) =>
-                            handleCheckboxFilter("coverageType", coverage, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`coverage-${coverage}`}>{coverage}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Coverage filter */}
+              {coverageTypeOptions.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="bg-transparent">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Coverage
+                      {filters.coverageType.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                          {filters.coverageType.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Filter by Coverage</h4>
+                      {coverageTypeOptions.map((c) => (
+                        <div key={c} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`cov-${c}`}
+                            checked={filters.coverageType.includes(c)}
+                            onCheckedChange={(chk) => toggleFilter("coverageType", c, chk as boolean)}
+                          />
+                          <Label htmlFor={`cov-${c}`} className="cursor-pointer">{c}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
-              {/* Country Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative bg-transparent">
-                    Country
-                    {filters.country.length > 0 && (
-                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                        {filters.country.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Country</h4>
-                    {countryOptions.map((country) => (
-                      <div key={country} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`country-${country}`}
-                          checked={filters.country.includes(country)}
-                          onCheckedChange={(checked) => handleCheckboxFilter("country", country, checked as boolean)}
-                        />
-                        <Label htmlFor={`country-${country}`}>{country}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Payment Frequency Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative bg-transparent">
-                    Payment
-                    {filters.paymentFrequency.length > 0 && (
-                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                        {filters.paymentFrequency.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Payment</h4>
-                    {paymentOptions.map((payment) => (
-                      <div key={payment} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`payment-${payment}`}
-                          checked={filters.paymentFrequency.includes(payment)}
-                          onCheckedChange={(checked) =>
-                            handleCheckboxFilter("paymentFrequency", payment, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`payment-${payment}`}>{payment}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Country filter */}
+              {countryOptions.length > 1 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="bg-transparent">
+                      Country
+                      {filters.country.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                          {filters.country.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-44">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Filter by Country</h4>
+                      {countryOptions.map((c) => (
+                        <div key={c} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`country-${c}`}
+                            checked={filters.country.includes(c)}
+                            onCheckedChange={(chk) => toggleFilter("country", c, chk as boolean)}
+                          />
+                          <Label htmlFor={`country-${c}`} className="cursor-pointer">{c}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
               {activeFiltersCount > 0 && (
-                <Button variant="ghost" onClick={clearAllFilters} className="text-red-600">
+                <Button variant="ghost" onClick={clearFilters} className="text-red-600">
                   Clear All ({activeFiltersCount})
                 </Button>
               )}
@@ -528,10 +476,10 @@ export default function PoliciesManagement() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Policies ({filteredPolicies.length})</CardTitle>
+            <CardTitle>Policies ({isLoading ? "…" : filteredPolicies.length})</CardTitle>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
-                <TabsTrigger value="all">All Policies</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="expired">Expired</TabsTrigger>
               </TabsList>
@@ -545,75 +493,76 @@ export default function PoliciesManagement() {
                 <TableRow>
                   <TableHead>Policy Details</TableHead>
                   <TableHead>Coverage</TableHead>
-                  <TableHead>Premium</TableHead>
+                  <TableHead>Sum Insured</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Claims</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPolicies.map((policy) => (
-                  <TableRow key={policy.id}>
+                {isLoading && [...Array(3)].map((_, i) => <TableRowSkeleton key={i} />)}
+
+                {!isLoading && filteredPolicies.map((policy) => (
+                  <TableRow key={policy.policyId}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{policy.policyNumber}</p>
-                        <p className="text-sm text-gray-600">{policy.type}</p>
-                        <p className="text-xs text-gray-500">{policy.country}</p>
-                      </div>
+                      <p className="font-medium">{policy.policyNumber}</p>
+                      <p className="text-sm text-gray-500">Home Insurance</p>
+                      <p className="text-xs text-gray-400">{policy.country} · Issued {policy.issuedAt}</p>
                     </TableCell>
+
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{policy.coverageType}</p>
-                        {policy.buildingAmount && (
-                          <p className="text-xs text-gray-600">Building: RM {policy.buildingAmount.toLocaleString()}</p>
-                        )}
-                        {policy.contentAmount && (
-                          <p className="text-xs text-gray-600">Contents: RM {policy.contentAmount.toLocaleString()}</p>
-                        )}
-                      </div>
+                      <p className="font-medium">{policy.coverageType}</p>
                     </TableCell>
+
                     <TableCell>
-                      <div>
-                        <p className="font-medium">RM {policy.premium.toLocaleString()}</p>
-                        <p className="text-xs text-gray-600">{policy.paymentFrequency}</p>
-                        {policy.nextPayment && <p className="text-xs text-blue-600">Next: {policy.nextPayment}</p>}
-                      </div>
+                      <p className="font-medium tabular-nums">
+                        {fmtAmount(policy.region, policy.coverageAmount)}
+                      </p>
                     </TableCell>
+
                     <TableCell>
-                      <div>
-                        <p className="text-sm">{policy.startDate}</p>
-                        <p className="text-sm">to {policy.endDate}</p>
-                      </div>
+                      <p className="text-sm">{policy.startDate}</p>
+                      <p className="text-sm text-gray-500">to {policy.endDate}</p>
                     </TableCell>
+
                     <TableCell>
-                      <Badge className={getStatusColor(policy.status)}>
-                        <div className="flex items-center space-x-1">
-                          {getStatusIcon(policy.status)}
-                          <span>{policy.status}</span>
-                        </div>
+                      <Badge className={statusBadgeClass(policy.status)}>
+                        <span className="flex items-center gap-1">
+                          <StatusIcon status={policy.status} />
+                          {policy.status}
+                        </span>
                       </Badge>
                     </TableCell>
+
                     <TableCell>
-                      <div className="text-center">
-                        <p className="font-medium">{policy.claimsCount}</p>
-                        <p className="text-xs text-gray-600">claims</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1">
-                        <Button variant="ghost" size="sm">
+                      <div className="flex items-center gap-1">
+                        {/* View detail — wire to detail page when available */}
+                        <Button variant="ghost" size="sm" title="View details">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
+
+                        {/* Download — enabled only when isDocumentReady */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!policy.isDocumentReady || downloadingId === policy.proposalId}
+                          title={policy.isDocumentReady ? "Download policy documents (ZIP)" : "Documents not ready yet"}
+                          onClick={() => handleDownload(policy)}
+                        >
+                          {downloadingId === policy.proposalId
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Download className="h-4 w-4" />
+                          }
                         </Button>
+
+                        {/* Terminate — Active policies only */}
                         {policy.status === "Active" && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Terminate policy"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
                                 <X className="h-4 w-4" />
@@ -623,15 +572,17 @@ export default function PoliciesManagement() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Terminate Policy</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to terminate policy {policy.policyNumber}? This action cannot be
-                                  undone and will immediately cancel the policy.
+                                  Are you sure you want to terminate policy{" "}
+                                  <strong>{policy.policyNumber}</strong>? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleTerminatePolicy(policy.id)}
                                   className="bg-red-600 hover:bg-red-700"
+                                  onClick={() =>
+                                    console.warn("Terminate endpoint not yet available:", policy.proposalId)
+                                  }
                                 >
                                   Terminate Policy
                                 </AlertDialogAction>
@@ -643,17 +594,23 @@ export default function PoliciesManagement() {
                     </TableCell>
                   </TableRow>
                 ))}
+
+                {!isLoading && filteredPolicies.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                      <p className="font-medium text-gray-700">No policies found</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {activeFiltersCount > 0
+                          ? "Try adjusting your filters or search terms."
+                          : "You have no issued policies yet."}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
-
-          {filteredPolicies.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
-              <p className="text-gray-600">Try adjusting your filters or search terms.</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

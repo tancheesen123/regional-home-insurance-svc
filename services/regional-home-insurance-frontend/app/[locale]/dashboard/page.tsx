@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import DashboardOverview from "@/components/dashboard/dashboard-overview"
+import PageHeader from "@/components/dashboard/page-header"
 
 export const metadata: Metadata = {
   title: "Dashboard | Etiqa Home Insurance",
@@ -8,8 +9,11 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="p-6">
-      <DashboardOverview />
-    </div>
+    <>
+      <PageHeader />
+      <div className="flex-1 overflow-y-auto p-6">
+        <DashboardOverview />
+      </div>
+    </>
   )
 }

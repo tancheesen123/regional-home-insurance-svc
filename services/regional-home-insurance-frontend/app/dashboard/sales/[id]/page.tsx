@@ -7,15 +7,14 @@ export const metadata: Metadata = {
 }
 
 interface SalesReportDetailPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
-export default function SalesReportDetailPage({ params }: SalesReportDetailPageProps) {
+export default async function SalesReportDetailPage({ params }: SalesReportDetailPageProps) {
+  const { id } = await params
   return (
     <div className="p-6">
-      <SalesReportDetail reportId={params.id} />
+      <SalesReportDetail reportId={id} />
     </div>
   )
 }

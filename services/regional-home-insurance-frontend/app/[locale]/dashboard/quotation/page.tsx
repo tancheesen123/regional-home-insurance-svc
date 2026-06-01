@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
-import QuotationForm from "@/components/quotation/quotation-form"
+import QuotationJourney from "@/components/quotation/quotation-journey"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import PageHeader from "@/components/dashboard/page-header"
 
 export const metadata: Metadata = {
   title: "New Policy Quotation | Etiqa Home Insurance",
@@ -11,27 +11,22 @@ export const metadata: Metadata = {
 
 export default function QuotationPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">New Policy Quotation</h1>
-              <p className="text-muted-foreground">Fill in the details to get your home insurance quote</p>
-            </div>
-          </div>
+    <>
+      <PageHeader>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-1.5 text-sm text-[#0066CC] hover:text-[#004EA8] hover:underline transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
+      </PageHeader>
+
+      <div className="flex-1 overflow-y-auto bg-[#FAFAFA]">
+        <div className="max-w-3xl mx-auto px-6 py-8">
+          <QuotationJourney />
         </div>
       </div>
-
-      <div className="container mx-auto px-4 py-8">
-        <QuotationForm />
-      </div>
-    </div>
+    </>
   )
 }

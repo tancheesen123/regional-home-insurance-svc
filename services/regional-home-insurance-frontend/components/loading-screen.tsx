@@ -1,4 +1,4 @@
-import { Shield } from "lucide-react"
+import Image from "next/image"
 
 interface LoadingScreenProps {
   fullScreen?: boolean
@@ -14,21 +14,34 @@ export default function LoadingScreen({ fullScreen = true }: LoadingScreenProps)
       {/* Logo + spinner */}
       <div className="relative flex items-center justify-center mb-6">
         {/* Outer spinning ring */}
-        <div className="absolute w-20 h-20 rounded-full border-4 border-[#0056b3]/20 border-t-[#0056b3] animate-spin" />
-        {/* Inner icon */}
-        <div className="w-12 h-12 rounded-full bg-[#0056b3]/10 flex items-center justify-center">
-          <Shield className="h-6 w-6 text-[#0056b3]" />
+        <div className="absolute w-20 h-20 rounded-full border-4 border-[#F5A623]/20 border-t-[#F5A623] animate-spin" />
+        {/* Inner logo */}
+        <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+          <Image
+            src="/images/Etiqa_Favicon.png"
+            alt="Etiqa"
+            width={32}
+            height={32}
+            className="w-8 h-8 object-contain"
+            priority
+          />
         </div>
       </div>
 
-      {/* Brand name */}
-      <p className="text-[#0056b3] font-semibold text-lg tracking-wide">Etiqa Home Insurance</p>
+      {/* Logo wordmark */}
+      <Image
+        src="/images/Etiqa-EGIB.png"
+        alt="Etiqa Home Insurance"
+        width={120}
+        height={36}
+        className="h-8 w-auto object-contain mb-3"
+      />
 
       {/* Animated dots */}
-      <div className="flex gap-1.5 mt-3">
-        <span className="w-2 h-2 rounded-full bg-[#0056b3] animate-bounce [animation-delay:-0.3s]" />
-        <span className="w-2 h-2 rounded-full bg-[#0056b3] animate-bounce [animation-delay:-0.15s]" />
-        <span className="w-2 h-2 rounded-full bg-[#0056b3] animate-bounce" />
+      <div className="flex gap-1.5 mt-1">
+        <span className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce [animation-delay:-0.3s]" />
+        <span className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce [animation-delay:-0.15s]" />
+        <span className="w-2 h-2 rounded-full bg-[#F5A623] animate-bounce" />
       </div>
     </div>
   )

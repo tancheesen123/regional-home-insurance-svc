@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import ChatbotWidget from "@/components/chatbot/chatbot-widget"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import { notFound } from "next/navigation"
@@ -17,8 +16,9 @@ export const metadata: Metadata = {
     "Get comprehensive insurance coverage with Etiqa. Home, auto, travel, and business insurance solutions tailored to your needs.",
   generator: "v0.app",
   icons: {
-    icon: "/icon.svg",
-    apple: "/apple-icon.png",
+    icon:      "/images/Etiqa_Favicon.png",
+    shortcut:  "/images/Etiqa_Favicon.png",
+    apple:     "/images/Etiqa_Favicon.png",
   },
 }
 
@@ -43,7 +43,6 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             {children}
-            <ChatbotWidget />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

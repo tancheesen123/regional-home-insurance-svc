@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight, Calculator, Home, Shield, CreditCard } from "lucide-react"
+import { useState, memo } from "react"
+import { ChevronLeft, ChevronRight, Calculator, Home, Shield, CreditCard, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import type { PremiumData } from "@/lib/api"
+import { getRegionConfig } from "@/lib/region"
+import { getSession } from "@/lib/session"
 
 interface CalculationSummaryProps {
   step: "customize" | "declare" | "details" | "summary"
@@ -14,11 +17,9 @@ interface CalculationSummaryProps {
     selectedPlan: string
     buildingAmount: number
     contentAmount: number
-    addOns: {
-      riotStrike: boolean
-      extendedTheft: boolean
-    }
   }
+  premiumData?: PremiumData | null
+  isPremiumLoading?: boolean
   valuablesData?: {
     totalDeclaredAmount: number
     maxDeclarableAmount: number
@@ -26,46 +27,27 @@ interface CalculationSummaryProps {
   }
 }
 
-export default function CalculationSummary({ step, planData, valuablesData }: CalculationSummaryProps) {
+function CalculationSummary({
+  step,
+  planData,
+  premiumData,
+  isPremiumLoading,
+  valuablesData,
+}: CalculationSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-
-  const calculateTotal = () => {
-    if (!planData) return { gross: 0, rebate: 0, tax: 0, stamp: 0, total: 0 }
-
-    let grossContribution = 1442.0
-    const onlineRebate = grossContribution * 0.15
-    const serviceTax = grossContribution * 0.06
-    const stampDuty = 10.0
-
-    if (planData.addOns?.riotStrike) grossContribution += 50.0
-    if (planData.addOns?.extendedTheft) grossContribution += 150.0
-
-    const total = grossContribution - onlineRebate + serviceTax + stampDuty
-    return {
-      gross: grossContribution,
-      rebate: onlineRebate,
-      tax: serviceTax,
-      stamp: stampDuty,
-      total,
-    }
-  }
-
-  const costs = calculateTotal()
+  const { symbol } = getRegionConfig(getSession()?.countryCode ?? "")
 
   const getStepTitle = () => {
     switch (step) {
-      case "customize":
-        return "Plan Customization"
-      case "declare":
-        return "Valuables Declaration"
-      case "details":
-        return "Personal Details"
-      case "summary":
-        return "Final Summary"
-      default:
-        return "Insurance Summary"
+      case "customize": return "Plan Customization"
+      case "declare":   return "Valuables Declaration"
+      case "details":   return "Personal Details"
+      case "summary":   return "Final Summary"
+      default:          return "Insurance Summary"
     }
   }
+
+  const fmt = (n: number) => n.toFixed(2)
 
   return (
     <>
@@ -119,20 +101,19 @@ export default function CalculationSummary({ step, planData, valuablesData }: Ca
             </Button>
           </div>
 
-          {/* Current Step Indicator */}
+          {/* Step Indicator */}
           <div className="mb-6">
             <Badge variant="outline" className="mb-2">
               {getStepTitle()}
             </Badge>
             <div className="flex space-x-1">
-              <div className={cn("h-2 w-8 rounded", step === "customize" ? "bg-[#0056b3]" : "bg-gray-200")} />
-              <div className={cn("h-2 w-8 rounded", step === "declare" ? "bg-[#0056b3]" : "bg-gray-200")} />
-              <div className={cn("h-2 w-8 rounded", step === "details" ? "bg-[#0056b3]" : "bg-gray-200")} />
-              <div className={cn("h-2 w-8 rounded", step === "summary" ? "bg-[#0056b3]" : "bg-gray-200")} />
+              {(["customize", "declare", "details", "summary"] as const).map((s) => (
+                <div key={s} className={cn("h-2 w-8 rounded", step === s ? "bg-[#0056b3]" : "bg-gray-200")} />
+              ))}
             </div>
           </div>
 
-          {/* Plan Details */}
+          {/* Coverage Plan */}
           {planData && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
@@ -144,37 +125,40 @@ export default function CalculationSummary({ step, planData, valuablesData }: Ca
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Plan Type</span>
-                  <span className="font-medium capitalize">{planData.selectedPlan.replace("-", " + ")}</span>
+                  <span className="font-medium capitalize">
+                    {planData.selectedPlan.replace("building-contents", "Building + Contents")
+                      .replace("building-only", "Building Only")
+                      .replace("content-only", "Content Only")}
+                  </span>
                 </div>
+
+                {/* Coverage dates from API when available */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Coverage Period</span>
-                  <span>21 Jun 2025 - 20 Jun 2026</span>
+                  <span className="text-right text-xs">
+                    {premiumData
+                      ? `${premiumData.startDate} – ${premiumData.endDate}`
+                      : "–"}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Property Type</span>
-                  <span>Landed, 1-storey</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Construction</span>
-                  <span>Partial Brick</span>
-                </div>
+
                 {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "building-only") && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Building</span>
-                    <span>RM {planData.buildingAmount.toLocaleString()}</span>
+                    <span className="text-gray-600">Building Sum</span>
+                    <span>{symbol} {planData.buildingAmount.toLocaleString()}</span>
                   </div>
                 )}
                 {(planData.selectedPlan === "building-contents" || planData.selectedPlan === "content-only") && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Contents</span>
-                    <span>RM {planData.contentAmount.toLocaleString()}</span>
+                    <span className="text-gray-600">Contents Sum</span>
+                    <span>{symbol} {planData.contentAmount.toLocaleString()}</span>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {/* Valuables Summary */}
+          {/* Declared Valuables */}
           {valuablesData && step !== "customize" && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
@@ -186,20 +170,18 @@ export default function CalculationSummary({ step, planData, valuablesData }: Ca
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Max Declarable</span>
-                  <span>RM {valuablesData.maxDeclarableAmount.toLocaleString()}</span>
+                  <span>{symbol} {valuablesData.maxDeclarableAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Declared</span>
                   <span className="font-medium text-orange-600">
-                    {valuablesData.totalDeclaredAmount > 0
-                      ? `RM ${valuablesData.totalDeclaredAmount.toLocaleString()}`
-                      : "-RM 0"}
+                    {symbol} {valuablesData.totalDeclaredAmount.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Undeclared Amount</span>
                   <span className="font-medium text-green-600">
-                    RM {valuablesData.undeclaredAmount.toLocaleString()}
+                    {symbol} {valuablesData.undeclaredAmount.toLocaleString()}
                   </span>
                 </div>
               </CardContent>
@@ -207,64 +189,99 @@ export default function CalculationSummary({ step, planData, valuablesData }: Ca
           )}
 
           {/* Cost Breakdown */}
-          {planData && (
+          {(planData || premiumData) && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Cost Breakdown
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span className="flex items-center">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Cost Breakdown
+                  </span>
+                  {isPremiumLoading && (
+                    <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Gross Contribution</span>
-                  <span>RM {costs.gross.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-green-600">
-                  <span>Online Rebate 15%</span>
-                  <span>- RM {costs.rebate.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Service Tax 6%</span>
-                  <span>RM {costs.tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Stamp Duty</span>
-                  <span>RM {costs.stamp.toFixed(2)}</span>
-                </div>
-                <Separator className="my-3" />
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold">Total Premium</p>
-                    <p className="text-xs text-gray-500">
-                      <span className="line-through">RM 1,567.36</span> You save 15%
-                    </p>
+                {premiumData ? (
+                  <>
+                    {/* Building / Content split */}
+                    {premiumData.buildingPremium > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Building Premium</span>
+                        <span>{symbol} {fmt(premiumData.buildingPremium)}</span>
+                      </div>
+                    )}
+                    {premiumData.contentPremium > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Content Premium</span>
+                        <span>{symbol} {fmt(premiumData.contentPremium)}</span>
+                      </div>
+                    )}
+                    {premiumData.addOnsPremium > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Add-ons Premium</span>
+                        <span>{symbol} {fmt(premiumData.addOnsPremium)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-medium">
+                      <span className="text-gray-700">Gross Premium</span>
+                      <span>{symbol} {fmt(premiumData.grossPremium)}</span>
+                    </div>
+                    {premiumData.discountAmount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount</span>
+                        <span>− {symbol} {fmt(premiumData.discountAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Service Tax ({premiumData.serviceTaxRate}%)
+                      </span>
+                      <span>{symbol} {fmt(premiumData.serviceTaxAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Stamp Duty</span>
+                      <span>{symbol} {fmt(premiumData.stampDutyAmount)}</span>
+                    </div>
+                    <Separator className="my-3" />
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">Total Premium</p>
+                        <p className="text-xs text-gray-500">
+                          {symbol} {fmt(premiumData.monthlyPremium)} / month
+                        </p>
+                      </div>
+                      <p className="text-xl font-bold text-[#0056b3]">
+                        {symbol} {fmt(premiumData.totalPremium)}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  // Placeholder while waiting for first calculation
+                  <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
+                    {isPremiumLoading
+                      ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Calculating…</span>
+                      : "Adjust your plan to see a breakdown"}
                   </div>
-                  <p className="text-xl font-bold text-[#0056b3]">RM {costs.total.toFixed(2)}</p>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
 
-          {/* Add-ons */}
-          {planData?.addOns && (planData.addOns.riotStrike || planData.addOns.extendedTheft) && (
+          {/* Add-on Breakdown (from API response array) */}
+          {premiumData && premiumData.addOnBreakdown.length > 0 && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Optional Add-ons</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {planData.addOns.riotStrike && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Riot & Strike Coverage</span>
-                    <span>+ RM 50.00/yr</span>
+                {premiumData.addOnBreakdown.map((item) => (
+                  <div key={item.code} className="flex justify-between">
+                    <span className="text-gray-600">{item.name}</span>
+                    <span>+ {symbol} {fmt(item.premium)}</span>
                   </div>
-                )}
-                {planData.addOns.extendedTheft && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Extended Theft Cover</span>
-                    <span>+ RM 150.00/yr</span>
-                  </div>
-                )}
+                ))}
               </CardContent>
             </Card>
           )}
@@ -283,3 +300,5 @@ export default function CalculationSummary({ step, planData, valuablesData }: Ca
     </>
   )
 }
+
+export default memo(CalculationSummary)
