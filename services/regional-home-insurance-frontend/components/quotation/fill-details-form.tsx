@@ -650,7 +650,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
 export default function FillDetailsForm() {
   const router = useRouter()
   const t = useTranslations("quotation")
-  const countryCode = getSession()?.countryCode ?? "MY"
+  const countryCode = getSession()?.countryCode ?? "ID"
 
   const COUNTRY_NAMES: Record<string, string> = {
     MY: "MALAYSIA",
@@ -676,15 +676,15 @@ export default function FillDetailsForm() {
   const defaultNationality = getDefaultNationality(countryCode)
 
   const [personalData, setPersonalData] = useState<PersonalData>({
-    name: "ADAM BIN BAKRI",
-    idType: defaultIdType,
-    nricNumber: "021217020209",
-    nationality: defaultNationality,
-    race: "",
-    gender: "MALE",
-    dateOfBirth: "17/12/2002",
-    mobileNumber: "123456789",
-    email: "ADAM@GMAIL.COM",
+    name:         "",
+    idType:       defaultIdType,
+    nricNumber:   "",
+    nationality:  defaultNationality,
+    race:         "",
+    gender:       "",
+    dateOfBirth:  "",
+    mobileNumber: "",
+    email:        "",
   })
 
   const [propertyData, setPropertyData] = useState<PropertyData>({
@@ -711,8 +711,8 @@ export default function FillDetailsForm() {
   })
 
   const [bankData, setBankData] = useState<BankData>({
-    bankName: "",
-    accountNumber: "123456789012",
+    bankName:      "",
+    accountNumber: "",
   })
 
   // ── Scan session auto-fill ────────────────────────────────────────────────
@@ -725,35 +725,91 @@ export default function FillDetailsForm() {
     if (!session) return
     setScanSession(session)
 
-    const personalMappings = getMappingsForStep(4, "personal")
-    const propertyMappings = getMappingsForStep(4, "property")
+    const raw = session.fields
     const applied: Record<string, ScanSessionField> = {}
 
+    // ── Helper: try each key in order, return first filled entry ─────────────
+    const resolve = (keys: string[]) => {
+      for (const k of keys) {
+        const f = raw[k]
+        if (f?.filled && f.value) return { f, k }
+      }
+      return null
+    }
+
+    // ── Gender normaliser — KTP returns Indonesian ("Laki-Laki" / "Perempuan")
+    const normaliseGender = (v: string): string => {
+      const lower = v.toLowerCase()
+      if (lower.includes("laki") || lower.includes("male")   || lower === "m") return "MALE"
+      if (lower.includes("perempuan") || lower.includes("female") || lower === "f") return "FEMALE"
+      return v.toUpperCase()
+    }
+
+    // ── Personal data auto-fill ───────────────────────────────────────────────
     setPersonalData((prev) => {
       const next = { ...prev }
-      personalMappings.forEach(({ aiKey, formKey }) => {
-        const f = session.fields[aiKey]
-        if (!f?.filled || !f.value) return
-        const k = formKey as keyof PersonalData
-        if (!prev[k]) {
-          (next as Record<string, unknown>)[k] = f.value
-          applied[aiKey] = f
-        }
-      })
+
+      // Full name: policy → "insuredName", KTP-ID → "name", PHL → "givenNames"
+      const name = resolve(["insuredName", "name", "fullName", "givenNames"])
+      if (name && !prev.name) {
+        next.name = name.f.value!
+        applied[name.k] = { ...name.f, source: "scanned" }
+      }
+
+      // NIK / ID number: KTP → "nik", PHL → "idNumber"
+      const nik = resolve(["nik", "idNumber", "nric"])
+      if (nik && !prev.nricNumber) {
+        next.nricNumber = nik.f.value!
+        applied[nik.k] = { ...nik.f, source: "scanned" }
+      }
+
+      // Date of birth: KTP → "birthdate", PHL → "dateOfBirth"
+      const dob = resolve(["dateOfBirth", "birthdate", "birthDate"])
+      if (dob && !prev.dateOfBirth) {
+        next.dateOfBirth = dob.f.value!
+        applied[dob.k] = { ...dob.f, source: "scanned" }
+      }
+
+      // Gender: KTP → "gender" (value: "Laki-Laki" / "Perempuan")
+      const gender = resolve(["gender"])
+      if (gender && !prev.gender) {
+        next.gender = normaliseGender(gender.f.value!)
+        applied[gender.k] = { ...gender.f, source: "scanned" }
+      }
+
       return next
     })
 
+    // ── Property data auto-fill ───────────────────────────────────────────────
     setPropertyData((prev) => {
       const next = { ...prev }
-      propertyMappings.forEach(({ aiKey, formKey }) => {
-        const f = session.fields[aiKey]
-        if (!f?.filled || !f.value) return
-        const k = formKey as keyof PropertyData
-        if (!prev[k]) {
-          (next as Record<string, unknown>)[k] = f.value
-          applied[aiKey] = f
-        }
-      })
+
+      // Address line 1: policy → "insuredAddress" / "riskAddress", PHL → "address"
+      const addr = resolve(["insuredAddress", "riskAddress", "address", "addressLine1"])
+      if (addr && !prev.propertyAddress1) {
+        next.propertyAddress1 = addr.f.value!
+        applied[addr.k] = { ...addr.f, source: "scanned" }
+      }
+
+      // City / province from address APIs
+      const city = resolve(["city", "propertyCity"])
+      if (city && !prev.propertyCity) {
+        next.propertyCity = city.f.value!
+        applied[city.k] = { ...city.f, source: "scanned" }
+      }
+
+      const state = resolve(["state", "province", "propertyState"])
+      if (state && !prev.propertyState) {
+        next.propertyState = state.f.value!
+        applied[state.k] = { ...state.f, source: "scanned" }
+      }
+
+      const postcode = resolve(["postcode", "propertyPostcode"])
+      if (postcode && !prev.propertyPostcode) {
+        next.propertyPostcode = postcode.f.value!
+        applied[postcode.k] = { ...postcode.f, source: "scanned" }
+      }
+
       return next
     })
 

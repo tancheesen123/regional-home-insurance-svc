@@ -83,9 +83,9 @@ export default function PlanCustomization() {
 
   // Plan state — initialised with building-contents defaults
   const [planState, setPlanState] = useState<PlanState>({
-    selectedPlan:   "building-contents",
-    buildingAmount: region.defaultBuilding,
-    contentAmount:  region.defaultContent,
+    selectedPlan:   "",   // no plan pre-selected — customer must choose
+    buildingAmount: 0,
+    contentAmount:  0,
     addOns: {
       riotStrike:               false,
       extendedTheft:            false,
@@ -169,18 +169,12 @@ export default function PlanCustomization() {
     (planId: string) => {
       setPlanState((prev) => ({
         ...prev,
-        selectedPlan: planId,
-        buildingAmount:
-          planId === "building-only"
-            ? region.defaultBuildingOnly
-            : region.defaultBuilding,
-        contentAmount:
-          planId === "content-only"
-            ? region.defaultContentOnly
-            : region.defaultContent,
+        selectedPlan:   planId,
+        buildingAmount: 0,   // customer enters their own amount
+        contentAmount:  0,
       }))
     },
-    [region],
+    [],
   )
 
   /** Parse raw input value and update state immediately (raw, un-rounded). */
@@ -340,7 +334,7 @@ export default function PlanCustomization() {
         onBack={() => setShowBuildingCalculator(false)}
         onConfirm={handleBuildingConfirm}
         symbol={region.symbol}
-        countryCode={getSession()?.countryCode ?? "MY"}
+        countryCode={getSession()?.countryCode ?? "ID"}
       />
     )
   }

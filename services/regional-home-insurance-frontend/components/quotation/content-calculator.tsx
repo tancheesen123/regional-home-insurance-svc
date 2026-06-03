@@ -68,7 +68,7 @@ export default function ContentCalculator({
   onBack, onConfirm, minAmount, maxAmount, roundingUnit, symbol, initialAmounts,
 }: Props) {
   const t           = useTranslations("quotation")
-  const countryCode = getSession()?.countryCode ?? "MY"
+  const countryCode = getSession()?.countryCode ?? "ID"
 
   // ── Sidebar state → dynamic sticky-bar left offset ────────────────────────
   const { state: sidebarState, isMobile } = useSidebar()

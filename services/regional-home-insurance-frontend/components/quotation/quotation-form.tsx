@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 import { getQuote, saveQuotationId, saveQuotationStartDate } from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getIdTypeOptions, getDefaultNationality } from "@/lib/id-type-helpers"
-import { markFieldManual, type ScanSessionField } from "@/lib/scan-session"
+import { markFieldManual, saveScanSession, type ScanSessionField } from "@/lib/scan-session"
 import { getMappingsForStep } from "@/lib/scan-field-map"
 import ScanFieldBadge from "@/components/quotation/scan-field-badge"
 import ScanBanner from "@/components/quotation/scan-banner"
@@ -28,7 +28,6 @@ interface FormData {
   ownershipType: string
   coverageStartDate: Date | undefined
   propertyType: string
-  propertySubType: string
   numberOfStorey: number
   constructionType: string
   postcode: string
@@ -65,29 +64,47 @@ interface QuotationFormProps {
 export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const router = useRouter()
   const t = useTranslations("quotation")
-  const countryCode = getSession()?.countryCode ?? "MY"
+
+  // ── Country code — deferred to client to avoid SSR/localStorage mismatch ───
+  // getSession() reads localStorage which is unavailable on the server,
+  // so it always returns null during SSR. We initialise with "MY" (a stable
+  // SSR-safe default), then correct to the actual country after mount.
+  const [countryCode, setCountryCode] = useState("ID")   // ID is the first supported country
   const idTypeOptions = getIdTypeOptions(countryCode)
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dobOpen, setDobOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>({
-    ownershipType: "owner",
-    coverageStartDate: new Date("2025-06-21"),
-    propertyType: "landed",
-    propertySubType: "landed-partial-brick",
-    numberOfStorey: 1,
-    constructionType: "partial-brick",
-    postcode: "09300",
-    currentFlooding: "no",
-    unoccupiedProperty: "no",
-    previousLoss: "no",
-    idType: idTypeOptions[0].value,
-    passportNumber: "021217020209",
-    nricNumber: "",
-    nationality: getDefaultNationality(countryCode),
-    dateOfBirth: "17/12/2002",
+    ownershipType:    "",         // no pre-selection — customer must choose
+    coverageStartDate: undefined,
+    propertyType:     "",         // no card pre-selected
+    numberOfStorey:   1,          // stepper minimum — always valid
+    constructionType: "",         // no card pre-selected
+    postcode:         "",
+    currentFlooding:  "",         // no toggle pre-selected
+    unoccupiedProperty: "",
+    previousLoss:     "",
+    idType: getIdTypeOptions("ID")[0].value,  // stable SSR default (first supported country)
+    passportNumber:   "",
+    nricNumber:       "",
+    nationality: getDefaultNationality("ID"),  // stable SSR default
+    dateOfBirth:      "",
   })
+
+  // After mount: read actual session and sync country-dependent fields
+  useEffect(() => {
+    const cc = getSession()?.countryCode ?? "ID"
+    if (cc === countryCode) return           // already correct, no re-render needed
+    setCountryCode(cc)
+    const opts = getIdTypeOptions(cc)
+    setFormData((prev) => ({
+      ...prev,
+      idType:      opts[0].value,
+      nationality: getDefaultNationality(cc),
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Scan result → form field mapping ──────────────────────────────────────
   // scanResult contains raw document fields (nik, name, birthdate, province…).
@@ -98,11 +115,119 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
   useEffect(() => {
     if (!scanResult) return
-    // TODO: map scanResult.fields (nik, name, birthdate…) → formData fields
-    // e.g. scanResult.fields.nik?.value → nricNumber
-    //      scanResult.fields.birthdate?.value → dateOfBirth (reformat)
-    // For now: no auto-fill, just acknowledge scan happened
-    setScanFields({})
+
+    const raw = scanResult.fields
+
+    // ── 1. Persist full scan result to sessionStorage ─────────────────────────
+    // Adds source:"scanned" to every field so Step 4 can also read badges.
+    const sessionFields: Record<string, ScanSessionField> = {}
+    Object.entries(raw).forEach(([key, field]) => {
+      sessionFields[key] = { ...field, source: "scanned" }
+    })
+    saveScanSession({
+      scannedAt:    new Date().toISOString(),
+      documentType: scanResult.sources[0]?.documentType ?? "UNKNOWN",
+      fields:       sessionFields,
+    })
+
+    // ── 2. Apply to form — never overwrite manually typed values ──────────────
+
+    /**
+     * Try to parse a date string from several common API formats and return
+     * it as "dd/MM/yyyy" (the form's expected format). Returns null on failure.
+     * Handles: "dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yyyy HH:mm:ss"
+     */
+    const normaliseDate = (raw: string): string | null => {
+      const s = raw.trim()
+      // Strip time component if present: "21/05/2026 09:08:56" → "21/05/2026"
+      const datePart = s.split(" ")[0]
+      const formats = ["dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "MM/dd/yyyy"]
+      for (const fmt of formats) {
+        const p = parse(datePart, fmt, new Date())
+        if (isValid(p)) return format(p, "dd/MM/yyyy")
+      }
+      return null
+    }
+
+    setFormData((prev) => {
+      const next = { ...prev }
+
+      // periodFrom → coverageStartDate (only if not yet set)
+      if (!prev.coverageStartDate && raw.periodFrom?.filled && raw.periodFrom.value) {
+        const normalised = normaliseDate(raw.periodFrom.value)
+        if (normalised) {
+          const parsed = parse(normalised, "dd/MM/yyyy", new Date())
+          if (isValid(parsed)) next.coverageStartDate = parsed
+        }
+      }
+
+      // occupiedAs → propertyType  (always apply — card selection, no "typed" value)
+      if (raw.occupiedAs?.filled && raw.occupiedAs.value) {
+        next.propertyType = raw.occupiedAs.value.toLowerCase().includes("landed")
+          ? "landed"
+          : "non-landed"
+      }
+
+      // constructionClassification → constructionType  (always apply)
+      if (raw.constructionClassification?.filled && raw.constructionClassification.value) {
+        next.constructionType = raw.constructionClassification.value
+          .toUpperCase()
+          .includes("CLASS I")
+          ? "full-brick"
+          : "partial-brick"
+      }
+
+      // riskAddress → postcode (only if currently empty)
+      // Split by comma, trim each segment, find first 5-digit number
+      if (!prev.postcode && raw.riskAddress?.filled && raw.riskAddress.value) {
+        const found = raw.riskAddress.value
+          .split(",")
+          .map((s) => s.trim())
+          .find((s) => /^\d{5}$/.test(s))
+        if (found) next.postcode = found
+      }
+
+      // idNumber / nik → nricNumber or passportNumber (only if currently empty)
+      // Try idNumber first (PH/KH), fall back to nik (ID KTP)
+      const rawId = raw.idNumber ?? raw.nik
+      if (rawId?.filled && rawId.value) {
+        if (prev.idType === "passport") {
+          if (!prev.passportNumber) next.passportNumber = rawId.value
+        } else {
+          if (!prev.nricNumber) next.nricNumber = rawId.value
+        }
+      }
+
+      // dateOfBirth / birthdate → dateOfBirth (only if currently empty)
+      // Normalise to dd/MM/yyyy regardless of what the API returns
+      const rawDob = raw.dateOfBirth ?? raw.birthdate ?? raw.birthDate
+      if (!prev.dateOfBirth && rawDob?.filled && rawDob.value) {
+        const normalised = normaliseDate(rawDob.value)
+        if (normalised) next.dateOfBirth = normalised
+      }
+
+      return next
+    })
+
+    // ── 3. Build scanFields for badge display ─────────────────────────────────
+    // Helper: converts a ScannedField → ScanSessionField (adds source tag).
+    // Returns undefined when the field isn't present so badges stay hidden.
+    const toSession = (f: typeof raw[string] | undefined): ScanSessionField | undefined =>
+      f ? { ...f, source: "scanned" as const } : undefined
+
+    setScanFields({
+      // Date picker badge
+      periodFrom:                 toSession(raw.periodFrom),
+      // Card selections (no badge shown on cards, but tracked for manual-edit detection)
+      occupiedAs:                 toSession(raw.occupiedAs),
+      constructionClassification: toSession(raw.constructionClassification),
+      // Postcode badge — uses riskAddress as source; falls back to a direct postcode field
+      postcode:                   toSession(raw.riskAddress ?? raw.postcode),
+      // IC / Passport fields — try idNumber (PH/KH) then nik (ID KTP)
+      idNumber:    toSession(raw.idNumber ?? raw.nik),
+      // Date of birth — try all common key variants
+      dateOfBirth: toSession(raw.dateOfBirth ?? raw.birthdate ?? raw.birthDate),
+    } as Record<string, ScanSessionField>)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanResult])
 
@@ -161,7 +286,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             ? format(formData.coverageStartDate, "dd/MM/yyyy")
             : "",
           propertyType: formData.propertyType,
-          propertySubType: formData.propertySubType,
+          // Derived from propertyType + constructionType — no longer a separate input
+          propertySubType: `${formData.propertyType}-${formData.constructionType}`,
           numberOfStorey: formData.numberOfStorey,
           constructionType: formData.constructionType,
           postcode: formData.postcode,
@@ -241,8 +367,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             </div>
           </div>
 
-          <div>
-            <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.coverageStartsFrom")}</Label>
+          <div id="field-coverageStartDate">
+            <Label className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-1">
+              {t("form.coverageStartsFrom")}
+              <ScanFieldBadge field={badge("periodFrom")} />
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg">
@@ -263,27 +392,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
           </div>
         </div>
 
-        {/* Property Type Dropdown */}
-        <div>
-          <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.propertyTypeLabel")}</Label>
-          <Select
-            value={formData.propertySubType}
-            onValueChange={(value) => handleInputChange("propertySubType", value)}
-          >
-            <SelectTrigger className="w-full border-[#E0E0E0]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="landed-partial-brick">{t("form.landedPartialBrick")}</SelectItem>
-              <SelectItem value="landed-full-brick">{t("form.landedFullBrick")}</SelectItem>
-              <SelectItem value="non-landed-partial-brick">{t("form.nonLandedPartialBrick")}</SelectItem>
-              <SelectItem value="non-landed-full-brick">{t("form.nonLandedFullBrick")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Property Type Cards */}
-        <div>
+        <div id="field-propertyType">
           <Label className="text-sm font-medium text-[#1A1A1A] mb-4 block">{t("form.propertyTypeLabel")}</Label>
           <div className="grid grid-cols-2 gap-4">
             {PROPERTY_TYPES.map((type) => (
@@ -343,7 +453,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         </div>
 
         {/* Construction Type */}
-        <div>
+        <div id="field-constructionType">
           <Label className="text-sm font-medium text-[#1A1A1A] mb-4 block">{t("form.constructionType")}</Label>
           <div className="space-y-3">
             {CONSTRUCTION_TYPES.map((type) => (
@@ -383,7 +493,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         </div>
 
         {/* Postcode */}
-        <div>
+        <div id="field-postcode">
           <Label htmlFor="postcode" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
             {t("form.postcodeLabel")}
             <ScanFieldBadge field={badge("postcode")} />
@@ -462,7 +572,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
           </div>
 
           {/* ID Number — changes based on selected type */}
-          <div>
+          <div id="field-idNumber">
             {formData.idType === "passport" ? (
               <>
                 <Label htmlFor="passport" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
@@ -523,6 +633,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                     id="dob-passport"
                     type="button"
                     variant="outline"
+                    onClick={() => setDobOpen(true)}
                     className={cn(
                       "w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg h-10",
                       !formData.dateOfBirth && "text-muted-foreground",
@@ -535,6 +646,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
+                    captionLayout="dropdown"
+                    fromYear={1900}
+                    toYear={new Date().getFullYear()}
                     selected={(() => {
                       if (!formData.dateOfBirth) return undefined
                       const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
@@ -543,7 +657,10 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                     onSelect={handleDobSelect}
                     disabled={{ after: new Date() }}
                     defaultMonth={(() => {
-                      if (!formData.dateOfBirth) return undefined
+                      if (!formData.dateOfBirth) {
+                        // Default to 30 years ago so the calendar opens near a typical birth year
+                        return new Date(new Date().getFullYear() - 30, 0, 1)
+                      }
                       const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
                       return isValid(parsed) ? parsed : undefined
                     })()}
@@ -557,7 +674,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
         {/* ── Date of Birth — non-passport only ── */}
         {formData.idType !== "passport" && (
-          <div>
+          <div id="field-dateOfBirth">
             <Label htmlFor="dob" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
               {t("form.dobLabel")}
               <ScanFieldBadge field={badge("dateOfBirth")} />
@@ -568,6 +685,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   id="dob"
                   type="button"
                   variant="outline"
+                  onClick={() => setDobOpen(true)}
                   className={cn(
                     "w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg h-10",
                     !formData.dateOfBirth && "text-muted-foreground",
@@ -580,6 +698,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
+                  captionLayout="dropdown"
+                  fromYear={1900}
+                  toYear={new Date().getFullYear()}
                   selected={(() => {
                     if (!formData.dateOfBirth) return undefined
                     const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
@@ -588,7 +709,10 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   onSelect={handleDobSelect}
                   disabled={{ after: new Date() }}
                   defaultMonth={(() => {
-                    if (!formData.dateOfBirth) return undefined
+                    if (!formData.dateOfBirth) {
+                      // Default to 30 years ago so the calendar opens near a typical birth year
+                      return new Date(new Date().getFullYear() - 30, 0, 1)
+                    }
                     const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
                     return isValid(parsed) ? parsed : undefined
                   })()}

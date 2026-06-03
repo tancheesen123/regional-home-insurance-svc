@@ -10,6 +10,22 @@
   }
 }
 
+/* ── Scan field highlight — Google Forms style amber pulse ring ───────────────
+   Applied by scrollToField() in scan-result-overview.tsx.
+   Added/removed via classList, so no React re-render required.
+   ─────────────────────────────────────────────────────────────────────────── */
+.field-scan-highlight {
+  border-radius: 8px;
+  animation: scanFieldPulse 2s ease-out forwards;
+}
+
+@keyframes scanFieldPulse {
+  0%   { box-shadow: 0 0 0 0px  rgba(245, 166, 35, 0.70); }
+  20%  { box-shadow: 0 0 0 6px  rgba(245, 166, 35, 0.45); }
+  60%  { box-shadow: 0 0 0 8px  rgba(245, 166, 35, 0.15); }
+  100% { box-shadow: 0 0 0 0px  rgba(245, 166, 35, 0.00); }
+}
+
 /* ── Spotlight hover effect ───────────────────────────────────────────────────
    Uses CSS custom properties set by SpotlightBackground component via direct
    DOM writes (no React re-renders). The radial-gradient repaints only the

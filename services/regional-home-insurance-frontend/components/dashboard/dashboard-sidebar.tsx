@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  FileText, Home, Settings, User, BarChart3, SlidersHorizontal,
+  FileText, Home, User, BarChart3, SlidersHorizontal,
   LogOut, UserCircle, ChevronsUpDown, Bell, HelpCircle,
 } from "lucide-react"
 import Image from "next/image"
@@ -64,7 +64,6 @@ export default function DashboardSidebar() {
     { name: t("nav.sales"),     href: "/dashboard/sales",    icon: BarChart3,         show: isAdmin },
     { name: t("nav.config"),    href: "/dashboard/config",   icon: SlidersHorizontal, show: isAdmin },
     { name: t("nav.profile"),   href: "/dashboard/profile",  icon: User,              show: isUser  },
-    { name: t("nav.settings"),  href: "/dashboard/settings", icon: Settings,          show: isUser  },
   ].filter((item) => item.show)
 
   const isActive = (href: string): boolean => {
@@ -222,12 +221,6 @@ export default function DashboardSidebar() {
                   <Link href="/dashboard/profile">
                     <UserCircle className="h-4 w-4 text-[#9E9E9E]" />
                     {tHeader("profileItem")}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="gap-2 cursor-pointer">
-                  <Link href="/dashboard/settings">
-                    <Settings className="h-4 w-4 text-[#9E9E9E]" />
-                    {tHeader("settingsItem")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
