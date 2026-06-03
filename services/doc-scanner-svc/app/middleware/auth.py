@@ -16,8 +16,8 @@ async def require_jwt(request: Request) -> dict:
     FastAPI dependency — attach to any route that needs auth.
 
     Usage:
-        @router.post("/scan")
-        async def scan(..., _claims: dict = Depends(require_jwt)):
+        @router.post("/scan-document")
+        async def scan_document(..., _claims: dict = Depends(require_jwt)):
             ...
     """
     credentials: HTTPAuthorizationCredentials | None = await _bearer_scheme(request)

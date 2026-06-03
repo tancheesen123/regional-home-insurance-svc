@@ -21,7 +21,6 @@ namespace ApplicationService.Core.Domain.Entities
         // Navigation
         public UserAccount UserAccount { get; set; }
         public AddressEntity? Address { get; set; }
-        public ICollection<CustomerPaymentMethod> PaymentMethods { get; set; }
         public ICollection<Quotation> Quotations { get; set; }
         public ICollection<Proposal> Proposals { get; set; }
     }

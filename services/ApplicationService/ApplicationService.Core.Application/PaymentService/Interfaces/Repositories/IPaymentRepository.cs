@@ -11,7 +11,6 @@ namespace ApplicationService.Core.Application.PaymentService.Interfaces.Reposito
         Task<Payment?> GetByTransactionIdAsync(string transactionId);
 
         Task<List<Payment>> GetByProposalIdAsync(string proposalId);
-        Task<PaymentGateway?> GetGatewayByRegionAsync(string region);
         Task AddPaymentAsync(Payment payment);
         void UpdatePayment(Payment payment);
         Task SaveChangesAsync();

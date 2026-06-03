@@ -16,15 +16,3 @@ class SourceResult(BaseModel):
     fieldsFound:   int
 
 
-class ExtractionResult(BaseModel):
-    """Full response returned by POST /scan."""
-    documentType:         str
-    detectedDocumentType: str
-    autoDetected:         bool
-    extractionMethod:     str = "vision"   # "text" | "vision"
-    countryCode:          str
-    confidence:           float = Field(ge=0.0, le=1.0)
-    fields:               dict[str, FieldResult]
-    warnings:             list[str] = []
-    # Populated when multiple files are scanned — one entry per file
-    sources:              list[SourceResult] = []

@@ -310,66 +310,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.CustomerPaymentMethod", b =>
-                {
-                    b.Property<string>("PaymentMethodId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("CardHolderName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CardType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("CustomerId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ExpiryMonth")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<string>("ExpiryYear")
-                        .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("nvarchar(4)");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LastFourDigits")
-                        .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("nvarchar(4)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("PaymentMethodId");
-
-                    b.HasIndex("CustomerId");
-
-                    b.ToTable("CustomerPaymentMethods");
-                });
-
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.LocationTierConfig", b =>
                 {
                     b.Property<string>("Id")
@@ -488,45 +428,12 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
                     b.HasKey("PaymentId");
 
-                    b.HasIndex("GatewayName");
-
                     b.HasIndex("ProposalId");
 
                     b.HasIndex("ReferenceNumber")
                         .IsUnique();
 
                     b.ToTable("Payments");
-                });
-
-            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PaymentGateway", b =>
-                {
-                    b.Property<string>("Name")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ApiKey")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SupportedRegions")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Name");
-
-                    b.ToTable("PaymentGateways");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>
@@ -1502,30 +1409,13 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                     b.Navigation("UserAccount");
                 });
 
-            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.CustomerPaymentMethod", b =>
-                {
-                    b.HasOne("ApplicationService.Core.Domain.Entities.Customer", "Customer")
-                        .WithMany("PaymentMethods")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-                });
-
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Payment", b =>
                 {
-                    b.HasOne("ApplicationService.Core.Domain.Entities.PaymentGateway", "PaymentGateway")
-                        .WithMany("Payments")
-                        .HasForeignKey("GatewayName");
-
                     b.HasOne("ApplicationService.Core.Domain.Entities.Proposal", "Proposal")
                         .WithMany("Payments")
                         .HasForeignKey("ProposalId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("PaymentGateway");
 
                     b.Navigation("Proposal");
                 });
@@ -1633,16 +1523,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
                 {
-                    b.Navigation("PaymentMethods");
-
                     b.Navigation("Proposals");
 
                     b.Navigation("Quotations");
-                });
-
-            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.PaymentGateway", b =>
-                {
-                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Policy", b =>

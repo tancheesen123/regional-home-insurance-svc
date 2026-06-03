@@ -4,16 +4,19 @@ using ApplicationService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
+namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    [DbContext(typeof(PHApplicationDbContext))]
-    partial class PHApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(KHApplicationDbContext))]
+    [Migration("20260603091226_RemoveUnusedTables")]
+    partial class RemoveUnusedTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
