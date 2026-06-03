@@ -18,7 +18,6 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AddressEntity> Addresses { get; set; }
-        public DbSet<CustomerPaymentMethod> CustomerPaymentMethods { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
         public DbSet<ValuableItem> ValuableItems { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -26,7 +25,6 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<Policy> Policies { get; set; }
         public DbSet<PolicyDocument> PolicyDocuments { get; set; }
         public DbSet<Payment> Payments { get; set; }
-        public DbSet<PaymentGateway> PaymentGateways { get; set; }
 
         // ── Product / Rate tables ─────────────────────────────────────────────
         public DbSet<ProductPremiumRate> ProductPremiumRates { get; set; }
@@ -108,27 +106,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .WithOne(a => a.Customer)
                       .HasForeignKey<Customer>(e => e.AddressId)
                       .OnDelete(DeleteBehavior.SetNull);
-            });
-
-            // CustomerPaymentMethod
-            modelBuilder.Entity<CustomerPaymentMethod>(entity =>
-            {
-                entity.HasKey(e => e.PaymentMethodId);
-                entity.Ignore(e => e.Id);
-                entity.Property(e => e.PaymentMethodId).HasMaxLength(50);
-                entity.Property(e => e.CustomerId).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.CardType).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.LastFourDigits).IsRequired().HasMaxLength(4);
-                entity.Property(e => e.ExpiryMonth).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.ExpiryYear).IsRequired().HasMaxLength(4);
-                entity.Property(e => e.CardHolderName).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.IsPrimary).IsRequired();
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasOne(e => e.Customer)
-                      .WithMany(c => c.PaymentMethods)
-                      .HasForeignKey(e => e.CustomerId);
             });
 
             // Product
@@ -279,16 +256,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasOne(e => e.Policy)
                       .WithMany(p => p.PolicyDocuments)
                       .HasForeignKey(e => e.PolicyId);
-            });
-
-            // PaymentGateway
-            modelBuilder.Entity<PaymentGateway>(entity =>
-            {
-                entity.HasKey(e => e.Name);
-                entity.Ignore(e => e.Id);
-                entity.Property(e => e.Name).HasMaxLength(50);
-                entity.Property(e => e.ApiKey).IsRequired().HasColumnType("TEXT");
-                entity.Property(e => e.SupportedRegions).HasColumnType("TEXT");
             });
 
             // ProductPremiumRate
@@ -543,11 +510,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasOne(e => e.Proposal)
                       .WithMany(p => p.Payments)
                       .HasForeignKey(e => e.ProposalId);
-
-                entity.HasOne(e => e.PaymentGateway)
-                      .WithMany(g => g.Payments)
-                      .HasForeignKey(e => e.GatewayName)
-                      .IsRequired(false);
             });
         }
     }

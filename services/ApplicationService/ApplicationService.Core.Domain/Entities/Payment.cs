@@ -34,6 +34,5 @@ namespace ApplicationService.Core.Domain.Entities
 
         // Navigation
         public Proposal Proposal { get; set; }
-        public PaymentGateway PaymentGateway { get; set; }
     }
 }
