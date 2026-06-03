@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils"
 import { scanDocument, type ScanDocumentResult } from "@/lib/api/scan-document"
 import { getSession } from "@/lib/session"
+import ScanResultOverview from "@/components/quotation/scan-result-overview"
 
 // ── Document type tiles ────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ interface Props {
 
 export default function DocumentScanner({ onScanComplete, onSkip, onReopen, collapsed }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const countryCode  = getSession()?.countryCode ?? "MY"
+  const countryCode  = getSession()?.countryCode ?? "ID"
 
   const [files,       setFiles]       = useState<File[]>([])
   const [scanning,    setScanning]    = useState(false)
@@ -117,7 +118,9 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     try {
       const data = await scanDocument(files, countryCode)
       setResult(data)
-      onScanComplete(data)
+      // ↑ Do NOT call onScanComplete here — that would collapse the scanner
+      // immediately and skip the ScanResultOverview. The overview calls
+      // onScanComplete itself when the user clicks "Got it, continue".
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
@@ -338,76 +341,17 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
         </div>
       )}
 
-      {/* ── Scan result ── */}
+      {/* ── Scan result — new Journey Readiness Overview ── */}
       {result && (
         <div className={cn(
-          "bg-white rounded-2xl border border-[#E0E0E0] shadow-sm overflow-hidden",
           "transition-all duration-500 ease-out",
           animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}>
-
-          {/* Result header */}
-          <div className="px-5 py-4 border-b border-[#F5F5F5] flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <CheckCircle2 className="h-4 w-4 text-[#00A651]" />
-                <p className="text-sm font-semibold text-[#1A1A1A]">
-                  {filledCount} of {totalCount} fields extracted
-                </p>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-[#9E9E9E]">
-                {result.sources[0] && (
-                  <span>
-                    Doc type:{" "}
-                    <span className="font-medium text-[#555555]">
-                      {result.sources[0].documentType}
-                    </span>
-                  </span>
-                )}
-                <span>
-                  Method:{" "}
-                  <span className="font-medium text-[#555555]">{result.extractionMethod}</span>
-                </span>
-                <span>
-                  Confidence:{" "}
-                  <span className="font-medium text-[#555555]">
-                    {Math.round(result.confidence * 100)}%
-                  </span>
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => { setResult(null); setFiles([]) }}
-              className="text-xs text-[#9E9E9E] hover:text-[#555555] transition-colors flex items-center gap-1"
-            >
-              <X className="h-3.5 w-3.5" /> Re-scan
-            </button>
-          </div>
-
-          {/* Warnings */}
-          {result.warnings.length > 0 && (
-            <div className="px-5 py-3 bg-[#FDF8EC] border-b border-[#F5A623]/20 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-[#D4891A] shrink-0 mt-0.5" />
-              <div className="text-xs text-[#D4891A] space-y-0.5">
-                {result.warnings.map((w, i) => <p key={i}>{w}</p>)}
-              </div>
-            </div>
-          )}
-
-          {/* Full field list */}
-          <ResultFieldList result={result} compact={false} />
-
-          {/* CTA */}
-          <div className="px-5 py-4 border-t border-[#E0E0E0]">
-            <button
-              type="button"
-              onClick={() => onScanComplete(result)}
-              className="w-full h-11 rounded-xl bg-[#F5A623] hover:bg-[#D4891A] text-white text-sm font-semibold transition-colors"
-            >
-              Continue to Quotation Form
-            </button>
-          </div>
+          <ScanResultOverview
+            result={result}
+            onContinue={() => onScanComplete(result)}
+            onRescan={() => { setResult(null); setFiles([]) }}
+          />
         </div>
       )}
     </div>
