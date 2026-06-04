@@ -279,7 +279,11 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Dapatkan Penawaran",
       "gettingQuote": "Mendapatkan Penawaran...",
-      "failedToGetQuote": "Gagal mendapatkan penawaran. Silakan coba lagi."
+      "failedToGetQuote": "Gagal mendapatkan penawaran. Silakan coba lagi.",
+      "floodChecking": "Memeriksa risiko banjir untuk wilayah ini…",
+      "floodAtRisk": "Banjir aktif dilaporkan di wilayah ini. Kami tidak dapat melanjutkan selama properti berada di zona banjir.",
+      "floodClear": "Tidak ada banjir aktif yang dilaporkan di wilayah ini.",
+      "floodSource": "Sumber: PetaBencana.id (real-time)"
     },
     "customize": {
       "title": "Sesuaikan perlindungan Anda",
@@ -447,7 +451,8 @@
       "accountLabel": "No. Rekening Giro / Tabungan",
       "continueToSummary": "Lanjutkan ke Ringkasan",
       "processing": "Memproses...",
-      "failedToCreate": "Gagal membuat proposal. Silakan coba lagi."
+      "failedToCreate": "Gagal membuat proposal. Silakan coba lagi.",
+      "optional": "opsional"
     },
     "summary": {
       "loadingProposal": "Memuat proposal Anda...",
@@ -526,6 +531,17 @@
       "claimsHotline": "Hotline Klaim",
       "emergencyClaims": "Untuk klaim darurat",
       "returnToDashboard": "Kembali ke Dasbor"
+    },
+    "validation": {
+      "required": "Kolom ini wajib diisi",
+      "selectDate": "Silakan pilih tanggal",
+      "postcode5": "Kode pos harus 5 digit",
+      "floodingBlock": "Maaf, kami tidak dapat memberikan penawaran untuk properti yang sedang mengalami banjir. Silakan hubungi cabang kami untuk bantuan.",
+      "passportFormat": "Nomor paspor harus 6-9 huruf atau angka",
+      "ktpFormat": "Nomor KTP (NIK) harus 16 digit",
+      "emailFormat": "Masukkan alamat email yang valid",
+      "fixHighlighted": "Lengkapi kolom yang ditandai sebelum melanjutkan.",
+      "completeAddress": "Lengkapi alamat properti (provinsi, kota, kode pos)"
     }
   }
 }

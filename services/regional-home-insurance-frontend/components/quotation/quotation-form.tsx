@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { CalendarIcon, Home, Building, Minus, Plus, Check } from "lucide-react"
+import { CalendarIcon, Home, Building, Minus, Plus, Check, AlertCircle } from "lucide-react"
 import { format, parse, isValid } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +16,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
-import { getQuote, saveQuotationId, saveQuotationStartDate } from "@/lib/api"
+import { getQuote, saveQuotationId, saveQuotationStartDate, saveQuotationIdentity } from "@/lib/api"
+import { checkFloodRisk, type FloodCheckResult } from "@/lib/api/flood-check"
 import { getSession } from "@/lib/session"
 import { getIdTypeOptions, getDefaultNationality } from "@/lib/id-type-helpers"
 import { markFieldManual, saveScanSession, type ScanSessionField } from "@/lib/scan-session"
@@ -56,6 +57,34 @@ const NATIONALITIES = [
   "MALAYSIAN", "SINGAPOREAN", "INDONESIAN", "THAI", "FILIPINO", "CAMBODIAN", "OTHER",
 ]
 
+/**
+ * Normalise a raw nationality string from the scanner to one of the
+ * NATIONALITIES options. e.g. "INDONESIA" / "WNI" → "INDONESIAN".
+ */
+function normaliseNationality(raw: string): string {
+  const v = raw.trim().toUpperCase()
+  if (v.includes("INDONESIA") || v === "WNI") return "INDONESIAN"
+  if (v.includes("MALAYSIA"))                 return "MALAYSIAN"
+  if (v.includes("SINGAPORE"))                return "SINGAPOREAN"
+  if (v.includes("PHILIPPIN") || v.includes("FILIPINO")) return "FILIPINO"
+  if (v.includes("CAMBODIA")  || v.includes("KHMER"))    return "CAMBODIAN"
+  if (v.includes("THAI"))                     return "THAI"
+  // Exact match already in the list?
+  if (NATIONALITIES.includes(v)) return v
+  return "OTHER"
+}
+
+/** Inline field-level error message shown beneath an invalid field. */
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null
+  return (
+    <p className="mt-1.5 text-xs text-[#D32F2F] flex items-center gap-1">
+      <AlertCircle className="h-3 w-3 shrink-0" />
+      {msg}
+    </p>
+  )
+}
+
 interface QuotationFormProps {
   /** Raw scan result passed from DocumentScanner — field mapping handled here */
   scanResult?: import("@/lib/api/scan-document").ScanDocumentResult | null
@@ -75,6 +104,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dobOpen, setDobOpen] = useState(false)
+  // Per-field validation errors. Key matches the `field-<key>` wrapper id.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  // Live flood-risk check (PetaBencana) driven by the postcode
+  const [floodCheck, setFloodCheck] = useState<FloodCheckResult | null>(null)
+  const [floodChecking, setFloodChecking] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     ownershipType:    "",         // no pre-selection — customer must choose
     coverageStartDate: undefined,
@@ -187,14 +221,35 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         if (found) next.postcode = found
       }
 
-      // idNumber / nik → nricNumber or passportNumber (only if currently empty)
-      // Try idNumber first (PH/KH), fall back to nik (ID KTP)
-      const rawId = raw.idNumber ?? raw.nik
-      if (rawId?.filled && rawId.value) {
-        if (prev.idType === "passport") {
-          if (!prev.passportNumber) next.passportNumber = rawId.value
-        } else {
-          if (!prev.nricNumber) next.nricNumber = rawId.value
+      // ── Detect document type: passport vs national ID ──────────────────────
+      // The scanner now emits documentType + standardized keys.
+      const docType = (
+        raw.documentType?.value ??
+        scanResult.sources[0]?.documentType ??
+        ""
+      ).toUpperCase()
+      const hasPassportNumber = !!(raw.passportNumber?.filled && raw.passportNumber.value)
+      const isPassport = docType.includes("PASSPORT") || hasPassportNumber
+
+      if (isPassport) {
+        // Switch the form to passport mode so the right inputs render
+        next.idType = "passport"
+
+        // Passport number — prefer passportNumber, fall back to idNumber
+        const pp = raw.passportNumber ?? raw.idNumber
+        if (pp?.filled && pp.value && !prev.passportNumber) {
+          next.passportNumber = pp.value
+        }
+
+        // Nationality — normalise to the NATIONALITIES list (e.g. "INDONESIA" → "INDONESIAN")
+        if (raw.nationality?.filled && raw.nationality.value) {
+          next.nationality = normaliseNationality(raw.nationality.value)
+        }
+      } else {
+        // National ID (KTP / PhilID / Khmer ID) → nricNumber
+        const rawId = raw.idNumber ?? raw.nik
+        if (rawId?.filled && rawId.value && !prev.nricNumber) {
+          next.nricNumber = rawId.value
         }
       }
 
@@ -223,8 +278,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       constructionClassification: toSession(raw.constructionClassification),
       // Postcode badge — uses riskAddress as source; falls back to a direct postcode field
       postcode:                   toSession(raw.riskAddress ?? raw.postcode),
-      // IC / Passport fields — try idNumber (PH/KH) then nik (ID KTP)
-      idNumber:    toSession(raw.idNumber ?? raw.nik),
+      // IC / Passport fields — passport first, then idNumber (PH/KH) then nik (ID KTP)
+      idNumber:    toSession(raw.passportNumber ?? raw.idNumber ?? raw.nik),
       // Date of birth — try all common key variants
       dateOfBirth: toSession(raw.dateOfBirth ?? raw.birthdate ?? raw.birthDate),
     } as Record<string, ScanSessionField>)
@@ -233,6 +288,35 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
   // Helper to get badge data for a given AI key
   const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
+
+  // ── Live flood-risk check (auto-runs on a valid 5-digit postcode) ──────────
+  useEffect(() => {
+    const pc = formData.postcode.trim()
+    if (countryCode.toUpperCase() !== "ID" || !/^\d{5}$/.test(pc)) {
+      setFloodCheck(null)
+      setFloodChecking(false)
+      return
+    }
+
+    let cancelled = false
+    setFloodChecking(true)
+    const timer = setTimeout(async () => {
+      const result = await checkFloodRisk(pc, countryCode)
+      if (cancelled) return
+      setFloodChecking(false)
+      setFloodCheck(result)
+      // Confirmed active flood → auto-set the manual question to "yes".
+      // This hard-blocks proceed (existing validation). Customer can still override.
+      if (result.status === "at-risk") {
+        setFormData((prev) =>
+          prev.currentFlooding === "yes" ? prev : { ...prev, currentFlooding: "yes" },
+        )
+      }
+    }, 700)
+
+    return () => { cancelled = true; clearTimeout(timer) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.postcode, countryCode])
 
   // Mark a field as manually edited when customer changes it
   const handleInputChange = useCallback((field: keyof FormData, value: string | Date | undefined | number) => {
@@ -247,7 +331,51 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       }
     })
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear the inline error for this field as soon as the user edits it.
+    setFieldErrors((prev) => {
+      if (!prev[field] && !(field === "passportNumber" || field === "nricNumber")) return prev
+      const next = { ...prev }
+      delete next[field as string]
+      if (field === "passportNumber" || field === "nricNumber") delete next.idNumber
+      return next
+    })
   }, [])
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const validate = useCallback((): Record<string, string> => {
+    const e: Record<string, string> = {}
+
+    if (!formData.ownershipType)     e.ownershipType     = t("validation.required")
+    if (!formData.coverageStartDate) e.coverageStartDate = t("validation.selectDate")
+    if (!formData.propertyType)      e.propertyType      = t("validation.required")
+    if (!formData.constructionType)  e.constructionType  = t("validation.required")
+
+    if (!formData.postcode.trim())          e.postcode = t("validation.required")
+    else if (!/^\d{5}$/.test(formData.postcode.trim())) e.postcode = t("validation.postcode5")
+
+    if (!formData.unoccupiedProperty) e.unoccupiedProperty = t("validation.required")
+    if (!formData.previousLoss)       e.previousLoss       = t("validation.required")
+
+    // Flooding: must be answered AND must not be "yes" (we cannot insure active flood risk)
+    if (!formData.currentFlooding)             e.currentFlooding = t("validation.required")
+    else if (formData.currentFlooding === "yes") e.currentFlooding = t("validation.floodingBlock")
+
+    // ID number — KTP (16 digits, ID region) vs passport (alphanumeric)
+    if (formData.idType === "passport") {
+      const pp = formData.passportNumber.trim()
+      if (!pp) e.idNumber = t("validation.required")
+      else if (!/^[A-Za-z0-9]{6,9}$/.test(pp)) e.idNumber = t("validation.passportFormat")
+      if (!formData.nationality) e.nationality = t("validation.required")
+    } else {
+      const id = formData.nricNumber.trim()
+      if (!id) e.idNumber = t("validation.required")
+      else if (countryCode === "ID" && !/^\d{16}$/.test(id)) e.idNumber = t("validation.ktpFormat")
+    }
+
+    if (!formData.dateOfBirth) e.dateOfBirth = t("validation.selectDate")
+
+    return e
+  }, [formData, countryCode, t])
 
   const handleIdTypeChange = useCallback((type: string) => {
     setFormData((prev) => ({
@@ -268,6 +396,18 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // ── Validate required fields first ─────────────────────────────────────────
+    const errs = validate()
+    setFieldErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      // Scroll the first invalid field into view
+      const firstKey = Object.keys(errs)[0]
+      const el = document.getElementById(`field-${firstKey}`)
+      el?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
+
     setIsLoading(true)
 
     const session = getSession()
@@ -314,6 +454,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       if (formData.coverageStartDate) {
         saveQuotationStartDate(format(formData.coverageStartDate, "dd/MM/yyyy"))
       }
+      // Persist the chosen ID type + number so fill-details locks to the same values
+      saveQuotationIdentity({
+        idType:   formData.idType,
+        idNumber: formData.idType === "passport" ? formData.passportNumber : formData.nricNumber,
+      })
       router.push("/dashboard/quotation/customize")
     } catch (err) {
       console.error("[GetQuote Error]", err)
@@ -335,9 +480,12 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Owner/Tenant Selection */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div id="field-ownershipType">
             <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.iAmA")}</Label>
-            <div className="grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1">
+            <div className={cn(
+              "grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1",
+              fieldErrors.ownershipType && "ring-1 ring-[#D32F2F] rounded-lg",
+            )}>
               <Button
                 type="button"
                 variant="ghost"
@@ -365,6 +513,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 {t("form.tenant")}
               </Button>
             </div>
+            <FieldError msg={fieldErrors.ownershipType} />
           </div>
 
           <div id="field-coverageStartDate">
@@ -374,7 +523,10 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             </Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg">
+                <Button variant="outline" className={cn(
+                  "w-full justify-start text-left font-normal border-[#E0E0E0] rounded-lg",
+                  fieldErrors.coverageStartDate && "border-[#D32F2F]",
+                )}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.coverageStartDate ? format(formData.coverageStartDate, "dd/MM/yyyy") : t("form.selectDate")}
                 </Button>
@@ -385,10 +537,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   selected={formData.coverageStartDate}
                   onSelect={(date) => handleInputChange("coverageStartDate", date)}
                   disabled={(date) => date < new Date()}
-                  initialFocus
+                  autoFocus
                 />
               </PopoverContent>
             </Popover>
+            <FieldError msg={fieldErrors.coverageStartDate} />
           </div>
         </div>
 
@@ -422,6 +575,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               </Card>
             ))}
           </div>
+          <FieldError msg={fieldErrors.propertyType} />
         </div>
 
         {/* Number of Storey */}
@@ -490,6 +644,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               </Card>
             ))}
           </div>
+          <FieldError msg={fieldErrors.constructionType} />
         </div>
 
         {/* Postcode */}
@@ -500,11 +655,38 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
           </Label>
           <Input
             id="postcode"
+            inputMode="numeric"
+            maxLength={5}
             value={formData.postcode}
-            onChange={(e) => handleInputChange("postcode", e.target.value)}
-            className="border-[#E0E0E0]"
+            onChange={(e) => handleInputChange("postcode", e.target.value.replace(/\D/g, ""))}
+            className={cn("border-[#E0E0E0]", fieldErrors.postcode && "border-[#D32F2F]")}
             placeholder={t("form.postcodePlaceholder")}
           />
+          <FieldError msg={fieldErrors.postcode} />
+
+          {/* Live flood-risk status (PetaBencana.id) */}
+          {floodChecking && (
+            <p className="mt-1.5 text-xs text-[#9E9E9E] flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-full border-2 border-[#E0E0E0] border-t-[#9E9E9E] animate-spin" />
+              {t("form.floodChecking")}
+            </p>
+          )}
+          {!floodChecking && floodCheck?.status === "at-risk" && (
+            <div className="mt-2 flex items-start gap-2 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-3 py-2">
+              <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
+              <p className="text-xs text-[#D32F2F] leading-snug">
+                {t("form.floodAtRisk")}
+                {floodCheck.areaName ? ` (${floodCheck.areaName})` : ""}
+                <span className="block text-[#9E9E9E] mt-0.5">{t("form.floodSource")}</span>
+              </p>
+            </div>
+          )}
+          {!floodChecking && floodCheck?.status === "clear" && (
+            <p className="mt-1.5 text-xs text-[#00A651] flex items-center gap-1.5">
+              <Check className="h-3 w-3 shrink-0" />
+              {t("form.floodClear")}
+            </p>
+          )}
         </div>
 
         {/* Risk Assessment Questions */}
@@ -516,11 +698,14 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               { field: "previousLoss",       labelKey: "form.previousLoss"       },
             ] as const
           ).map(({ field, labelKey }) => (
-            <div key={field}>
+            <div key={field} id={`field-${field}`}>
               <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">
                 {t(labelKey)}
               </Label>
-              <div className="grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1">
+              <div className={cn(
+                "grid grid-cols-2 bg-[#F5F5F5] rounded-lg p-1",
+                fieldErrors[field] && "ring-1 ring-[#D32F2F]",
+              )}>
                 {(["yes", "no"] as const).map((val) => (
                   <Button
                     key={val}
@@ -538,6 +723,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   </Button>
                 ))}
               </div>
+              <FieldError msg={fieldErrors[field]} />
             </div>
           ))}
         </div>
@@ -582,8 +768,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 <Input
                   id="passport"
                   value={formData.passportNumber}
-                  onChange={(e) => handleInputChange("passportNumber", e.target.value)}
-                  className="border-[#E0E0E0] rounded-lg h-10"
+                  onChange={(e) => handleInputChange("passportNumber", e.target.value.toUpperCase())}
+                  className={cn("border-[#E0E0E0] rounded-lg h-10", fieldErrors.idNumber && "border-[#D32F2F]")}
                   placeholder={t("form.passportPlaceholder")}
                 />
               </>
@@ -595,23 +781,29 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 </Label>
                 <Input
                   id="nric"
+                  inputMode={countryCode === "ID" ? "numeric" : "text"}
+                  maxLength={countryCode === "ID" ? 16 : undefined}
                   value={formData.nricNumber}
-                  onChange={(e) => handleInputChange("nricNumber", e.target.value)}
-                  className="border-[#E0E0E0] rounded-lg h-10"
+                  onChange={(e) => handleInputChange(
+                    "nricNumber",
+                    countryCode === "ID" ? e.target.value.replace(/\D/g, "") : e.target.value,
+                  )}
+                  className={cn("border-[#E0E0E0] rounded-lg h-10", fieldErrors.idNumber && "border-[#D32F2F]")}
                   placeholder={t("form.nricPlaceholder")}
                 />
               </>
             )}
+            <FieldError msg={fieldErrors.idNumber} />
           </div>
         </div>
 
         {/* ── Passport extras: Nationality + Date of Birth (same row) ── */}
         {formData.idType === "passport" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div id="field-nationality">
               <Label className="text-sm font-medium text-[#1A1A1A] mb-3 block">{t("form.nationalityLabel")}</Label>
               <Select value={formData.nationality} onValueChange={(value) => handleInputChange("nationality", value)}>
-                <SelectTrigger className="border-[#E0E0E0] rounded-lg h-10">
+                <SelectTrigger className={cn("border-[#E0E0E0] rounded-lg h-10", fieldErrors.nationality && "border-[#D32F2F]")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -620,9 +812,10 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError msg={fieldErrors.nationality} />
             </div>
 
-            <div>
+            <div id="field-dateOfBirth">
               <Label htmlFor="dob-passport" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
                 {t("form.dobLabel")}
                 <ScanFieldBadge field={badge("dateOfBirth")} />
@@ -647,8 +840,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   <Calendar
                     mode="single"
                     captionLayout="dropdown"
-                    fromYear={1900}
-                    toYear={new Date().getFullYear()}
+                    startMonth={new Date(1900, 0)}
+                    endMonth={new Date()}
                     selected={(() => {
                       if (!formData.dateOfBirth) return undefined
                       const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
@@ -664,10 +857,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                       const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
                       return isValid(parsed) ? parsed : undefined
                     })()}
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
+              <FieldError msg={fieldErrors.dateOfBirth} />
             </div>
           </div>
         )}
@@ -699,8 +893,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 <Calendar
                   mode="single"
                   captionLayout="dropdown"
-                  fromYear={1900}
-                  toYear={new Date().getFullYear()}
+                  startMonth={new Date(1900, 0)}
+                  endMonth={new Date()}
                   selected={(() => {
                     if (!formData.dateOfBirth) return undefined
                     const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
@@ -716,10 +910,11 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                     const parsed = parse(formData.dateOfBirth, "dd/MM/yyyy", new Date())
                     return isValid(parsed) ? parsed : undefined
                   })()}
-                  initialFocus
+                  autoFocus
                 />
               </PopoverContent>
             </Popover>
+            <FieldError msg={fieldErrors.dateOfBirth} />
           </div>
         )}
 

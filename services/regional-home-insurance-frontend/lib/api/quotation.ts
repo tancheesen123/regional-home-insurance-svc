@@ -211,6 +211,33 @@ export function getQuotationStartDate(): string | null {
   return localStorage.getItem(QUOTATION_START_KEY)
 }
 
+// ── Identity (idType + idNumber) carried from quotation → fill-details ─────────
+
+const QUOTATION_IDENTITY_KEY = "etiqa_quotation_identity"
+
+export interface QuotationIdentity {
+  idType:   string   // lower-case from quotation form, e.g. "ktp" | "passport"
+  idNumber: string
+}
+
+/** Persist the ID type + number chosen on the quotation page so fill-details can lock them. */
+export function saveQuotationIdentity(identity: QuotationIdentity): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(QUOTATION_IDENTITY_KEY, JSON.stringify(identity))
+}
+
+export function getQuotationIdentity(): QuotationIdentity | null {
+  if (typeof window === "undefined") return null
+  const raw = localStorage.getItem(QUOTATION_IDENTITY_KEY)
+  if (!raw) return null
+  try { return JSON.parse(raw) as QuotationIdentity } catch { return null }
+}
+
+export function clearQuotationIdentity(): void {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(QUOTATION_IDENTITY_KEY)
+}
+
 /** Convert "DD/MM/YYYY" → "YYYY-MM-DD" for CalculatePremium.
  *  Falls back to tomorrow's date if input is missing. */
 export function toCalculateDateFormat(ddmmyyyy: string | null): string {

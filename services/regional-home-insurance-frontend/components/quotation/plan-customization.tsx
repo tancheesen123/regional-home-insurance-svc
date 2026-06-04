@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Check, Home, Package, Shield, Calculator, ChevronRight } from "lucide-react"
+import { Check, Home, Package, Shield, Calculator, ChevronRight, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -80,6 +80,8 @@ export default function PlanCustomization() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Per-field validation errors (plan, buildingAmount, contentAmount)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Plan state — initialised with building-contents defaults
   const [planState, setPlanState] = useState<PlanState>({
@@ -173,6 +175,7 @@ export default function PlanCustomization() {
         buildingAmount: 0,   // customer enters their own amount
         contentAmount:  0,
       }))
+      setFieldErrors({})   // plan changed — reset all amount errors
     },
     [],
   )
@@ -184,6 +187,11 @@ export default function PlanCustomization() {
       setPlanState((prev) => ({ ...prev, [field]: num }))
       // Clear the "from calculator" badge when the user manually edits the building field
       if (field === "buildingAmount") setBuildingFromCalc(false)
+      // Clear inline error for this amount field as the user types
+      setFieldErrors((prev) => {
+        if (!prev[field]) return prev
+        const next = { ...prev }; delete next[field]; return next
+      })
     },
     [],
   )
@@ -218,6 +226,7 @@ export default function PlanCustomization() {
       setSavedRoomAmounts(roomAmounts)
       setPlanState((prev) => ({ ...prev, contentAmount: total }))
       setShowContentCalculator(false)
+      setFieldErrors((prev) => { const n = { ...prev }; delete n.contentAmount; return n })
     },
     [],
   )
@@ -229,6 +238,7 @@ export default function PlanCustomization() {
       setPlanState((prev) => ({ ...prev, buildingAmount: snapped }))
       setShowBuildingCalculator(false)
       setBuildingFromCalc(true)
+      setFieldErrors((prev) => { const n = { ...prev }; delete n.buildingAmount; return n })
     },
     [region],
   )
@@ -237,6 +247,27 @@ export default function PlanCustomization() {
 
   const handleProceed = async () => {
     setError(null)
+
+    // ── Validate required fields ───────────────────────────────────────────────
+    const e: Record<string, string> = {}
+    if (!planState.selectedPlan) {
+      e.plan = t("validation.required")
+    } else {
+      const needsBuilding = planState.selectedPlan === "building-contents" || planState.selectedPlan === "building-only"
+      const needsContent  = planState.selectedPlan === "building-contents" || planState.selectedPlan === "content-only"
+      if (needsBuilding && (!planState.buildingAmount || planState.buildingAmount < region.buildingMin)) {
+        e.buildingAmount = t("validation.required")
+      }
+      if (needsContent && (!planState.contentAmount || planState.contentAmount < region.contentMin)) {
+        e.contentAmount = t("validation.required")
+      }
+    }
+    setFieldErrors(e)
+    if (Object.keys(e).length > 0) {
+      const firstKey = Object.keys(e)[0]
+      document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
 
     const session = getSession()
     const quotationId = getQuotationId()
@@ -373,9 +404,12 @@ export default function PlanCustomization() {
             </Button>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-6" id="field-plan">
             <p className="text-lg font-medium mb-4">{t("customize.iWouldLikeToProtect")}</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={cn(
+              "grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg",
+              fieldErrors.plan && "ring-1 ring-[#D32F2F] p-2",
+            )}>
               {PLAN_IDS.map((id) => {
                 const icons = planIcons(id)
                 return (
@@ -407,17 +441,24 @@ export default function PlanCustomization() {
                 )
               })}
             </div>
+            {fieldErrors.plan && (
+              <p className="mt-2 text-xs text-[#D32F2F] flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.plan}
+              </p>
+            )}
           </div>
         </div>
 
         {/* ── Building Sum Insured ── */}
         {(planState.selectedPlan === "building-contents" ||
           planState.selectedPlan === "building-only") && (
-          <div className={cn(
+          <div id="field-buildingAmount" className={cn(
             "border p-6 rounded-lg transition-all duration-150",
-            buildingFromCalc
-              ? "bg-[#E6F7EE] border-[#00A651]"
-              : "bg-white border-[#E0E0E0]",
+            fieldErrors.buildingAmount
+              ? "bg-white border-[#D32F2F]"
+              : buildingFromCalc
+                ? "bg-[#E6F7EE] border-[#00A651]"
+                : "bg-white border-[#E0E0E0]",
           )}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-semibold text-[#1A1A1A]">{t("customize.homeBuildingTitle")}</h3>
@@ -457,13 +498,21 @@ export default function PlanCustomization() {
             <p className="text-xs text-[#9E9E9E] ml-13">
               Min {region.symbol} {fmtAmount(region.buildingMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.buildingMax)}
             </p>
+            {fieldErrors.buildingAmount && (
+              <p className="mt-2 text-xs text-[#D32F2F] flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.buildingAmount}
+              </p>
+            )}
           </div>
         )}
 
         {/* ── Content Sum Insured ── */}
         {(planState.selectedPlan === "building-contents" ||
           planState.selectedPlan === "content-only") && (
-          <div className="bg-[#FFFDE7] border border-[#E0E0E0] p-6 rounded-lg">
+          <div id="field-contentAmount" className={cn(
+            "bg-[#FFFDE7] border p-6 rounded-lg",
+            fieldErrors.contentAmount ? "border-[#D32F2F]" : "border-[#E0E0E0]",
+          )}>
             <span className="inline-block mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#E87722] bg-[#FDF0E6] border border-[#F5C896] px-2 py-0.5 rounded-md">Home Content</span>
             <h3 className="text-lg font-semibold text-[#1A1A1A] mb-1">{t("customize.homeContentTitle")}</h3>
             <p className="text-[#555555] mb-1 text-sm">{t("customize.homeContentDesc")}</p>
@@ -494,6 +543,11 @@ export default function PlanCustomization() {
             <p className="text-xs text-[#9E9E9E]">
               Min {region.symbol} {fmtAmount(region.contentMin)} &nbsp;–&nbsp; Max {region.symbol} {fmtAmount(region.contentMax)}
             </p>
+            {fieldErrors.contentAmount && (
+              <p className="mt-2 text-xs text-[#D32F2F] flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.contentAmount}
+              </p>
+            )}
           </div>
         )}
 
