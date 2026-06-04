@@ -17,10 +17,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import CalculationSummary from "./calculation-summary"
+import SummaryBar, { type SummaryBreakdown } from "./summary-bar"
 import QuotationStepper from "./quotation-stepper"
 import AddressSelect, { type AddressValues } from "./address-select"
-import { createProposal, saveProposalId, getQuotationId, getQuotationIdentity } from "@/lib/api"
+import {
+  createProposal, saveProposalId, getQuotationId, getQuotationIdentity,
+  getQuotationPremium, getQuotationPropertySummary,
+} from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getScanSession, markFieldManual, type ScanSessionField } from "@/lib/scan-session"
 import { getMappingsForStep } from "@/lib/scan-field-map"
@@ -990,8 +993,8 @@ export default function FillDetailsForm() {
     return e
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     setError(null)
 
     // Validate before anything else
@@ -1086,24 +1089,46 @@ export default function FillDetailsForm() {
     }
   }
 
-  // Stable references for CalculationSummary — never changes so sidebar never re-renders
-  const planData = useMemo(() => ({
-    selectedPlan: "building-contents",
-    buildingAmount: 500000,
-    contentAmount: 60000,
-    addOns: { riotStrike: false, extendedTheft: false },
-  }), [])
+  // ── Summary bar data (real premium carried from earlier steps) ──────────────
+  const storedPremium = getQuotationPremium()
+  const propSummary   = getQuotationPropertySummary()
 
-  const valuablesData = useMemo(() => ({
-    totalDeclaredAmount: 5000,
-    maxDeclarableAmount: 20000,
-    undeclaredAmount: 55000,
-  }), [])
+  const PLAN_LABEL: Record<string, string> = {
+    "building-contents": "Building + Contents",
+    "building-only":     "Building Only",
+    "content-only":      "Content Only",
+  }
+
+  const buildBreakdown = (): SummaryBreakdown | undefined => {
+    if (!storedPremium) return undefined
+    const gross = storedPremium.grossPremium
+    const pct = gross > 0 ? Math.round((storedPremium.discountAmount / gross) * 100) : undefined
+    return {
+      planLabel:        PLAN_LABEL[storedPremium.planType] ?? storedPremium.planType,
+      coveragePeriod:   `${storedPremium.startDate} – ${storedPremium.endDate}`,
+      coverageType:     propSummary
+        ? `${propSummary.propertyType === "landed" ? "Landed" : "Non-landed"}, ${propSummary.numberOfStorey}-storey`
+        : undefined,
+      constructionType: propSummary
+        ? (propSummary.constructionType === "full-brick" ? "Full Brick" : "Partial Brick")
+        : undefined,
+      buildingSum:      storedPremium.buildingSum  > 0 ? storedPremium.buildingSum  : undefined,
+      contentsSum:      storedPremium.contentsSum  > 0 ? storedPremium.contentsSum  : undefined,
+      grossPremium:     storedPremium.grossPremium,
+      discountAmount:   storedPremium.discountAmount,
+      discountRatePct:  pct,
+      serviceTaxRate:   storedPremium.serviceTaxRate,
+      serviceTaxAmount: storedPremium.serviceTaxAmount,
+      stampDuty:        storedPremium.stampDutyAmount,
+      addOns:           storedPremium.addOnBreakdown.map((a) => ({ name: a.name, premium: a.premium })),
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
+    <>
+    <div className="max-w-4xl mx-auto px-4 pb-6">
       <QuotationStepper currentStep={3} />
 
       <div className="bg-white rounded-lg p-6">
@@ -1157,20 +1182,19 @@ export default function FillDetailsForm() {
             </Alert>
           )}
 
-          {/* Submit Button */}
-          <div className="flex justify-center pt-6">
-            <Button
-              type="submit"
-              className="bg-[#0056b3] hover:bg-[#004494] text-white font-semibold px-12 py-3"
-              disabled={isLoading}
-            >
-              {isLoading ? t("fillDetails.processing") : t("fillDetails.continueToSummary")}
-            </Button>
-          </div>
         </form>
       </div>
-
-      <CalculationSummary step="details" planData={planData} valuablesData={valuablesData} />
     </div>
+
+      <SummaryBar
+        total={storedPremium?.totalPremium}
+        totalBeforeDiscount={storedPremium?.totalBeforeDiscount}
+        monthly={storedPremium?.monthlyPremium}
+        breakdown={buildBreakdown()}
+        onProceed={() => handleSubmit()}
+        proceedLabel={t("fillDetails.continueToSummary")}
+        proceedLoading={isLoading}
+      />
+    </>
   )
 }

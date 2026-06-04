@@ -3,17 +3,16 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { getProposal, getProposalId, initiatePayment, savePaymentResult, type GetProposalData } from "@/lib/api"
 import { getSession } from "@/lib/session"
-import { getRegionConfig } from "@/lib/region"
 import QuotationStepper from "./quotation-stepper"
+import SummaryBar, { type SummaryBreakdown } from "./summary-bar"
 
 export default function SummaryPayment() {
   const router = useRouter()
@@ -22,7 +21,6 @@ export default function SummaryPayment() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [agreementChecked, setAgreementChecked] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(false)
-  const [summaryExpanded, setSummaryExpanded] = useState(true)
   const [proposal, setProposal] = useState<GetProposalData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,10 +87,6 @@ export default function SummaryPayment() {
     }
   }
 
-  const { symbol } = getRegionConfig(getSession()?.countryCode ?? "")
-  const formatCurrency = (amount: number) =>
-    `${symbol} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto flex items-center justify-center min-h-[400px]">
@@ -106,8 +100,38 @@ export default function SummaryPayment() {
 
   const q = proposal?.quotation
 
+  const PLAN_LABEL: Record<string, string> = {
+    "building-contents": "Building + Contents",
+    "building-only":     "Building Only",
+    "content-only":      "Content Only",
+  }
+
+  const buildBreakdown = (): SummaryBreakdown | undefined => {
+    if (!q) return undefined
+    const pb = q.premiumBreakdown
+    const gross = pb?.grossPremium ?? 0
+    const pct = gross > 0 && pb ? Math.round((pb.discountAmount / gross) * 100) : undefined
+    const valuables = q.valuableItems.map((v) => ({ label: v.description || v.category, value: v.value }))
+    return {
+      planLabel:        PLAN_LABEL[q.planType] ?? q.planType,
+      coveragePeriod:   `${q.coverageStartDate} – ${q.expiryDate}`,
+      coverageType:     `${q.propertyType === "landed" ? "Landed" : "Non-landed"}, ${q.numberOfStorey}-storey`,
+      constructionType: q.constructionType === "full-brick" ? "Full Brick" : "Partial Brick",
+      buildingSum:      q.buildingSum > 0 ? q.buildingSum : undefined,
+      contentsSum:      q.contentsSum > 0 ? q.contentsSum : undefined,
+      grossPremium:     pb?.grossPremium,
+      discountAmount:   pb?.discountAmount,
+      discountRatePct:  pct,
+      serviceTaxRate:   pb?.taxRate,
+      serviceTaxAmount: pb?.taxAmount,
+      stampDuty:        pb?.stampDuty,
+      valuables:        valuables.length ? valuables : undefined,
+    }
+  }
+
   return (
-    <div className="max-w-6xl mx-auto">
+    <>
+    <div className="max-w-3xl mx-auto px-4 pb-6">
       <QuotationStepper currentStep={4} />
 
       {error && (
@@ -116,9 +140,8 @@ export default function SummaryPayment() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Declaration + Payment */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-6">
 
           {/* Personal Details */}
           {proposal && (
@@ -204,100 +227,20 @@ export default function SummaryPayment() {
             </CardContent>
           </Card>
 
-          {/* Pay Button */}
-          <Button
-            onClick={handlePay}
-            disabled={!agreementChecked || isProcessing}
-            className="w-full bg-[#0056b3] hover:bg-[#004494] text-white font-semibold py-4 text-lg"
-          >
-            {isProcessing ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>{t("summary.redirecting")}</span>
-              </div>
-            ) : (
-              `${t("summary.pay")} ${q ? formatCurrency(q.totalPremium) : ""}`
-            )}
-          </Button>
-        </div>
-
-        {/* Right: Summary Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-4">
-            <CardHeader className="cursor-pointer" onClick={() => setSummaryExpanded(!summaryExpanded)}>
-              <CardTitle className="flex items-center justify-between">
-                <span>{t("summary.summaryTitle")}</span>
-                {summaryExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </CardTitle>
-            </CardHeader>
-            {summaryExpanded && q && (
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <h4 className="font-semibold text-lg capitalize">{q.planType.replace("-", " + ")}</h4>
-                    <Badge variant="outline">{q.region}</Badge>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-[#555555]">{t("summary.coveragePeriod")}</span>
-                      <span>{q.coverageStartDate} – {q.expiryDate}</span>
-                    </div>
-                    {q.buildingSum > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-[#555555]">{t("summary.buildingSum")}</span>
-                        <span>{symbol} {q.buildingSum.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {q.contentsSum > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-[#555555]">{t("summary.contentsSum")}</span>
-                        <span>{symbol} {q.contentsSum.toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Add-ons */}
-                {Object.entries(q.addOns).some(([, v]) => v) && (
-                  <div className="border-t pt-3">
-                    <p className="text-sm font-medium mb-2">{t("summary.addons")}</p>
-                    <div className="space-y-1 text-sm">
-                      {q.addOns.riotStrike && <p className="text-[#555555]">{t("summary.riotStrikeAddon")}</p>}
-                      {q.addOns.extendedTheft && <p className="text-[#555555]">{t("summary.extendedTheftAddon")}</p>}
-                      {q.addOns.alternativeAccommodation && <p className="text-[#555555]">{t("summary.altAccommodationAddon")}</p>}
-                      {q.addOns.publicLiability && <p className="text-[#555555]">{t("summary.publicLiabilityAddon")}</p>}
-                    </div>
-                  </div>
-                )}
-
-                {/* Valuables */}
-                {q.valuableItems.length > 0 && (
-                  <div className="border-t pt-3">
-                    <p className="text-sm font-medium mb-2">{t("summary.declaredValuables")}</p>
-                    <div className="space-y-1 text-sm">
-                      {q.valuableItems.map((item) => (
-                        <div key={item.itemId} className="flex justify-between">
-                          <span className="text-[#555555]">{item.description}</span>
-                          <span>{symbol} {item.value.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Premium */}
-                <div className="bg-[#0056b3] text-white p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-semibold">{t("summary.totalPremium")}</span>
-                    <span className="text-xl font-bold">{formatCurrency(q.totalPremium)}</span>
-                  </div>
-                  <p className="text-xs text-blue-200">{t("summary.monthly")}: {formatCurrency(q.monthlyPremium)}</p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
         </div>
       </div>
     </div>
+
+    <SummaryBar
+      total={q?.totalPremium}
+      totalBeforeDiscount={q?.premiumBreakdown?.totalBeforeDiscount ?? null}
+      monthly={q?.monthlyPremium}
+      breakdown={buildBreakdown()}
+      onProceed={handlePay}
+      proceedLabel={t("customize.proceed")}
+      proceedLoading={isProcessing}
+      proceedDisabled={!agreementChecked || isProcessing}
+    />
+    </>
   )
 }

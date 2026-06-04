@@ -98,6 +98,18 @@ export interface ProposalQuotation {
   totalPremium: number
   annualPremium: number
   monthlyPremium: number
+  premiumBreakdown?: {
+    planPremium: number
+    addOnPremium: number
+    grossPremium: number
+    discountAmount: number
+    netPremium: number
+    taxRate: number
+    taxAmount: number
+    stampDuty: number
+    totalPremium: number
+    totalBeforeDiscount: number
+  } | null
   coverageStartDate: string
   expiryDate: string
   valuableItems: {

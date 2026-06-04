@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
-import CalculationSummary from "./calculation-summary"
+import SummaryBar, { type SummaryBreakdown } from "./summary-bar"
 import QuotationStepper from "./quotation-stepper"
 import ContentCalculator, {
   type RoomAmounts,
@@ -23,6 +23,8 @@ import {
   calculatePremium,
   getQuotationId,
   getQuotationStartDate,
+  getQuotationPropertySummary,
+  saveQuotationPremium,
   toCalculateDateFormat,
   type PremiumData,
 } from "@/lib/api"
@@ -298,6 +300,8 @@ export default function PlanCustomization() {
         return
       }
 
+      // Persist the server-computed premium so later steps' summary bar shows the real total
+      saveQuotationPremium(response.data)
       router.push("/dashboard/quotation/declare-valuables")
     } catch (err) {
       console.error("[CustomizePlan Error]", err)
@@ -309,10 +313,31 @@ export default function PlanCustomization() {
 
   // ── Derived / helpers ─────────────────────────────────────────────────────
 
-  const summaryPlanData = {
-    selectedPlan:   planState.selectedPlan,
-    buildingAmount: planState.buildingAmount,
-    contentAmount:  planState.contentAmount,
+  const propSummary = getQuotationPropertySummary()
+
+  const buildBreakdown = (): SummaryBreakdown | undefined => {
+    if (!premiumData) return undefined
+    const gross = premiumData.grossPremium
+    const pct = gross > 0 ? Math.round((premiumData.discountAmount / gross) * 100) : undefined
+    return {
+      planLabel:        planTitle(planState.selectedPlan),
+      coveragePeriod:   `${premiumData.startDate} – ${premiumData.endDate}`,
+      coverageType:     propSummary
+        ? `${propSummary.propertyType === "landed" ? "Landed" : "Non-landed"}, ${propSummary.numberOfStorey}-storey`
+        : undefined,
+      constructionType: propSummary
+        ? (propSummary.constructionType === "full-brick" ? "Full Brick" : "Partial Brick")
+        : undefined,
+      buildingSum:      planState.selectedPlan !== "content-only"  ? planState.buildingAmount : undefined,
+      contentsSum:      planState.selectedPlan !== "building-only" ? planState.contentAmount  : undefined,
+      grossPremium:     premiumData.grossPremium,
+      discountAmount:   premiumData.discountAmount,
+      discountRatePct:  pct,
+      serviceTaxRate:   premiumData.serviceTaxRate,
+      serviceTaxAmount: premiumData.serviceTaxAmount,
+      stampDuty:        premiumData.stampDutyAmount,
+      addOns:           premiumData.addOnBreakdown.map((a) => ({ name: a.name, premium: a.premium })),
+    }
   }
 
   const planTitle = (id: string) => {
@@ -389,7 +414,8 @@ export default function PlanCustomization() {
   // ── Render — Main plan customization ──────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
+    <>
+    <div className="max-w-4xl mx-auto px-4 pb-6">
 
       <QuotationStepper currentStep={1} />
 
@@ -594,33 +620,19 @@ export default function PlanCustomization() {
           </Alert>
         )}
 
-        {/* ── Proceed ── */}
-        <div className="flex justify-center pt-6">
-          <Button
-            className="bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 px-12 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E]"
-            onClick={handleProceed}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>{t("customize.saving")}</span>
-              </div>
-            ) : (
-              t("customize.proceed")
-            )}
-          </Button>
-        </div>
       </div>
-
-      {/* ── Calculation Summary sidebar ── */}
-      <CalculationSummary
-        step="customize"
-        planData={summaryPlanData}
-        premiumData={premiumData}
-        isPremiumLoading={isPremiumLoading}
-      />
-
     </div>
+
+      <SummaryBar
+        loading={isPremiumLoading}
+        total={premiumData?.totalPremium}
+        totalBeforeDiscount={premiumData?.totalBeforeDiscount}
+        monthly={premiumData?.monthlyPremium}
+        breakdown={buildBreakdown()}
+        onProceed={handleProceed}
+        proceedLabel={t("customize.proceed")}
+        proceedLoading={isLoading}
+      />
+    </>
   )
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function DeclareValuablesPage() {
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col">
       <PageHeader>
         <Link
           href="/dashboard/quotation/customize"
@@ -22,11 +22,11 @@ export default function DeclareValuablesPage() {
         </Link>
       </PageHeader>
 
-      <div className="flex-1 overflow-y-auto bg-transparent">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto bg-transparent min-h-0">
+        <div className="pt-8">
           <DeclareValuables />
         </div>
       </div>
-    </>
+    </div>
   )
 }
