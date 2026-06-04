@@ -2,6 +2,7 @@ using ApplicationService.Core.Application.ProposalService.Interfaces.Repositorie
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Query
 {
@@ -58,8 +59,7 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
 
                 var policy = p.Policy;
 
-                var documents = (policy.PolicyDocuments ?? Enumerable.Empty<Core.Domain.Entities.PolicyDocument>())
-                    .OrderBy(d => d.UploadedAt)
+                var documents = DeserializeDocuments(policy.DocumentsJson)
                     .Select(d => new PolicyDocumentDetail
                     {
                         DocumentId = d.DocumentId,
@@ -102,6 +102,21 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
                     request.ProposalId, policy.PolicyNumber, documents.Count);
 
                 return result;
+            }
+
+            private static List<DocEntry> DeserializeDocuments(string? json)
+            {
+                if (string.IsNullOrWhiteSpace(json)) return new List<DocEntry>();
+                try { return JsonSerializer.Deserialize<List<DocEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+                catch { return new List<DocEntry>(); }
+            }
+
+            private class DocEntry
+            {
+                public string DocumentId { get; set; } = string.Empty;
+                public string FileType   { get; set; } = string.Empty;
+                public string FileName   { get; set; } = string.Empty;
+                public DateTime UploadedAt { get; set; }
             }
         }
     }

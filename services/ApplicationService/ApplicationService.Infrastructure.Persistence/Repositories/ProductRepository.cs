@@ -13,9 +13,9 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             _resolver = resolver;
         }
 
-        public async Task<ProductPremiumRate?> GetPremiumRateAsync(string region)
+        public async Task<RegionConfig?> GetRegionConfigAsync(string region)
         {
-            return await _resolver.Resolve().ProductPremiumRates
+            return await _resolver.Resolve().RegionConfigs
                 .Where(r => r.Region == region && r.IsActive)
                 .FirstOrDefaultAsync();
         }
@@ -25,20 +25,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             return await _resolver.Resolve().AddOns
                 .Where(a => codes.Contains(a.Code) && a.IsActive)
                 .ToListAsync();
-        }
-
-        public async Task<Dictionary<string, decimal>> GetAddOnRatesAsync(string region, List<string> codes)
-        {
-            return await _resolver.Resolve().AddOnRates
-                .Where(r => codes.Contains(r.AddOnCode) && r.Region == region && r.IsActive)
-                .ToDictionaryAsync(r => r.AddOnCode, r => r.Rate);
-        }
-
-        public async Task<TaxConfig?> GetTaxConfigAsync(string region)
-        {
-            return await _resolver.Resolve().TaxConfigs
-                .Where(t => t.Region == region && t.IsActive)
-                .FirstOrDefaultAsync();
         }
     }
 }

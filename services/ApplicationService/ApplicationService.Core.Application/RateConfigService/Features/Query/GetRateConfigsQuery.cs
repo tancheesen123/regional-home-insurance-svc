@@ -21,22 +21,18 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
             {
                 var region = request.Region.ToUpper();
 
-                var buildingRates   = await _repo.GetBuildingRatesAsync(region);
                 var regionConfig    = await _repo.GetRegionConfigAsync(region);
-                var locationTiers   = await _repo.GetLocationTiersAsync(region);
-                var riskMultipliers = await _repo.GetRiskMultipliersAsync(region);
+                var locationTiers   = await _repo.GetMultipliersAsync(region, "location_tier");
+                var riskMultipliers = await _repo.GetMultipliersAsync(region, "risk_factor");
+
+                // Building rates come from RegionConfig.BuildingRatesJson
+                var buildingRates = regionConfig == null
+                    ? new List<BuildingRateDto>()
+                    : ParseBuildingRates(regionConfig.BuildingRatesJson, region);
 
                 return new GetRateConfigsResult
                 {
-                    BuildingRates   = buildingRates.Select(r => new BuildingRateDto
-                    {
-                        Id              = r.Id,
-                        Region          = r.Region,
-                        PropertySubType = r.PropertySubType,
-                        ConstructionType= r.ConstructionType,
-                        RatePerUnit     = r.RatePerUnit,
-                        IsActive        = r.IsActive,
-                    }).ToList(),
+                    BuildingRates = buildingRates,
 
                     RegionConfig = regionConfig == null ? null : new RegionRateConfigDto
                     {
@@ -56,7 +52,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     {
                         Id         = t.Id,
                         Region     = t.Region,
-                        Tier       = t.Tier,
+                        Tier       = t.FactorKey,
                         Multiplier = t.Multiplier,
                         Label      = t.Label,
                         Keywords   = ParseKeywords(t.KeywordsJson),
@@ -75,10 +71,39 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 };
             }
 
-            private static List<string> ParseKeywords(string json)
+            private static List<string> ParseKeywords(string? json)
             {
+                if (string.IsNullOrWhiteSpace(json)) return new();
                 try { return JsonSerializer.Deserialize<List<string>>(json) ?? new(); }
                 catch { return new(); }
+            }
+
+            private static List<BuildingRateDto> ParseBuildingRates(string json, string region)
+            {
+                try
+                {
+                    var rows = JsonSerializer.Deserialize<List<BuildingRateRow>>(json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    return rows.Select(r => new BuildingRateDto
+                    {
+                        Id               = r.Id,
+                        Region           = region,
+                        PropertySubType  = r.PropertySubType,
+                        ConstructionType = r.ConstructionType,
+                        RatePerUnit      = r.RatePerUnit,
+                        IsActive         = r.IsActive,
+                    }).ToList();
+                }
+                catch { return new(); }
+            }
+
+            private class BuildingRateRow
+            {
+                public string  Id               { get; set; } = string.Empty;
+                public string  PropertySubType  { get; set; } = string.Empty;
+                public string  ConstructionType { get; set; } = string.Empty;
+                public decimal RatePerUnit      { get; set; }
+                public bool    IsActive         { get; set; } = true;
             }
         }
     }
@@ -107,14 +132,15 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
             {
                 var region = request.Region.ToUpper();
 
-                var regionConfig  = await _repo.GetRegionConfigAsync(region)
+                var regionConfig = await _repo.GetRegionConfigAsync(region)
                     ?? throw new InvalidOperationException(
                         $"No rate configuration found for region '{region}'. Please seed the data first.");
 
-                var buildingRates = await _repo.GetBuildingRatesAsync(region);
-                var locationTiers = await _repo.GetLocationTiersAsync(region);
+                var locationTiers = await _repo.GetMultipliersAsync(region, "location_tier");
 
-                // Build rates dictionary: propertySubType → { fullBrick, partialBrick }
+                // Building rates come from RegionConfig.BuildingRatesJson
+                var buildingRates = ParseBuildingRates(regionConfig.BuildingRatesJson);
+
                 var ratesDict = buildingRates
                     .GroupBy(r => r.PropertySubType.ToLower())
                     .ToDictionary(
@@ -122,16 +148,13 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                         g => new ConstructionRateDetail
                         {
                             FullBrick    = g.FirstOrDefault(r =>
-                                r.ConstructionType.Equals("full-brick",
-                                    StringComparison.OrdinalIgnoreCase))?.RatePerUnit ?? 0m,
+                                r.ConstructionType.Equals("full-brick", StringComparison.OrdinalIgnoreCase))?.RatePerUnit ?? 0m,
                             PartialBrick = g.FirstOrDefault(r =>
-                                r.ConstructionType.Equals("partial-brick",
-                                    StringComparison.OrdinalIgnoreCase))?.RatePerUnit ?? 0m,
+                                r.ConstructionType.Equals("partial-brick", StringComparison.OrdinalIgnoreCase))?.RatePerUnit ?? 0m,
                         });
 
-                // Build location tiers dictionary: tier → { multiplier, label, keywords }
                 var tiersDict = locationTiers.ToDictionary(
-                    t => t.Tier.ToLower(),
+                    t => t.FactorKey.ToLower(),
                     t => new LocationTierDetail
                     {
                         Multiplier = t.Multiplier,
@@ -154,10 +177,24 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 };
             }
 
-            private static List<string> ParseKeywords(string json)
+            private static List<string> ParseKeywords(string? json)
             {
+                if (string.IsNullOrWhiteSpace(json)) return new();
                 try { return JsonSerializer.Deserialize<List<string>>(json) ?? new(); }
                 catch { return new(); }
+            }
+
+            private static List<BuildingRateRow> ParseBuildingRates(string json)
+            {
+                try { return JsonSerializer.Deserialize<List<BuildingRateRow>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+                catch { return new(); }
+            }
+
+            private class BuildingRateRow
+            {
+                public string  PropertySubType  { get; set; } = string.Empty;
+                public string  ConstructionType { get; set; } = string.Empty;
+                public decimal RatePerUnit      { get; set; }
             }
         }
     }

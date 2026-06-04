@@ -4,46 +4,33 @@ namespace ApplicationService.Core.Application.RateConfigService.Interfaces.Repos
 {
     public interface IRateConfigRepository
     {
-        // ── BuildingConstructionRates ──────────────────────────────────────────
-        Task<List<BuildingConstructionRate>> GetBuildingRatesAsync(string region);
-        Task<BuildingConstructionRate?> GetBuildingRateByIdAsync(string id);
-        Task UpdateBuildingRateAsync(BuildingConstructionRate rate);
+        // ── RegionConfig (merged: ProductPremiumRate + TaxConfig + RegionRateConfig) ──
+        Task<RegionConfig?> GetRegionConfigAsync(string region);
+        Task<RegionConfig?> GetRegionConfigByIdAsync(string id);
+        Task UpdateRegionConfigAsync(RegionConfig config);
 
-        // ── RegionRateConfig ──────────────────────────────────────────────────
-        Task<RegionRateConfig?> GetRegionConfigAsync(string region);
-        Task<RegionRateConfig?> GetRegionConfigByIdAsync(string id);
-        Task UpdateRegionConfigAsync(RegionRateConfig config);
+        // ── RateMultiplierConfig (merged: LocationTierConfig + RiskMultiplierConfig) ──
+        Task<List<RateMultiplierConfig>> GetMultipliersAsync(string region, string type);
+        Task<RateMultiplierConfig?> GetMultiplierByIdAsync(string id);
+        Task UpdateMultiplierAsync(RateMultiplierConfig config);
 
-        // ── LocationTierConfig ────────────────────────────────────────────────
-        Task<List<LocationTierConfig>> GetLocationTiersAsync(string region);
-        Task<LocationTierConfig?> GetLocationTierByIdAsync(string id);
-        Task UpdateLocationTierAsync(LocationTierConfig tier);
-
-        // ── RiskMultiplierConfig ──────────────────────────────────────────────
-        Task<List<RiskMultiplierConfig>> GetRiskMultipliersAsync(string region);
-        Task<RiskMultiplierConfig?> GetRiskMultiplierByIdAsync(string id);
-        Task UpdateRiskMultiplierAsync(RiskMultiplierConfig config);
+        // ── AddOn (rates embedded as JSON) ────────────────────────────────────
+        Task<List<AddOn>> GetAddOnsAsync();
+        Task<AddOn?> GetAddOnByCodeAsync(string code);
+        Task UpdateAddOnAsync(AddOn addOn);
 
         // ── Snapshots ─────────────────────────────────────────────────────────
         Task<RateConfigSnapshot> SaveSnapshotAsync(RateConfigSnapshot snapshot);
-        Task SaveChangeLogsAsync(List<RateConfigChangeLog> logs);
         Task<List<RateConfigSnapshot>> GetSnapshotsAsync(string region);
         Task<RateConfigSnapshot?> GetSnapshotByIdAsync(string snapshotId);
 
-        // ── Change logs ───────────────────────────────────────────────────────
-        Task<List<RateConfigChangeLog>> GetChangeLogsAsync(string region, int pageSize, int page);
-
         // ── Seeder ────────────────────────────────────────────────────────────
-        Task<bool> HasBuildingRatesAsync(string region);
-        Task SeedBuildingRatesAsync(List<BuildingConstructionRate> rates);
-        Task SeedRegionConfigAsync(RegionRateConfig config);
-        Task SeedLocationTiersAsync(List<LocationTierConfig> tiers);
-        Task SeedRiskMultipliersAsync(List<RiskMultiplierConfig> multipliers);
-        /// <summary>
-        /// Returns all FactorKeys that already exist for the region.
-        /// Used by patch-seed to avoid inserting duplicates.
-        /// </summary>
-        Task<HashSet<string>> GetExistingRiskMultiplierKeysAsync(string region);
+        Task<bool> HasRegionConfigAsync(string region);
+        Task SeedRegionConfigAsync(RegionConfig config);
+        Task SeedMultipliersAsync(List<RateMultiplierConfig> multipliers);
+        Task SeedAddOnsAsync(List<AddOn> addOns);
+        Task<HashSet<string>> GetExistingMultiplierKeysAsync(string region, string type);
+
         Task SaveChangesAsync();
     }
 }

@@ -14,6 +14,7 @@ using PollyPolicy = Polly.Policy;
 using System.IO.Compression;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Xsl;
@@ -170,29 +171,22 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     TotalPremium   = q.Premium,
                     AnnualPremium  = q.Premium,
                     MonthlyPremium = Math.Round(q.Premium / 12, 2),
-                    PremiumBreakdown = q.QuotationPremium == null ? null : new PremiumBreakdownDto
+                    PremiumBreakdown = q.PlanPremium == null ? null : new PremiumBreakdownDto
                     {
-                        PlanPremium         = q.QuotationPremium.PlanPremium,
-                        AddOnPremium        = q.QuotationPremium.AddOnPremium,
-                        GrossPremium        = q.QuotationPremium.GrossPremium,
-                        DiscountAmount      = q.QuotationPremium.DiscountAmount,
-                        NetPremium          = q.QuotationPremium.NetPremium,
-                        TaxRate             = q.QuotationPremium.TaxRate,
-                        TaxAmount           = q.QuotationPremium.TaxAmount,
-                        StampDuty           = q.QuotationPremium.StampDuty,
-                        TotalPremium        = q.QuotationPremium.TotalPremium,
-                        TotalBeforeDiscount = q.QuotationPremium.TotalBeforeDiscount
+                        PlanPremium         = q.PlanPremium         ?? 0,
+                        AddOnPremium        = q.AddOnPremium        ?? 0,
+                        GrossPremium        = q.GrossPremium        ?? 0,
+                        DiscountAmount      = q.DiscountAmount      ?? 0,
+                        NetPremium          = q.NetPremium          ?? 0,
+                        TaxRate             = q.TaxRate             ?? 0,
+                        TaxAmount           = q.TaxAmount           ?? 0,
+                        StampDuty           = q.StampDuty           ?? 0,
+                        TotalPremium        = q.Premium,
+                        TotalBeforeDiscount = q.TotalBeforeDiscount ?? 0
                     },
                     CoverageStartDate = q.CoverageStartDate.ToString("dd/MM/yyyy"),
                     ExpiryDate        = q.ExpiryDate.ToString("dd/MM/yyyy"),
-                    ValuableItems = q.ValuableItems?
-                        .Select(v => new ValuableItemSnapshotDto
-                        {
-                            ItemId      = v.ItemId,
-                            Category    = v.Category,
-                            Description = v.Description,
-                            Value       = v.Value
-                        }).ToList() ?? new()
+                    ValuableItems = DeserializeValuableItems(q.ValuableItemsJson)
                 }
             };
         }
@@ -351,7 +345,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
             var status  = true;
             var message = "";
-            var savedDocuments = new List<PolicyDocument>();
+            var savedDocuments = new List<DocRecord>();
 
             var region    = request.Region.ToUpper();
             var localLang = LocalLanguageNames.TryGetValue(region, out var ln) ? ln : region;
@@ -409,12 +403,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 _logger.LogError("ExecutePdf FAILED | PolicyNumber={PolicyNumber} Reason={Message}",
                     request.PolicyNumber, message);
 
-                await repo.AddPolicyDocumentsAsync(new List<PolicyDocument>(), request.PolicyId, false, request.Region);
+                await repo.AddPolicyDocumentsAsync("[]", request.PolicyId, false, request.Region);
                 await repo.SaveChangesAsync(request.Region);
                 return false;
             }
 
-            await repo.AddPolicyDocumentsAsync(savedDocuments, request.PolicyId, true, request.Region);
+            var documentsJson = JsonSerializer.Serialize(savedDocuments);
+            await repo.AddPolicyDocumentsAsync(documentsJson, request.PolicyId, true, request.Region);
             await repo.SaveChangesAsync(request.Region);
 
             _logger.LogInformation("ExecutePdf SUCCESS | PolicyNumber={PolicyNumber}", request.PolicyNumber);
@@ -422,7 +417,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         }
 
 
-        private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomePDSFormAsync(
+        private async Task<(PDFStatusResponse response, DocRecord? doc)> HomePDSFormAsync(
             BackendInvokeRequest request, Proposal proposal,
             string lang = LangVariantEn, string? langName = null)
         {
@@ -462,7 +457,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         _logger.LogError("HomePDSForm retry error: {Message}", ex.Message);
                     });
 
-            PolicyDocument? policyDoc = null;
+            DocRecord? policyDoc = null;
 
             try
             {
@@ -495,15 +490,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                 if (File.Exists(filePath)) File.Delete(filePath);
                                 await File.WriteAllBytesAsync(filePath, encrypted);
 
-                                policyDoc = new PolicyDocument
+                                policyDoc = new DocRecord
                                 {
                                     DocumentId = Guid.NewGuid().ToString(),
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = langName == null ? "PDS" : "PDS_Local",
-                                    PolicyId   = request.PolicyId,
-                                    CreatedAt  = DateTime.UtcNow
+                                    FileType   = langName == null ? "PDS" : "PDS_Local"
                                 };
                                 status = true;
                             }
@@ -536,7 +529,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         }
 
 
-        private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeEPolicyFormAsync(
+        private async Task<(PDFStatusResponse response, DocRecord? doc)> HomeEPolicyFormAsync(
             BackendInvokeRequest request, Proposal proposal,
             string lang = LangVariantEn, string? langName = null)
         {
@@ -573,7 +566,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         _logger.LogError("HomeEPolicyForm retry error: {Message}", ex.Message);
                     });
 
-            PolicyDocument? policyDoc = null;
+            DocRecord? policyDoc = null;
 
             try
             {
@@ -606,15 +599,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                 if (File.Exists(filePath)) File.Delete(filePath);
                                 await File.WriteAllBytesAsync(filePath, encrypted);
 
-                                policyDoc = new PolicyDocument
+                                policyDoc = new DocRecord
                                 {
                                     DocumentId = Guid.NewGuid().ToString(),
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = langName == null ? "EPolicy" : "EPolicy_Local",
-                                    PolicyId   = request.PolicyId,
-                                    CreatedAt  = DateTime.UtcNow
+                                    FileType   = langName == null ? "EPolicy" : "EPolicy_Local"
                                 };
                                 status = true;
                             }
@@ -647,7 +638,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         }
 
 
-        private async Task<(PDFStatusResponse response, PolicyDocument? doc)> HomeTaxInvoiceFormAsync(
+        private async Task<(PDFStatusResponse response, DocRecord? doc)> HomeTaxInvoiceFormAsync(
             BackendInvokeRequest request, Proposal proposal,
             string lang = LangVariantEn, string? langName = null)
         {
@@ -684,7 +675,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         _logger.LogError("HomeTaxInvoiceForm retry error: {Message}", ex.Message);
                     });
 
-            PolicyDocument? policyDoc = null;
+            DocRecord? policyDoc = null;
 
             try
             {
@@ -717,15 +708,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                                 if (File.Exists(filePath)) File.Delete(filePath);
                                 await File.WriteAllBytesAsync(filePath, encrypted);
 
-                                policyDoc = new PolicyDocument
+                                policyDoc = new DocRecord
                                 {
                                     DocumentId = Guid.NewGuid().ToString(),
                                     FileName   = file,
                                     FileUrl    = $"{_docSettings.BaseUrl}/documents/{region}/Home/{request.PolicyId}/{file}",
                                     UploadedAt = DateTime.UtcNow,
-                                    FileType   = langName == null ? "TaxInvoice" : "TaxInvoice_Local",
-                                    PolicyId   = request.PolicyId,
-                                    CreatedAt  = DateTime.UtcNow
+                                    FileType   = langName == null ? "TaxInvoice" : "TaxInvoice_Local"
                                 };
                                 status = true;
                             }
@@ -909,21 +898,20 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             try
             {
                 var q        = proposal.Quotation;
-                var qp       = q?.QuotationPremium;
                 var docsPath = _docSettings.DocsPath;
                 var entity   = _docSettings.Entity;
 
                 var coverageAmount   = Math.Round((q?.BuildingSum ?? 0) + (q?.ContentsSum ?? 0), 2).ToString("N2");
-                var planPremium      = (qp?.PlanPremium    ?? 0).ToString("N2");
+                var planPremium      = (q?.PlanPremium    ?? 0).ToString("N2");
                 var discountRate     = string.Empty;
-                var discountAmount   = (qp?.DiscountAmount ?? 0).ToString("N2");
+                var discountAmount   = (q?.DiscountAmount ?? 0).ToString("N2");
                 var commissionRate   = "0";
                 var commissionAmount = "0.00";
-                var netPremium       = (qp?.NetPremium     ?? 0).ToString("N2");
-                var serviceTaxRate   = ((int)((qp?.TaxRate ?? 0) * 100)).ToString();
-                var serviceTaxAmount = (qp?.TaxAmount      ?? 0).ToString("N2");
-                var stampDuty        = (qp?.StampDuty      ?? 0).ToString("N2");
-                var totalPremium     = (qp?.TotalPremium   ?? 0).ToString("N2");
+                var netPremium       = (q?.NetPremium     ?? 0).ToString("N2");
+                var serviceTaxRate   = ((int)((q?.TaxRate ?? 0) * 100)).ToString();
+                var serviceTaxAmount = (q?.TaxAmount      ?? 0).ToString("N2");
+                var stampDuty        = (q?.StampDuty      ?? 0).ToString("N2");
+                var totalPremium     = (q?.Premium        ?? 0).ToString("N2");
 
                 bool isBanca            = false;
                 bool isAgency           = false;
@@ -1060,7 +1048,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             try
             {
                 var q        = proposal.Quotation;
-                var qp       = q?.QuotationPremium;
                 var docsPath = _docSettings.DocsPath;
 
                 // ── Dates ────────────────────────────────────────────────────────────
@@ -1068,18 +1055,18 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
                 // ── Premium figures ──────────────────────────────────────────────────
-                var planPremium    = qp?.PlanPremium    ?? 0m;
-                var addOnPremium   = qp?.AddOnPremium   ?? 0m;
-                var grossPremium   = qp?.GrossPremium   ?? (planPremium + addOnPremium);
-                var discountAmount = qp?.DiscountAmount ?? 0m;
+                var planPremium    = q?.PlanPremium    ?? 0m;
+                var addOnPremium   = q?.AddOnPremium   ?? 0m;
+                var grossPremium   = q?.GrossPremium   ?? (planPremium + addOnPremium);
+                var discountAmount = q?.DiscountAmount ?? 0m;
                 var discountRate   = grossPremium > 0
                                         ? Math.Round(discountAmount / grossPremium * 100, 2).ToString("0.##")
                                         : "0";
-                var netPremium   = qp?.NetPremium   ?? 0m;
-                var taxRate      = (qp?.TaxRate      ?? 0m).ToString("0.##");
-                var taxAmount    = qp?.TaxAmount    ?? 0m;
-                var stampDuty    = qp?.StampDuty    ?? 0m;
-                var totalPremium = qp?.TotalPremium ?? 0m;
+                var netPremium   = q?.NetPremium   ?? 0m;
+                var taxRate      = (q?.TaxRate      ?? 0m).ToString("0.##");
+                var taxAmount    = q?.TaxAmount    ?? 0m;
+                var stampDuty    = q?.StampDuty    ?? 0m;
+                var totalPremium = q?.Premium      ?? 0m;
 
                 var buildingSum     = q?.BuildingSum  ?? 0m;
                 var contentsSum     = q?.ContentsSum  ?? 0m;
@@ -1274,7 +1261,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             try
             {
                 var q  = proposal.Quotation;
-                var qp = q?.QuotationPremium;
                 var docsPath = _docSettings.DocsPath;
 
                 // ── Dates ────────────────────────────────────────────────────────────
@@ -1282,15 +1268,15 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
                 // ── Premium figures ──────────────────────────────────────────────────
-                var grossPremium   = qp?.GrossPremium   ?? 0m;
-                var discountAmount = qp?.DiscountAmount ?? 0m;
+                var grossPremium   = q?.GrossPremium   ?? 0m;
+                var discountAmount = q?.DiscountAmount ?? 0m;
                 var discountRate   = grossPremium > 0
                                         ? Math.Round(discountAmount / grossPremium * 100, 2).ToString("0.##")
                                         : "0";
-                var sstAmount    = qp?.TaxAmount    ?? 0m;
-                var taxRate      = (qp?.TaxRate      ?? 0m).ToString("0.##");
-                var stampDuty    = qp?.StampDuty    ?? 0m;
-                var totalPremium = qp?.TotalPremium ?? 0m;
+                var sstAmount    = q?.TaxAmount  ?? 0m;
+                var taxRate      = (q?.TaxRate   ?? 0m).ToString("0.##");
+                var stampDuty    = q?.StampDuty  ?? 0m;
+                var totalPremium = q?.Premium    ?? 0m;
 
                 // ── Payment mode ─────────────────────────────────────────────────────
                 // Resolve from the latest successful payment; fall back to "Online".
@@ -1473,6 +1459,46 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         {
             if (string.IsNullOrEmpty(mobile)) return "***";
             return mobile.Length > 4 ? $"****{mobile[^4..]}" : "***";
+        }
+
+        // ── Inner types ───────────────────────────────────────────────────────
+
+        /// <summary>JSON-serialisable record that replaces the PolicyDocument entity.</summary>
+        private class DocRecord
+        {
+            public string   DocumentId { get; set; } = string.Empty;
+            public string   FileName   { get; set; } = string.Empty;
+            public string   FileUrl    { get; set; } = string.Empty;
+            public string   FileType   { get; set; } = string.Empty;
+            public DateTime UploadedAt { get; set; }
+        }
+
+        // ── Helper: deserialise ValuableItemsJson ─────────────────────────────
+
+        private static List<ValuableItemSnapshotDto> DeserializeValuableItems(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<ValuableItemSnapshotDto>();
+            try
+            {
+                var rows = JsonSerializer.Deserialize<List<ValuableItemRow>>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                return rows.Select(r => new ValuableItemSnapshotDto
+                {
+                    ItemId      = r.ItemId,
+                    Category    = r.Category,
+                    Description = r.Description,
+                    Value       = r.Value
+                }).ToList();
+            }
+            catch { return new List<ValuableItemSnapshotDto>(); }
+        }
+
+        private class ValuableItemRow
+        {
+            public string  ItemId      { get; set; } = string.Empty;
+            public string  Category    { get; set; } = string.Empty;
+            public string  Description { get; set; } = string.Empty;
+            public decimal Value       { get; set; }
         }
     }
 }

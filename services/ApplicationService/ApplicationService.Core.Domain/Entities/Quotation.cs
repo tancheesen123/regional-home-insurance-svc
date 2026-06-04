@@ -6,12 +6,11 @@ namespace ApplicationService.Core.Domain.Entities
     {
         public string QuotationId { get; set; }
         public string Status { get; set; }           // "QUOTED" | "CONVERTED" | "EXPIRED"
-        public decimal Premium { get; set; }
+        public decimal Premium { get; set; }         // total tax-inclusive premium
         public DateTime CoverageStartDate { get; set; }
         public DateTime ExpiryDate { get; set; }
         public string Region { get; set; }           // "KH", "PH", "ID"
         public string CustomerId { get; set; }
-        public string? ProductId { get; set; }
 
         // Property & Risk Info
         public string OwnershipType { get; set; }    // "owner" | "tenant"
@@ -41,11 +40,26 @@ namespace ApplicationService.Core.Domain.Entities
         public bool HasAlternativeAccommodation { get; set; }
         public bool HasPublicLiability { get; set; }
 
+        // ── Premium breakdown (was QuotationPremium table) ────────────────────
+        public decimal? PlanPremium { get; set; }
+        public decimal? AddOnPremium { get; set; }
+        public decimal? GrossPremium { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal? NetPremium { get; set; }
+        public decimal? TaxRate { get; set; }
+        public decimal? TaxAmount { get; set; }
+        public decimal? StampDuty { get; set; }
+        public decimal? TotalBeforeDiscount { get; set; }
+
+        // ── Valuable items (was ValuableItem table) ───────────────────────────
+        /// <summary>
+        /// JSON array of declared valuable items.
+        /// Shape: [{ "itemId": "...", "category": "jewellery", "description": "...", "value": 5000 }]
+        /// </summary>
+        public string? ValuableItemsJson { get; set; }
+
         // Navigation
         public Customer Customer { get; set; }
-        public Product Product { get; set; }
-        public ICollection<ValuableItem> ValuableItems { get; set; }
         public Proposal Proposal { get; set; }
-        public QuotationPremium? QuotationPremium { get; set; }
     }
 }

@@ -39,7 +39,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
 
                 var payment  = LatestSuccessfulPayment(p);
                 var premium  = GetPremium(p);
-                var qp       = p.Quotation?.QuotationPremium;
+                var q        = p.Quotation;
                 var now      = DateTime.UtcNow;
 
                 // ── Customer info ──────────────────────────────────────────────
@@ -86,9 +86,9 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
 
                 // ── Financial info ─────────────────────────────────────────────
                 var commission = Math.Round(premium * 0.10m, 2);
-                var taxes      = qp?.TaxAmount    ?? 0m;
-                var fees       = qp?.StampDuty    ?? 0m;
-                var totalAmt   = payment?.Amount   ?? qp?.TotalPremium ?? premium;
+                var taxes      = q?.TaxAmount  ?? 0m;
+                var fees       = q?.StampDuty  ?? 0m;
+                var totalAmt   = payment?.Amount ?? q?.Premium ?? premium;
 
                 var paymentStatus = payment?.Status?.ToUpper() switch
                 {
@@ -128,8 +128,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 };
 
                 // ── Documents ──────────────────────────────────────────────────
-                var documents = (p.Policy?.PolicyDocuments ?? Enumerable.Empty<PolicyDocument>())
-                    .OrderBy(d => d.UploadedAt)
+                var documents = DeserializeDocuments(p.Policy?.DocumentsJson)
                     .Select(d => new SalesDocument
                     {
                         Id         = d.DocumentId,
@@ -200,9 +199,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     {
                         events.Add(new SalesTimelineEvent
                         {
-                            Date        = p.Policy.PolicyDocuments?
-                                              .OrderByDescending(d => d.UploadedAt)
-                                              .FirstOrDefault()?.UploadedAt ?? p.Policy.IssuedAt,
+                            Date        = p.Policy.IssuedAt,
                             Event       = "Documents Ready",
                             Description = "All policy documents (PDS, ePolicy, Tax Invoice) generated",
                             Status      = "completed",
@@ -214,9 +211,24 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
             }
 
             private static decimal GetPremium(Proposal p)
-                => p.Quotation?.QuotationPremium?.TotalPremium
+                => p.Quotation?.Premium
                 ?? p.Policy?.CoverageAmount
                 ?? 0m;
+
+            private static List<DocEntry> DeserializeDocuments(string? json)
+            {
+                if (string.IsNullOrWhiteSpace(json)) return new List<DocEntry>();
+                try { return System.Text.Json.JsonSerializer.Deserialize<List<DocEntry>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+                catch { return new List<DocEntry>(); }
+            }
+
+            private class DocEntry
+            {
+                public string   DocumentId { get; set; } = string.Empty;
+                public string   FileType   { get; set; } = string.Empty;
+                public string   FileName   { get; set; } = string.Empty;
+                public DateTime UploadedAt { get; set; }
+            }
 
             private static Payment? LatestSuccessfulPayment(Proposal p)
                 => p.Payments?

@@ -16,7 +16,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
         public async Task<Customer?> GetByUserIdAsync(string userId)
         {
             return await _resolver.Resolve().Customers
-                .Include(c => c.Address)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
         }
     }

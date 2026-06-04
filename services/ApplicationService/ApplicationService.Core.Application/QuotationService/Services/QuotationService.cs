@@ -7,6 +7,7 @@ using ApplicationService.Core.Application.QuotationService.Interfaces.Repositori
 using ApplicationService.Core.Application.QuotationService.Interfaces.Services;
 using ApplicationService.Core.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace ApplicationService.Core.Application.QuotationService.Services
 {
@@ -34,12 +35,9 @@ namespace ApplicationService.Core.Application.QuotationService.Services
         {
             _logger.LogInformation("=== QuotationService.GetQuoteAsync ===");
 
-            var premium = CalculatePremium(request);
-
+            var premium      = CalculatePremium(request);
             var coverageStart = ParseDate(request.CoverageStartDate);
-            // EndDate = StartDate + 1 year - 1 day so the purchase day is day 1 of coverage
-            // e.g. start Jun 21 2025 → end Jun 20 2026 (365 days inclusive)
-            var expiryDate    = coverageStart.AddYears(1).AddDays(-1);
+            var expiryDate   = coverageStart.AddYears(1).AddDays(-1);
 
             var quotation = new Quotation
             {
@@ -50,7 +48,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 ExpiryDate         = expiryDate,
                 Region             = region.ToUpper(),
                 CustomerId         = request.CustomerId,
-                ProductId          = null,
                 OwnershipType      = request.OwnershipType,
                 PropertyType       = request.PropertyType,
                 PropertySubType    = request.PropertySubType,
@@ -105,16 +102,14 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                     $"Valid values: {string.Join(", ", PlanTypeParser.ValidValues)}.");
 
             var planTypeInt = (int)planTypeEnum;
-
-            var addOns     = request.AddOns ?? new AddOnsDto();
-            var addOnCodes = new List<string>();
+            var addOns      = request.AddOns ?? new AddOnsDto();
+            var addOnCodes  = new List<string>();
             if (addOns.RiotStrike)               addOnCodes.Add(AddonCode.Map["RiotStrike"]);
             if (addOns.ExtendedTheft)            addOnCodes.Add(AddonCode.Map["ExtendedTheft"]);
             if (addOns.AlternativeAccommodation) addOnCodes.Add(AddonCode.Map["AlternativeAccommodation"]);
             if (addOns.PublicLiability)          addOnCodes.Add(AddonCode.Map["PublicLiability"]);
 
-
-            var calcRequest = new CalculatePremiumRequest
+            var calc = await _productService.CalculatePremiumAsync(new CalculatePremiumRequest
             {
                 PlanType           = planTypeInt,
                 BuildingSumInsured = request.BuildingSum,
@@ -122,11 +117,9 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 AddOnCodes         = addOnCodes,
                 StartDate          = quotation.CoverageStartDate,
                 DiscountAmount     = request.DiscountAmount
-            };
+            }, quotation.Region);
 
-            var calc = await _productService.CalculatePremiumAsync(calcRequest, quotation.Region);
-
-            // ── Persist plan details onto the quotation ───────────────────────
+            // ── Persist plan + premium breakdown on Quotation ─────────────────
             quotation.PlanType                    = request.PlanType;
             quotation.BuildingSum                 = request.BuildingSum;
             quotation.ContentsSum                 = request.ContentsSum;
@@ -134,55 +127,43 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             quotation.HasExtendedTheft            = addOns.ExtendedTheft;
             quotation.HasAlternativeAccommodation = addOns.AlternativeAccommodation;
             quotation.HasPublicLiability          = addOns.PublicLiability;
-            quotation.Premium                     = calc.TotalPremium;   // tax-inclusive payable amount
+            quotation.Premium                     = calc.TotalPremium;
+            quotation.PlanPremium                 = calc.PlanPremium;
+            quotation.AddOnPremium                = calc.TotalAddOnPremium;
+            quotation.GrossPremium                = calc.GrossPremium;
+            quotation.DiscountAmount              = calc.DiscountAmount;
+            quotation.NetPremium                  = calc.NetPremium;
+            quotation.TaxRate                     = calc.ServiceTaxRate;
+            quotation.TaxAmount                   = calc.ServiceTaxAmount;
+            quotation.StampDuty                   = calc.StampDutyAmount;
+            quotation.TotalBeforeDiscount         = calc.TotalBeforeDiscount;
             quotation.UpdatedAt                   = DateTime.UtcNow;
 
             await _quotationRepository.UpdateQuotationPlanAsync(quotation);
-
-            // ── Persist full premium breakdown ────────────────────────────────
-            var quotationPremium = new QuotationPremium
-            {
-                QuotationId        = quotation.QuotationId,
-                PlanPremium        = calc.PlanPremium,
-                AddOnPremium       = calc.TotalAddOnPremium,
-                GrossPremium       = calc.GrossPremium,
-                DiscountAmount     = calc.DiscountAmount,
-                NetPremium         = calc.NetPremium,
-                TaxRate            = calc.ServiceTaxRate,
-                TaxAmount          = calc.ServiceTaxAmount,
-                StampDuty          = calc.StampDutyAmount,
-                TotalPremium       = calc.TotalPremium,
-                TotalBeforeDiscount = calc.TotalBeforeDiscount,
-                CreatedAt          = DateTime.UtcNow
-            };
-
-            await _quotationRepository.UpsertQuotationPremiumAsync(quotationPremium);
             await _quotationRepository.SaveChangesAsync();
 
             return new CustomizePlanResponse
             {
-                QuotationId          = quotation.QuotationId,
-                PlanType             = quotation.PlanType,
-                BuildingSum          = quotation.BuildingSum,
-                ContentsSum          = quotation.ContentsSum,
-
-                BuildingPremium      = calc.BuildingPremium,
-                ContentPremium       = calc.ContentPremium,
-                PlanPremium          = calc.PlanPremium,
-                AddOnsPremium        = calc.TotalAddOnPremium,
-                GrossPremium         = calc.GrossPremium,
-                DiscountAmount       = calc.DiscountAmount,
-                NetPremium           = calc.NetPremium,
-                ServiceTaxRate       = calc.ServiceTaxRate,
-                ServiceTaxAmount     = calc.ServiceTaxAmount,
-                StampDutyAmount      = calc.StampDutyAmount,
-                TotalPremium         = calc.TotalPremium,
-                TotalBeforeDiscount  = calc.TotalBeforeDiscount,
-                AnnualPremium        = calc.TotalPremium,
-                MonthlyPremium       = Math.Round(calc.TotalPremium / 12, 2),
-                StartDate            = calc.StartDate,
-                EndDate              = calc.EndDate,
-
+                QuotationId         = quotation.QuotationId,
+                PlanType            = quotation.PlanType,
+                BuildingSum         = quotation.BuildingSum,
+                ContentsSum         = quotation.ContentsSum,
+                BuildingPremium     = calc.BuildingPremium,
+                ContentPremium      = calc.ContentPremium,
+                PlanPremium         = calc.PlanPremium,
+                AddOnsPremium       = calc.TotalAddOnPremium,
+                GrossPremium        = calc.GrossPremium,
+                DiscountAmount      = calc.DiscountAmount,
+                NetPremium          = calc.NetPremium,
+                ServiceTaxRate      = calc.ServiceTaxRate,
+                ServiceTaxAmount    = calc.ServiceTaxAmount,
+                StampDutyAmount     = calc.StampDutyAmount,
+                TotalPremium        = calc.TotalPremium,
+                TotalBeforeDiscount = calc.TotalBeforeDiscount,
+                AnnualPremium       = calc.TotalPremium,
+                MonthlyPremium      = Math.Round(calc.TotalPremium / 12, 2),
+                StartDate           = calc.StartDate,
+                EndDate             = calc.EndDate,
                 AddOnBreakdown = calc.AddOnBreakdowns.Select(a => new AddOnBreakdownDto
                 {
                     Code    = a.Code,
@@ -208,11 +189,15 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             if (string.IsNullOrEmpty(quotation.PlanType))
                 throw new InvalidOperationException("Plan has not been customised yet. Call CustomizePlan before declaring valuables.");
 
-            // ── Load regional category limits from DB ─────────────────────────
-            var categoryRates = await _quotationRepository.GetValuableCategoryRatesAsync(quotation.Region);
+            // ── Load valuable category limits from RegionConfig.ValuableRatesJson ──
+            var regionConfig = await _quotationRepository.GetRegionConfigAsync(quotation.Region);
+            if (regionConfig == null)
+                throw new InvalidOperationException($"No active region config found for region '{quotation.Region}'.");
+
+            var categoryRates = DeserializeValuableRates(regionConfig.ValuableRatesJson);
             if (categoryRates.Count == 0)
                 throw new InvalidOperationException(
-                    $"No active valuable category rates are configured for region '{quotation.Region}'.");
+                    $"No valuable category rates configured for region '{quotation.Region}'.");
 
             // ── Validate each item ────────────────────────────────────────────
             var categoryTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
@@ -222,61 +207,61 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 var key = item.Category.ToLower();
                 if (!categoryRates.TryGetValue(key, out var limits))
                     throw new ArgumentException(
-                        $"Unknown category '{item.Category}'. " +
-                        $"Valid categories: {string.Join(", ", categoryRates.Keys)}.");
+                        $"Unknown category '{item.Category}'. Valid: {string.Join(", ", categoryRates.Keys)}.");
 
                 if (item.Value <= 0)
                     throw new ArgumentException($"Item '{item.Description}' must have a value greater than zero.");
 
                 if (item.Value > limits.MaxPerItem)
                     throw new ArgumentException(
-                        $"'{item.Description}' ({item.Category}) declared value {item.Value:C} exceeds the per-item limit of {limits.MaxPerItem:C}.");
+                        $"'{item.Description}' ({item.Category}) value {item.Value:C} exceeds per-item limit of {limits.MaxPerItem:C}.");
 
                 categoryTotals[key] = categoryTotals.GetValueOrDefault(key) + item.Value;
             }
 
-            // Validate category totals
             foreach (var (cat, total) in categoryTotals)
             {
                 var limits = categoryRates[cat];
                 if (total > limits.MaxTotal)
                     throw new ArgumentException(
-                        $"Total declared value for '{cat}' ({total:C}) exceeds the category limit of {limits.MaxTotal:C}.");
+                        $"Total for '{cat}' ({total:C}) exceeds category limit of {limits.MaxTotal:C}.");
             }
 
-            // ── Build ValuableItem entities ───────────────────────────────────
+            // ── Build item records + calculate premiums ────────────────────────
             var now          = DateTime.UtcNow;
-            var itemEntities = request.Items.Select(i => new ValuableItem
+            var itemRecords  = request.Items.Select(i =>
             {
-                ItemId      = Guid.NewGuid().ToString(),
-                Category    = i.Category.ToLower(),
-                Description = i.Description,
-                Value       = i.Value,
-                QuotationId = request.QuotationId,
-                CreatedAt   = now
+                var rate    = categoryRates[i.Category.ToLower()].Rate;
+                var premium = Math.Round(i.Value * rate, 2);
+                return new
+                {
+                    ItemId      = Guid.NewGuid().ToString(),
+                    Category    = i.Category.ToLower(),
+                    Description = i.Description,
+                    Value       = i.Value,
+                    ItemPremium = premium
+                };
             }).ToList();
 
-            // ── Calculate valuables premium ───────────────────────────────────
-            var itemResponses = itemEntities.Select(e =>
+            // ── Serialize to JSON and update Quotation ────────────────────────
+            var jsonItems = itemRecords.Select(x => new
             {
-                var rate    = categoryRates[e.Category].Rate;
-                var premium = Math.Round(e.Value * rate, 2);
-                return (Entity: e, Premium: premium);
+                itemId      = x.ItemId,
+                category    = x.Category,
+                description = x.Description,
+                value       = x.Value
             }).ToList();
 
-            decimal totalDeclaredValue = itemResponses.Sum(x => x.Entity.Value);
-            decimal valuablesPremium   = itemResponses.Sum(x => x.Premium);
+            quotation.ValuableItemsJson = JsonSerializer.Serialize(jsonItems);
 
-            // ── Update quotation premium ──────────────────────────────────────
-            // planPremium = whatever CustomizePlan last saved; valuables are additive
-            decimal planPremium  = quotation.Premium;
-            decimal totalPremium = Math.Round(planPremium + valuablesPremium, 2);
-            decimal monthly      = Math.Round(totalPremium / 12, 2);
+            decimal totalDeclaredValue = itemRecords.Sum(x => x.Value);
+            decimal valuablesPremium   = itemRecords.Sum(x => x.ItemPremium);
+            decimal planPremium        = quotation.Premium;
+            decimal totalPremium       = Math.Round(planPremium + valuablesPremium, 2);
 
             quotation.Premium   = totalPremium;
             quotation.UpdatedAt = now;
 
-            await _quotationRepository.ReplaceValuableItemsAsync(request.QuotationId, itemEntities);
             await _quotationRepository.UpdateQuotationPlanAsync(quotation);
             await _quotationRepository.SaveChangesAsync();
 
@@ -288,14 +273,14 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 PlanPremium        = planPremium,
                 TotalPremium       = totalPremium,
                 AnnualPremium      = totalPremium,
-                MonthlyPremium     = monthly,
-                Items = itemResponses.Select(x => new ValuableItemResponse
+                MonthlyPremium     = Math.Round(totalPremium / 12, 2),
+                Items = itemRecords.Select(x => new ValuableItemResponse
                 {
-                    ItemId      = x.Entity.ItemId,
-                    Category    = x.Entity.Category,
-                    Description = x.Entity.Description,
-                    Value       = x.Entity.Value,
-                    ItemPremium = x.Premium
+                    ItemId      = x.ItemId,
+                    Category    = x.Category,
+                    Description = x.Description,
+                    Value       = x.Value,
+                    ItemPremium = x.ItemPremium
                 }).ToList()
             };
         }
@@ -313,7 +298,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             if (quotation.Status != "QUOTED")
                 throw new InvalidOperationException($"Quotation is already '{quotation.Status}' and cannot be submitted.");
 
-            // Resolve mailing address
             var mailing = request.MailingAddress;
             var prop    = request.PropertyAddress;
 
@@ -349,20 +333,16 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 BankAccountNumber    = request.BankDetails.AccountNumber
             };
 
-            var startDate = quotation.CoverageStartDate;
-            // EndDate = StartDate + 1 year - 1 day so the purchase day is day 1 of coverage
-            var endDate   = startDate.AddYears(1).AddDays(-1);
-
             var policy = new Policy
             {
-                PolicyId        = Guid.NewGuid().ToString(),
-                PolicyNumber    = GeneratePolicyNumber(quotation.Region),
-                StartDate       = startDate,
-                EndDate         = endDate,
-                CoverageAmount  = quotation.Premium * 100,   // coverage = premium × 100
-                IssuedAt        = DateTime.UtcNow,
-                IssuedBy        = "SYSTEM",
-                ProposalId      = proposal.ProposalId
+                PolicyId       = Guid.NewGuid().ToString(),
+                PolicyNumber   = GeneratePolicyNumber(quotation.Region),
+                StartDate      = quotation.CoverageStartDate,
+                EndDate        = quotation.ExpiryDate,
+                CoverageAmount = quotation.Premium * 100,
+                IssuedAt       = DateTime.UtcNow,
+                IssuedBy       = "SYSTEM",
+                ProposalId     = proposal.ProposalId
             };
 
             await _quotationRepository.AddProposalAsync(proposal);
@@ -372,64 +352,77 @@ namespace ApplicationService.Core.Application.QuotationService.Services
 
             return new SubmitPolicyResponse
             {
-                PolicyId    = policy.PolicyId,
+                PolicyId     = policy.PolicyId,
                 PolicyNumber = policy.PolicyNumber,
-                ProposalId  = proposal.ProposalId,
-                QuotationId = quotation.QuotationId,
-                Premium     = quotation.Premium,
-                StartDate   = policy.StartDate.ToString("dd/MM/yyyy"),
-                EndDate     = policy.EndDate.ToString("dd/MM/yyyy"),
-                Status      = proposal.Status,
-                Message     = "Policy submitted successfully."
+                ProposalId   = proposal.ProposalId,
+                QuotationId  = quotation.QuotationId,
+                Premium      = quotation.Premium,
+                StartDate    = policy.StartDate.ToString("dd/MM/yyyy"),
+                EndDate      = policy.EndDate.ToString("dd/MM/yyyy"),
+                Status       = proposal.Status,
+                Message      = "Policy submitted successfully."
             };
         }
 
-        // ── Premium Calculation ───────────────────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────────────────────
 
         private decimal CalculatePremium(GetQuoteRequest request)
         {
             var premium = BasePremium;
-
-            // Construction type
-            premium *= request.ConstructionType.Equals("full-brick", StringComparison.OrdinalIgnoreCase)
-                ? 1.0m : 1.3m;
-
-            // Number of storeys
-            premium *= request.NumberOfStorey switch
-            {
-                1 => 1.0m,
-                2 => 1.1m,
-                _ => 1.2m
-            };
-
-            // Risk factors
-            if (request.CurrentFlooding.Equals("yes", StringComparison.OrdinalIgnoreCase))
-                premium *= 1.25m;
-
-            if (request.UnoccupiedProperty.Equals("yes", StringComparison.OrdinalIgnoreCase))
-                premium *= 1.20m;
-
-            if (request.PreviousLoss.Equals("yes", StringComparison.OrdinalIgnoreCase))
-                premium *= 1.15m;
-
+            premium *= request.ConstructionType.Equals("full-brick", StringComparison.OrdinalIgnoreCase) ? 1.0m : 1.3m;
+            premium *= request.NumberOfStorey switch { 1 => 1.0m, 2 => 1.1m, _ => 1.2m };
+            if (request.CurrentFlooding.Equals("yes", StringComparison.OrdinalIgnoreCase))    premium *= 1.25m;
+            if (request.UnoccupiedProperty.Equals("yes", StringComparison.OrdinalIgnoreCase)) premium *= 1.20m;
+            if (request.PreviousLoss.Equals("yes", StringComparison.OrdinalIgnoreCase))       premium *= 1.15m;
             return Math.Round(premium, 2);
         }
 
-        private string GeneratePolicyNumber(string region)
+        private static string GeneratePolicyNumber(string region)
         {
-            var year     = DateTime.UtcNow.Year;
-            var sequence = new Random().Next(100000, 999999);
-            return $"HI-{region}-{year}-{sequence}";
+            return $"HI-{region}-{DateTime.UtcNow.Year}-{new Random().Next(100000, 999999)}";
         }
 
-        private DateTime ParseDate(string date)
+        private static DateTime ParseDate(string date)
         {
             if (DateTime.TryParseExact(date, "dd/MM/yyyy",
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var result))
                 return result;
-
             return DateTime.UtcNow.Date;
+        }
+
+        /// <summary>
+        /// Deserialises ValuableRatesJson → category → (MaxPerItem, MaxTotal, Rate).
+        /// JSON shape: [{ "category": "jewellery", "maxPerItem": 5000, "maxTotal": 20000, "rate": 0.02 }]
+        /// </summary>
+        private static Dictionary<string, (decimal MaxPerItem, decimal MaxTotal, decimal Rate)>
+            DeserializeValuableRates(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new Dictionary<string, (decimal, decimal, decimal)>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                var rows = JsonSerializer.Deserialize<List<ValuableRateRow>>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+                return rows.ToDictionary(
+                    r => r.Category.ToLower(),
+                    r => (r.MaxPerItem, r.MaxTotal, r.Rate),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return new Dictionary<string, (decimal, decimal, decimal)>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private class ValuableRateRow
+        {
+            public string Category  { get; set; } = string.Empty;
+            public decimal MaxPerItem { get; set; }
+            public decimal MaxTotal   { get; set; }
+            public decimal Rate       { get; set; }
         }
     }
 }

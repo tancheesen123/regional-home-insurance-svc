@@ -32,7 +32,10 @@ namespace ApplicationService.Core.Domain.Entities
         /// </summary>
         public string SnapshotType { get; set; } = "auto";
 
-        // Navigation
-        public ICollection<RateConfigChangeLog> ChangeLogs { get; set; } = new List<RateConfigChangeLog>();
+        /// <summary>
+        /// Field-level change logs serialised as JSON array — replaces RateConfigChangeLog table.
+        /// Shape: [{ "tableName": "...", "recordId": "...", "fieldName": "...", "oldValue": "...", "newValue": "...", "changedBy": "...", "changedAt": "..." }]
+        /// </summary>
+        public string ChangeLogsJson { get; set; } = "[]";
     }
 }

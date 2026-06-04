@@ -4,16 +4,19 @@ using ApplicationService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
+namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
 {
-    [DbContext(typeof(KHApplicationDbContext))]
-    partial class KHApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(PHApplicationDbContext))]
+    [Migration("20260603123435_SimplifySchema")]
+    partial class SimplifySchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

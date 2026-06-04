@@ -976,8 +976,8 @@ function HistoryTab({
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.changeLogs.map((log) => (
-                        <tr key={log.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      {detail.changeLogs.map((log, idx) => (
+                        <tr key={log.id || idx} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="py-2 pr-4 font-mono text-gray-700">{log.fieldName}</td>
                           <td className="py-2 pr-4 text-red-500 line-through">{log.oldValue}</td>
                           <td className="py-2 pr-4 text-green-600 font-medium">{log.newValue}</td>
@@ -1053,7 +1053,7 @@ function ChangeLogTab({ countryCode }: { countryCode: string }) {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No changes recorded yet.</td></tr>
             ) : logs.map((log, idx) => (
               <tr
-                key={log.id}
+                key={log.id || idx}
                 className={cn(
                   "border-b border-blue-50 transition-all duration-150 group",
                   "hover:bg-blue-600 hover:shadow-md",

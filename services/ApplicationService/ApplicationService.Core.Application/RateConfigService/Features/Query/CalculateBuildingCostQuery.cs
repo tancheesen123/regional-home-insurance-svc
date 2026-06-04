@@ -50,19 +50,18 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                         $"Number of storeys ({body.NumberOfStoreys}) exceeds the regional " +
                         $"maximum of {regionCfg.MaxStoreys}.");
 
-                // ── Look up base rate ─────────────────────────────────────────
-                var allRates = await _repo.GetBuildingRatesAsync(region);
-                var rateRow  = allRates.FirstOrDefault(r =>
-                    r.PropertySubType.Equals(body.PropertySubType,   StringComparison.OrdinalIgnoreCase) &&
-                    r.ConstructionType.Equals(body.ConstructionType,  StringComparison.OrdinalIgnoreCase))
+                // ── Look up base rate from RegionConfig.BuildingRatesJson ─────
+                var buildingRates = ParseBuildingRates(regionCfg.BuildingRatesJson);
+                var rateRow = buildingRates.FirstOrDefault(r =>
+                    r.PropertySubType.Equals(body.PropertySubType,  StringComparison.OrdinalIgnoreCase) &&
+                    r.ConstructionType.Equals(body.ConstructionType, StringComparison.OrdinalIgnoreCase))
                     ?? throw new KeyNotFoundException(
-                        $"No rate found for '{body.PropertySubType}' / '{body.ConstructionType}' " +
-                        $"in region '{region}'. " +
+                        $"No rate found for '{body.PropertySubType}' / '{body.ConstructionType}' in region '{region}'. " +
                         "Valid property types: bungalow, semi-detached, terrace, condo, apartment, flat. " +
                         "Valid construction types: full-brick, partial-brick.");
 
                 // ── Load all risk multipliers for this region ─────────────────
-                var allMultipliers = await _repo.GetRiskMultipliersAsync(region);
+                var allMultipliers = await _repo.GetMultipliersAsync(region, "risk_factor");
 
                 // ── Look up the 4 classification factors ──────────────────────
                 var ageFactor        = LookupFactor(allMultipliers, $"age.{body.AgeOfBuilding}",
@@ -78,7 +77,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     "siteSurrounding", "normal | confined | city-centre");
 
                 // ── Detect location tier from province ────────────────────────
-                var tiers = await _repo.GetLocationTiersAsync(region);
+                var tiers = await _repo.GetMultipliersAsync(region, "location_tier");
                 var (detectedTier, locationMultiplier) = DetectTier(body.Province, tiers);
 
                 // ═════════════════════════════════════════════════════════════
@@ -182,7 +181,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
             /// (likely means the value passed for that field is invalid).
             /// </summary>
             private static decimal LookupFactor(
-                List<RiskMultiplierConfig> all, string key,
+                List<RateMultiplierConfig> all, string key,
                 string fieldName, string validValues)
             {
                 var row = all.FirstOrDefault(m =>
@@ -197,26 +196,20 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 return row.Multiplier;
             }
 
-            /// <summary>
-            /// Matches province string against each tier's keyword list.
-            /// Strategy: provinceInput.Contains(keyword) — case-insensitive.
-            /// If multiple tiers match, picks the highest multiplier.
-            /// Fallback: urban tier.
-            /// </summary>
             private static (string tier, decimal multiplier) DetectTier(
-                string province, List<LocationTierConfig> tiers)
+                string province, List<RateMultiplierConfig> tiers)
             {
                 if (string.IsNullOrWhiteSpace(province))
                     return FallbackUrban(tiers);
 
                 var provinceNorm = province.Trim().ToLower();
-                LocationTierConfig? best = null;
+                RateMultiplierConfig? best = null;
 
                 foreach (var tier in tiers)
                 {
                     List<string> keywords;
-                    try { keywords = JsonSerializer.Deserialize<List<string>>(tier.KeywordsJson) ?? new(); }
-                    catch   { keywords = new(); }
+                    try { keywords = JsonSerializer.Deserialize<List<string>>(tier.KeywordsJson ?? "[]") ?? new(); }
+                    catch { keywords = new(); }
 
                     if (keywords.Any(kw => provinceNorm.Contains(kw.ToLower(), StringComparison.Ordinal)))
                     {
@@ -225,14 +218,29 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     }
                 }
 
-                return best != null ? (best.Tier, best.Multiplier) : FallbackUrban(tiers);
+                return best != null ? (best.FactorKey, best.Multiplier) : FallbackUrban(tiers);
             }
 
-            private static (string, decimal) FallbackUrban(List<LocationTierConfig> tiers)
+            private static (string, decimal) FallbackUrban(List<RateMultiplierConfig> tiers)
             {
                 var urban = tiers.FirstOrDefault(t =>
-                    t.Tier.Equals("urban", StringComparison.OrdinalIgnoreCase));
-                return urban != null ? (urban.Tier, urban.Multiplier) : ("urban", 1.00m);
+                    t.FactorKey.Equals("urban", StringComparison.OrdinalIgnoreCase));
+                return urban != null ? (urban.FactorKey, urban.Multiplier) : ("urban", 1.00m);
+            }
+
+            private static List<BuildingRateRow> ParseBuildingRates(string json)
+            {
+                try { return JsonSerializer.Deserialize<List<BuildingRateRow>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+                catch { return new(); }
+            }
+
+            private sealed class BuildingRateRow
+            {
+                public string  Id               { get; set; } = string.Empty;
+                public string  PropertySubType  { get; set; } = string.Empty;
+                public string  ConstructionType { get; set; } = string.Empty;
+                public decimal RatePerUnit      { get; set; }
+                public bool    IsActive         { get; set; } = true;
             }
 
             private static decimal Round(decimal value) =>

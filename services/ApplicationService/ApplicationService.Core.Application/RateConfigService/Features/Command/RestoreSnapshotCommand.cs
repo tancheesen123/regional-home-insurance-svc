@@ -1,6 +1,6 @@
+using ApplicationService.Core.Application.RateConfigService.DTOs;
 using ApplicationService.Core.Application.RateConfigService.Interfaces.Repositories;
 using ApplicationService.Core.Application.RateConfigService.Services;
-using ApplicationService.Core.Domain.Entities;
 using MediatR;
 using System.Text.Json;
 
@@ -17,6 +17,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         {
             private readonly IRateConfigRepository  _repo;
             private readonly RateConfigAuditService _audit;
+            private static readonly JsonSerializerOptions _json =
+                new() { PropertyNameCaseInsensitive = true };
 
             public Handler(IRateConfigRepository repo, RateConfigAuditService audit)
             {
@@ -27,47 +29,39 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public async Task<RestoreSnapshotResult> Handle(
                 RestoreSnapshotCommand cmd, CancellationToken ct)
             {
-                // 1. Load the target snapshot
                 var snapshot = await _repo.GetSnapshotByIdAsync(cmd.SnapshotId)
-                    ?? throw new KeyNotFoundException(
-                        $"Snapshot '{cmd.SnapshotId}' not found.");
+                    ?? throw new KeyNotFoundException($"Snapshot '{cmd.SnapshotId}' not found.");
 
-                // 2. Parse snapshot JSON
                 SnapshotPayload payload;
                 try
                 {
-                    payload = JsonSerializer.Deserialize<SnapshotPayload>(
-                        snapshot.SnapshotJson,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                    payload = JsonSerializer.Deserialize<SnapshotPayload>(snapshot.SnapshotJson, _json)
                         ?? throw new InvalidOperationException("Snapshot JSON is empty.");
                 }
                 catch (JsonException ex)
                 {
-                    throw new InvalidOperationException(
-                        $"Snapshot JSON could not be parsed: {ex.Message}");
+                    throw new InvalidOperationException($"Snapshot JSON could not be parsed: {ex.Message}");
                 }
 
                 var region = cmd.Region.ToUpper();
-                var logs   = new List<RateConfigChangeLog>();
+                var logs   = new List<RateConfigChangeLogDto>();
 
-                // 3. Restore RegionRateConfig ──────────────────────────────────
+                // ── Restore RegionConfig ──────────────────────────────────────
                 var regionRow = await _repo.GetRegionConfigAsync(region);
-                if (regionRow != null && payload != null)
+                if (regionRow != null)
                 {
                     void TrackR(string field, string oldV, string newV)
                     {
-                        if (oldV != newV)
-                            logs.Add(RateConfigAuditService.Log(
-                                "RegionRateConfigs", regionRow.Id, field, oldV, newV));
+                        if (oldV != newV) logs.Add(RateConfigAuditService.Log("RegionConfigs", regionRow.Id, field, oldV, newV));
                     }
 
-                    TrackR("AreaUnit",           regionRow.AreaUnit,                    payload.AreaUnit ?? regionRow.AreaUnit);
-                    TrackR("AreaMin",             regionRow.AreaMin.ToString(),          payload.AreaMin.ToString());
-                    TrackR("AreaMax",             regionRow.AreaMax.ToString(),          payload.AreaMax.ToString());
+                    TrackR("AreaUnit",           regionRow.AreaUnit,                          payload.AreaUnit ?? regionRow.AreaUnit);
+                    TrackR("AreaMin",             regionRow.AreaMin.ToString(),                payload.AreaMin.ToString());
+                    TrackR("AreaMax",             regionRow.AreaMax.ToString(),                payload.AreaMax.ToString());
                     TrackR("StoreyIncrementPct",  regionRow.StoreyIncrementPct.ToString("F4"), payload.StoreyIncrementPct.ToString("F4"));
-                    TrackR("MaxStoreys",          regionRow.MaxStoreys.ToString(),       payload.MaxStoreys.ToString());
-                    TrackR("ProfessionalFeeRate", regionRow.ProfessionalFeeRate.ToString("F4"), payload.ProfessionalFeeRate.ToString("F4"));
-                    TrackR("BenchmarkYear",       regionRow.BenchmarkYear.ToString(),   payload.BenchmarkYear.ToString());
+                    TrackR("MaxStoreys",          regionRow.MaxStoreys.ToString(),             payload.MaxStoreys.ToString());
+                    TrackR("ProfessionalFeeRate", regionRow.ProfessionalFeeRate.ToString("F4"),payload.ProfessionalFeeRate.ToString("F4"));
+                    TrackR("BenchmarkYear",       regionRow.BenchmarkYear.ToString(),          payload.BenchmarkYear.ToString());
 
                     regionRow.AreaUnit            = payload.AreaUnit ?? regionRow.AreaUnit;
                     regionRow.AreaMin             = payload.AreaMin;
@@ -76,102 +70,70 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     regionRow.MaxStoreys          = payload.MaxStoreys;
                     regionRow.ProfessionalFeeRate = payload.ProfessionalFeeRate;
                     regionRow.BenchmarkYear       = payload.BenchmarkYear;
-                    regionRow.UpdatedAt           = DateTime.UtcNow;
-                    regionRow.UpdatedBy           = cmd.RestoredBy;
+
+                    // Restore building rates JSON if present in snapshot
+                    if (!string.IsNullOrWhiteSpace(payload.BuildingRatesJson))
+                    {
+                        TrackR("BuildingRatesJson", regionRow.BuildingRatesJson, payload.BuildingRatesJson);
+                        regionRow.BuildingRatesJson = payload.BuildingRatesJson;
+                    }
+
+                    regionRow.UpdatedAt = DateTime.UtcNow;
+                    regionRow.UpdatedBy = cmd.RestoredBy;
                     await _repo.UpdateRegionConfigAsync(regionRow);
                 }
 
-                // 4. Restore BuildingConstructionRates ────────────────────────
-                if (payload?.Rates != null)
+                // ── Restore LocationTier multipliers ──────────────────────────
+                if (payload.LocationTiers != null)
                 {
-                    var buildingRows = await _repo.GetBuildingRatesAsync(region);
-                    foreach (var row in buildingRows)
-                    {
-                        var subKey = row.PropertySubType.ToLower();
-                        if (!payload.Rates.TryGetValue(subKey, out var rateDetail)) continue;
-
-                        decimal snap = row.ConstructionType.Equals("full-brick",
-                            StringComparison.OrdinalIgnoreCase)
-                            ? rateDetail.FullBrick
-                            : rateDetail.PartialBrick;
-
-                        if (row.RatePerUnit != snap)
-                        {
-                            logs.Add(RateConfigAuditService.Log(
-                                "BuildingConstructionRates", row.Id,
-                                $"{row.PropertySubType}/{row.ConstructionType} → RatePerUnit",
-                                row.RatePerUnit.ToString("F4"),
-                                snap.ToString("F4")));
-
-                            row.RatePerUnit = snap;
-                            row.UpdatedAt   = DateTime.UtcNow;
-                            row.UpdatedBy   = cmd.RestoredBy;
-                            await _repo.UpdateBuildingRateAsync(row);
-                        }
-                    }
-                }
-
-                // 5. Restore LocationTierConfigs ───────────────────────────────
-                if (payload?.LocationTiers != null)
-                {
-                    var tierRows = await _repo.GetLocationTiersAsync(region);
+                    var tierRows = await _repo.GetMultipliersAsync(region, "location_tier");
                     foreach (var row in tierRows)
                     {
-                        var key = row.Tier.ToLower();
+                        var key = row.FactorKey.ToLower();
                         if (!payload.LocationTiers.TryGetValue(key, out var tierDetail)) continue;
+
+                        var newKeywordsJson = JsonSerializer.Serialize(tierDetail.Keywords ?? new List<string>());
 
                         void TrackT(string field, string oldV, string newV)
                         {
-                            if (oldV != newV)
-                                logs.Add(RateConfigAuditService.Log(
-                                    "LocationTierConfigs", row.Id,
-                                    $"{row.Tier} → {field}", oldV, newV));
+                            if (oldV != newV) logs.Add(RateConfigAuditService.Log("LocationTierConfigs", row.Id, $"{row.FactorKey} → {field}", oldV, newV));
                         }
-
-                        var newKeywordsJson = JsonSerializer.Serialize(
-                            tierDetail.Keywords ?? new List<string>());
 
                         TrackT("Multiplier", row.Multiplier.ToString("F4"), tierDetail.Multiplier.ToString("F4"));
                         TrackT("Label",      row.Label,                     tierDetail.Label ?? row.Label);
-                        TrackT("Keywords",   row.KeywordsJson,               newKeywordsJson);
+                        TrackT("Keywords",   row.KeywordsJson ?? "[]",       newKeywordsJson);
 
                         row.Multiplier   = tierDetail.Multiplier;
                         row.Label        = tierDetail.Label ?? row.Label;
                         row.KeywordsJson = newKeywordsJson;
                         row.UpdatedAt    = DateTime.UtcNow;
                         row.UpdatedBy    = cmd.RestoredBy;
-                        await _repo.UpdateLocationTierAsync(row);
+                        await _repo.UpdateMultiplierAsync(row);
                     }
                 }
 
-                // 6. Restore RiskMultiplierConfigs ─────────────────────────────
-                if (payload?.RiskMultipliers != null)
+                // ── Restore RiskMultiplier multipliers ────────────────────────
+                if (payload.RiskMultipliers != null)
                 {
-                    var riskRows = await _repo.GetRiskMultipliersAsync(region);
+                    var riskRows = await _repo.GetMultipliersAsync(region, "risk_factor");
                     foreach (var row in riskRows)
                     {
                         if (!payload.RiskMultipliers.TryGetValue(row.FactorKey, out var snap)) continue;
+                        if (row.Multiplier == snap) continue;
 
-                        if (row.Multiplier != snap)
-                        {
-                            logs.Add(RateConfigAuditService.Log(
-                                "RiskMultiplierConfigs", row.Id,
-                                $"{row.FactorKey} → Multiplier",
-                                row.Multiplier.ToString("F4"),
-                                snap.ToString("F4")));
+                        logs.Add(RateConfigAuditService.Log("RiskMultiplierConfigs", row.Id,
+                            $"{row.FactorKey} → Multiplier",
+                            row.Multiplier.ToString("F4"), snap.ToString("F4")));
 
-                            row.Multiplier = snap;
-                            row.UpdatedAt  = DateTime.UtcNow;
-                            row.UpdatedBy  = cmd.RestoredBy;
-                            await _repo.UpdateRiskMultiplierAsync(row);
-                        }
+                        row.Multiplier = snap;
+                        row.UpdatedAt  = DateTime.UtcNow;
+                        row.UpdatedBy  = cmd.RestoredBy;
+                        await _repo.UpdateMultiplierAsync(row);
                     }
                 }
 
-                // 7. Persist restored config rows
                 await _repo.SaveChangesAsync();
 
-                // 8. Audit the restore
                 var note  = string.IsNullOrWhiteSpace(cmd.Note) ? string.Empty : $" — {cmd.Note}";
                 var label = $"Restored from snapshot '{snapshot.Label}'{note} ({logs.Count} field(s) reverted)";
 
@@ -187,8 +149,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             }
         }
 
-        // ── Internal deserialization shapes ───────────────────────────────────
-
         private class SnapshotPayload
         {
             public string?  AreaUnit            { get; set; }
@@ -198,9 +158,9 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public int      MaxStoreys          { get; set; }
             public decimal  ProfessionalFeeRate { get; set; }
             public int      BenchmarkYear       { get; set; }
-            public Dictionary<string, TierPayload>?  LocationTiers   { get; set; }
-            public Dictionary<string, RatePayload>?  Rates           { get; set; }
-            public Dictionary<string, decimal>?      RiskMultipliers { get; set; }
+            public string?  BuildingRatesJson   { get; set; }
+            public Dictionary<string, TierPayload>? LocationTiers   { get; set; }
+            public Dictionary<string, decimal>?     RiskMultipliers { get; set; }
         }
 
         private class TierPayload
@@ -208,12 +168,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
             public decimal      Multiplier { get; set; }
             public string?      Label      { get; set; }
             public List<string>? Keywords  { get; set; }
-        }
-
-        private class RatePayload
-        {
-            public decimal FullBrick    { get; set; }
-            public decimal PartialBrick { get; set; }
         }
     }
 

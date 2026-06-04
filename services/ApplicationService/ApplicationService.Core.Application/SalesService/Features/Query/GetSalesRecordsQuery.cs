@@ -128,7 +128,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
             }
 
             private static decimal GetPremium(Proposal p)
-                => p.Quotation?.QuotationPremium?.TotalPremium
+                => p.Quotation?.Premium
                 ?? p.Policy?.CoverageAmount
                 ?? 0m;
 

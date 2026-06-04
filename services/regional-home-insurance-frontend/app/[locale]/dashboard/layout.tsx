@@ -27,8 +27,10 @@ export default function DashboardLayout({
           {/* Dot-grid texture — dark dots on light bg */}
           <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 z-0" />
 
-          <SidebarInset className="flex flex-col h-full min-h-0 overflow-hidden bg-transparent">
-            {children}
+          <SidebarInset className="flex flex-col h-full min-h-0 bg-transparent">
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {children}
+            </div>
           </SidebarInset>
         </SpotlightBackground>
 
