@@ -20,8 +20,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Dialog,
   DialogContent,
@@ -89,10 +87,10 @@ function DocumentCard({
   onDownload: (doc: PolicyDocumentInfo) => void
 }) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+    <div className="flex items-center justify-between p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:shadow-md transition-all duration-150">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <FileText className="h-5 w-5 text-blue-600" />
+        <div className="w-10 h-10 bg-[#FEF3DC] rounded-lg flex items-center justify-center flex-shrink-0">
+          <FileText className="h-5 w-5 text-[#F5A623]" />
         </div>
         <div>
           <p className="font-medium text-sm text-[#1A1A1A]">{labelForFileType(doc.fileType)}</p>
@@ -104,7 +102,7 @@ function DocumentCard({
         variant="outline"
         disabled={isDownloading}
         onClick={() => onDownload(doc)}
-        className="shrink-0"
+        className="shrink-0 border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
       >
         {isDownloading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -123,15 +121,15 @@ function DocumentCard({
 
 function DocumentSkeleton() {
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+    <div className="flex items-center justify-between p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA]">
       <div className="flex items-center gap-3 flex-1">
-        <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse shrink-0" />
+        <div className="w-10 h-10 bg-[#E0E0E0] rounded-lg animate-pulse shrink-0" />
         <div className="space-y-2 flex-1">
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-40" />
-          <div className="h-2 bg-gray-200 rounded animate-pulse w-56" />
+          <div className="h-3 bg-[#E0E0E0] rounded animate-pulse w-40" />
+          <div className="h-2 bg-[#E0E0E0] rounded animate-pulse w-56" />
         </div>
       </div>
-      <div className="h-8 w-28 bg-gray-200 rounded animate-pulse shrink-0" />
+      <div className="h-8 w-28 bg-[#E0E0E0] rounded animate-pulse shrink-0" />
     </div>
   )
 }
@@ -311,9 +309,9 @@ export default function PaymentSuccess() {
 
   if (isLoadingData) {
     return (
-      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[400px]">
+      <div className="max-w-4xl mx-auto px-4 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3 text-[#555555]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0056b3]" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#F5A623]" />
           <p className="text-sm">{t("summary.loadingProposal")}</p>
         </div>
       </div>
@@ -321,17 +319,17 @@ export default function PaymentSuccess() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 pb-12">
 
       {/* ── Confetti ── */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50">
           <div className="absolute inset-0">
-            {[["left-1/4","yellow"],["left-1/2","blue","0.5s"],["right-1/4","green","1s"],["left-1/3","red","1.5s"],["right-1/3","purple","2s"]].map(([pos, color, delay], i) => (
+            {[["left-1/4","#F5A623"],["left-1/2","#0066CC","0.5s"],["right-1/4","#00A651","1s"],["left-1/3","#E87722","1.5s"],["right-1/3","#F5A623","2s"]].map(([pos, color, delay], i) => (
               <div
                 key={i}
-                className={`absolute top-0 ${pos} w-2 h-2 bg-${color}-500 rounded-full animate-bounce`}
-                style={delay ? { animationDelay: delay as string } : undefined}
+                className={`absolute top-0 ${pos} w-2 h-2 rounded-full animate-bounce`}
+                style={{ backgroundColor: color, ...(delay ? { animationDelay: delay } : {}) }}
               />
             ))}
           </div>
@@ -339,39 +337,39 @@ export default function PaymentSuccess() {
       )}
 
       {/* ── Success Header ── */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-          <CheckCircle className="h-12 w-12 text-green-600" />
+      <div className="text-center mb-8 pt-2">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-[#E6F7EE] rounded-full mb-4">
+          <CheckCircle className="h-12 w-12 text-[#00A651]" />
         </div>
-        <h1 className="text-3xl font-bold text-[#1A1A1A] mb-2">{t("success.title")}</h1>
-        <p className="text-lg text-[#555555] mb-4">{t("success.subtitle")}</p>
+        <h1 className="text-2xl font-bold text-[#1A1A1A] mb-2">{t("success.title")}</h1>
+        <p className="text-base text-[#555555] mb-4">{t("success.subtitle")}</p>
         {q && (
-          <Badge variant="default" className="bg-green-600 text-white px-4 py-2">
+          <span className="inline-flex items-center rounded-full bg-[#E6F7EE] text-[#00A651] border border-[#86EFAC] px-4 py-1.5 text-sm font-semibold">
             {t("success.policyActiveFrom")} {q.coverageStartDate}
-          </Badge>
+          </span>
         )}
       </div>
 
       {/* ── Email notice ── */}
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <Mail className="h-4 w-4" />
-        <AlertDescription>
-          <strong>{t("success.emailNoticeStrong")}</strong> {t("success.emailNoticeDesc")}
-        </AlertDescription>
-      </Alert>
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-[#BFE3F5] bg-[#E1F5FE] p-4">
+        <Mail className="h-4 w-4 mt-0.5 shrink-0 text-[#0288D1]" />
+        <p className="text-sm text-[#1A1A1A]">
+          <strong className="font-semibold">{t("success.emailNoticeStrong")}</strong> {t("success.emailNoticeDesc")}
+        </p>
+      </div>
 
       {/* ── Non-fatal data load error ── */}
       {dataError && (
-        <Alert className="mb-6 border-yellow-200 bg-yellow-50">
-          <AlertDescription className="text-yellow-800">{dataError}</AlertDescription>
-        </Alert>
+        <div className="mb-6 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-4">
+          <p className="text-sm text-[#D97706]">{dataError}</p>
+        </div>
       )}
 
       {/* ── Document Status Section ── */}
-      <Card className="mb-6">
+      <Card className="mb-6 rounded-xl border-[#E0E0E0] shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#0056b3]" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+            <Package className="h-5 w-5 text-[#F5A623]" />
             Policy Documents
           </CardTitle>
         </CardHeader>
@@ -379,7 +377,7 @@ export default function PaymentSuccess() {
           {docStatus === "polling" && (
             <div className="space-y-3">
               <div className="flex items-center gap-3 mb-4 text-[#555555]">
-                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0 text-[#F5A623]" />
                 <p className="text-sm">Preparing your policy documents… This usually takes about 30 seconds.</p>
               </div>
               <DocumentSkeleton />
@@ -390,7 +388,7 @@ export default function PaymentSuccess() {
 
           {docStatus === "ready" && (
             <div className="space-y-3">
-              <p className="text-sm text-green-600 font-medium mb-3 flex items-center gap-2">
+              <p className="text-sm text-[#00A651] font-medium mb-3 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" /> Documents are ready
               </p>
               {documents.map((doc) => (
@@ -403,14 +401,14 @@ export default function PaymentSuccess() {
                 />
               ))}
               {downloadError && (
-                <Alert variant="destructive" className="mt-2">
-                  <AlertDescription>{downloadError}</AlertDescription>
-                </Alert>
+                <div className="mt-2 rounded-xl border border-[#FECACA] bg-[#FFEBEE] p-3">
+                  <p className="text-sm text-[#D32F2F]">{downloadError}</p>
+                </div>
               )}
               <div className="pt-2">
                 <Button
                   variant="outline"
-                  className="w-full border-[#0056b3] text-[#0056b3] hover:bg-blue-50"
+                  className="w-full border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
                   onClick={handleDownloadAll}
                   disabled={isDownloadingAll}
                 >
@@ -426,13 +424,18 @@ export default function PaymentSuccess() {
 
           {(docStatus === "error" || docStatus === "timeout") && (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <AlertTriangle className="h-8 w-8 text-yellow-500" />
+              <AlertTriangle className="h-8 w-8 text-[#F59E0B]" />
               <p className="text-sm text-[#555555]">
                 {docStatus === "timeout"
                   ? "Document generation is taking longer than expected. Please refresh or contact support."
                   : "Could not load documents. Please try again or contact support."}
               </p>
-              <Button variant="outline" size="sm" onClick={handleRetryPoll}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetryPoll}
+                className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" /> Retry
               </Button>
             </div>
@@ -441,9 +444,9 @@ export default function PaymentSuccess() {
       </Card>
 
       {/* ── Policy Summary Card ── */}
-      <Card className="mb-6 border-green-200">
-        <CardHeader className="bg-green-50">
-          <CardTitle className="flex items-center gap-2 text-green-800">
+      <Card className="mb-6 rounded-xl border-[#86EFAC] shadow-sm overflow-hidden">
+        <CardHeader className="bg-[#E6F7EE]">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#00A651]">
             <FileText className="h-5 w-5" />
             {t("success.policySummaryTitle")}
           </CardTitle>
@@ -503,10 +506,10 @@ export default function PaymentSuccess() {
 
       {/* ── Policyholder + What's Next ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="rounded-xl border-[#E0E0E0] shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Home className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+              <Home className="h-5 w-5 text-[#F5A623]" />
               {t("success.policyholderInfo")}
             </CardTitle>
           </CardHeader>
@@ -530,10 +533,10 @@ export default function PaymentSuccess() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl border-[#E0E0E0] shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+              <Calendar className="h-5 w-5 text-[#F5A623]" />
               {t("success.whatsNext")}
             </CardTitle>
           </CardHeader>
@@ -544,11 +547,11 @@ export default function PaymentSuccess() {
               { n: 3, title: t("success.stayConnected"),  desc: t("success.stayConnectedDesc") },
             ].map(({ n, title, desc }) => (
               <div key={n} className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-medium text-blue-600">{n}</span>
+                <div className="w-6 h-6 bg-[#FEF3DC] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-[#D4891A]">{n}</span>
                 </div>
                 <div>
-                  <p className="font-medium">{title}</p>
+                  <p className="font-medium text-[#1A1A1A]">{title}</p>
                   <p className="text-sm text-[#555555]">{desc}</p>
                 </div>
               </div>
@@ -559,39 +562,49 @@ export default function PaymentSuccess() {
 
       {/* ── Quick Actions ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Button variant="outline" onClick={() => router.push("/dashboard/policies")}>
+        <Button
+          variant="outline"
+          onClick={() => router.push("/dashboard/policies")}
+          className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
+        >
           <Eye className="h-4 w-4 mr-2" /> {t("success.viewAllPolicies")}
         </Button>
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
+        >
           <Share2 className="h-4 w-4 mr-2" /> {t("success.sharePolicy")}
         </Button>
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
+        >
           <Phone className="h-4 w-4 mr-2" /> {t("success.contactSupport")}
         </Button>
       </div>
 
       {/* ── Support ── */}
-      <Card className="border-gray-200">
-        <CardHeader><CardTitle>{t("success.needHelp")}</CardTitle></CardHeader>
+      <Card className="rounded-xl border-[#E0E0E0] shadow-sm">
+        <CardHeader><CardTitle className="text-base font-semibold text-[#1A1A1A]">{t("success.needHelp")}</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <Phone className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <h4 className="font-semibold mb-1">{t("success.customerService")}</h4>
+              <Phone className="h-8 w-8 mx-auto mb-2 text-[#F5A623]" />
+              <h4 className="font-semibold mb-1 text-[#1A1A1A]">{t("success.customerService")}</h4>
               <p className="text-sm text-[#555555]">1-300-13-8420</p>
-              <p className="text-xs text-[#555555]">{t("success.available247")}</p>
+              <p className="text-xs text-[#9E9E9E]">{t("success.available247")}</p>
             </div>
             <div className="text-center">
-              <Mail className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <h4 className="font-semibold mb-1">{t("success.emailSupport")}</h4>
+              <Mail className="h-8 w-8 mx-auto mb-2 text-[#F5A623]" />
+              <h4 className="font-semibold mb-1 text-[#1A1A1A]">{t("success.emailSupport")}</h4>
               <p className="text-sm text-[#555555]">support@etiqa.com</p>
-              <p className="text-xs text-[#555555]">{t("success.responseTime")}</p>
+              <p className="text-xs text-[#9E9E9E]">{t("success.responseTime")}</p>
             </div>
             <div className="text-center">
-              <FileText className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <h4 className="font-semibold mb-1">{t("success.claimsHotline")}</h4>
+              <FileText className="h-8 w-8 mx-auto mb-2 text-[#F5A623]" />
+              <h4 className="font-semibold mb-1 text-[#1A1A1A]">{t("success.claimsHotline")}</h4>
               <p className="text-sm text-[#555555]">1-800-22-3372</p>
-              <p className="text-xs text-[#555555]">{t("success.emergencyClaims")}</p>
+              <p className="text-xs text-[#9E9E9E]">{t("success.emergencyClaims")}</p>
             </div>
           </div>
         </CardContent>
@@ -599,7 +612,7 @@ export default function PaymentSuccess() {
 
       {/* ── Return to Dashboard ── */}
       <div className="text-center mt-8">
-        <Button onClick={() => router.push("/dashboard")} size="lg" className="bg-[#0056b3] hover:bg-[#004494] text-white">
+        <Button onClick={() => router.push("/dashboard")} size="lg" className="bg-[#F5A623] hover:bg-[#D4891A] text-white">
           <Home className="h-5 w-5 mr-2" />
           {t("success.returnToDashboard")}
         </Button>
@@ -607,9 +620,9 @@ export default function PaymentSuccess() {
 
       {/* ── Document Ready Modal (auto-opens when isReady:true) ── */}
       <Dialog open={docModalOpen} onOpenChange={setDocModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-[#1A1A1A]">
               🎉 Your Policy is Ready
               {policyNumber && (
                 <span className="text-sm font-normal text-[#555555]">— {policyNumber}</span>
@@ -630,14 +643,14 @@ export default function PaymentSuccess() {
           </div>
 
           {downloadError && (
-            <Alert variant="destructive" className="mt-3">
-              <AlertDescription>{downloadError}</AlertDescription>
-            </Alert>
+            <div className="mt-3 rounded-xl border border-[#FECACA] bg-[#FFEBEE] p-3">
+              <p className="text-sm text-[#D32F2F]">{downloadError}</p>
+            </div>
           )}
 
-          <div className="mt-4 pt-3 border-t">
+          <div className="mt-4 pt-3 border-t border-[#E0E0E0]">
             <Button
-              className="w-full bg-[#0056b3] hover:bg-[#004494] text-white"
+              className="w-full bg-[#F5A623] hover:bg-[#D4891A] text-white"
               onClick={handleDownloadAll}
               disabled={isDownloadingAll}
             >

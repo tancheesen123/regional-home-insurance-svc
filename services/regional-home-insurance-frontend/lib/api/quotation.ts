@@ -238,6 +238,53 @@ export function clearQuotationIdentity(): void {
   localStorage.removeItem(QUOTATION_IDENTITY_KEY)
 }
 
+// ── Property summary (for the summary bar's expanded breakdown) ────────────────
+
+const QUOTATION_PROPERTY_KEY = "etiqa_quotation_property"
+
+export interface QuotationPropertySummary {
+  propertyType:     string   // "landed" | "non-landed"
+  numberOfStorey:   number
+  constructionType: string   // "full-brick" | "partial-brick"
+}
+
+export function saveQuotationPropertySummary(p: QuotationPropertySummary): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(QUOTATION_PROPERTY_KEY, JSON.stringify(p))
+}
+
+export function getQuotationPropertySummary(): QuotationPropertySummary | null {
+  if (typeof window === "undefined") return null
+  const raw = localStorage.getItem(QUOTATION_PROPERTY_KEY)
+  if (!raw) return null
+  try { return JSON.parse(raw) as QuotationPropertySummary } catch { return null }
+}
+
+// ── Premium snapshot (carried from customize → later steps for the summary bar) ──
+
+const QUOTATION_PREMIUM_KEY = "etiqa_quotation_premium"
+
+/** Persist the full premium breakdown from the customize step. */
+export function saveQuotationPremium(data: PremiumData): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(QUOTATION_PREMIUM_KEY, JSON.stringify(data))
+}
+
+export function getQuotationPremium(): PremiumData | null {
+  if (typeof window === "undefined") return null
+  const raw = localStorage.getItem(QUOTATION_PREMIUM_KEY)
+  if (!raw) return null
+  try { return JSON.parse(raw) as PremiumData } catch { return null }
+}
+
+/** Patch just the headline totals after valuables change the premium. */
+export function patchQuotationPremiumTotals(totalPremium: number, monthlyPremium: number): void {
+  if (typeof window === "undefined") return
+  const cur = getQuotationPremium()
+  if (!cur) return
+  saveQuotationPremium({ ...cur, totalPremium, monthlyPremium })
+}
+
 /** Convert "DD/MM/YYYY" → "YYYY-MM-DD" for CalculatePremium.
  *  Falls back to tomorrow's date if input is missing. */
 export function toCalculateDateFormat(ddmmyyyy: string | null): string {

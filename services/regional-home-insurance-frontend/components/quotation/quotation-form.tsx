@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
-import { getQuote, saveQuotationId, saveQuotationStartDate, saveQuotationIdentity } from "@/lib/api"
+import { getQuote, saveQuotationId, saveQuotationStartDate, saveQuotationIdentity, saveQuotationPropertySummary } from "@/lib/api"
 import { checkFloodRisk, type FloodCheckResult } from "@/lib/api/flood-check"
 import { getSession } from "@/lib/session"
 import { getIdTypeOptions, getDefaultNationality } from "@/lib/id-type-helpers"
@@ -458,6 +458,12 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       saveQuotationIdentity({
         idType:   formData.idType,
         idNumber: formData.idType === "passport" ? formData.passportNumber : formData.nricNumber,
+      })
+      // Persist property summary so the summary bar can show coverage/construction type
+      saveQuotationPropertySummary({
+        propertyType:     formData.propertyType,
+        numberOfStorey:   formData.numberOfStorey,
+        constructionType: formData.constructionType,
       })
       router.push("/dashboard/quotation/customize")
     } catch (err) {

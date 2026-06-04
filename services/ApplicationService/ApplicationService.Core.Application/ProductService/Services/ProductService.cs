@@ -11,6 +11,9 @@ namespace ApplicationService.Core.Application.ProductService.Services
         private readonly ILogger<ProductService> _logger;
         private readonly IProductRepository _productRepository;
 
+        /// <summary>Online-purchase rebate applied to every online quote (15% of gross premium).</summary>
+        private const decimal OnlineRebateRate = 0.15m;
+
         public ProductService(ILogger<ProductService> logger, IProductRepository productRepository)
         {
             _logger            = logger;
@@ -94,7 +97,10 @@ namespace ApplicationService.Core.Application.ProductService.Services
             decimal grossPremium      = planPremium + totalAddOnPremium;
 
             // ── Discount ──────────────────────────────────────────────────────
-            decimal discountAmount = request.DiscountAmount;
+            // Online purchase rebate (always applied for online quotes) + any
+            // explicit campaign discount passed in the request.
+            decimal onlineRebate   = Round(grossPremium * OnlineRebateRate);
+            decimal discountAmount = request.DiscountAmount + onlineRebate;
             decimal netPremium     = Math.Max(0m, grossPremium - discountAmount);
 
             // ── Dates ─────────────────────────────────────────────────────────

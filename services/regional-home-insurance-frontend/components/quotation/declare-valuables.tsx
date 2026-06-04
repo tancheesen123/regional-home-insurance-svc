@@ -13,9 +13,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import CalculationSummary from "./calculation-summary"
+import SummaryBar, { type SummaryBreakdown } from "./summary-bar"
 import QuotationStepper from "./quotation-stepper"
-import { declareValuables, getQuotationId } from "@/lib/api"
+import {
+  declareValuables, getQuotationId,
+  getQuotationPremium, getQuotationPropertySummary, patchQuotationPremiumTotals,
+} from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getRegionConfig } from "@/lib/region"
 
@@ -60,20 +63,48 @@ export default function DeclareValuables() {
   )
   const undeclaredAmount = 60000 - totalDeclaredAmount
 
-  const planData = {
-    selectedPlan: "building-contents",
-    buildingAmount: 500000,
-    contentAmount: 60000,
-    addOns: {
-      riotStrike: false,
-      extendedTheft: false,
-    },
+  // ── Summary bar data (real premium carried from the customize step) ──────────
+  const storedPremium = getQuotationPremium()
+  const propSummary   = getQuotationPropertySummary()
+
+  const PLAN_LABEL: Record<string, string> = {
+    "building-contents": "Building + Contents",
+    "building-only":     "Building Only",
+    "content-only":      "Content Only",
   }
 
-  const valuablesData = {
-    totalDeclaredAmount,
-    maxDeclarableAmount,
-    undeclaredAmount,
+  const buildBreakdown = (): SummaryBreakdown | undefined => {
+    const declared = categories.flatMap((c) =>
+      c.items.map((it) => ({
+        label: it.description || t(c.nameKey as Parameters<typeof t>[0]),
+        value: it.value,
+      })),
+    )
+    if (!storedPremium) {
+      return declared.length ? { valuables: declared } : undefined
+    }
+    const gross = storedPremium.grossPremium
+    const pct = gross > 0 ? Math.round((storedPremium.discountAmount / gross) * 100) : undefined
+    return {
+      planLabel:        PLAN_LABEL[storedPremium.planType] ?? storedPremium.planType,
+      coveragePeriod:   `${storedPremium.startDate} – ${storedPremium.endDate}`,
+      coverageType:     propSummary
+        ? `${propSummary.propertyType === "landed" ? "Landed" : "Non-landed"}, ${propSummary.numberOfStorey}-storey`
+        : undefined,
+      constructionType: propSummary
+        ? (propSummary.constructionType === "full-brick" ? "Full Brick" : "Partial Brick")
+        : undefined,
+      buildingSum:      storedPremium.buildingSum  > 0 ? storedPremium.buildingSum  : undefined,
+      contentsSum:      storedPremium.contentsSum  > 0 ? storedPremium.contentsSum  : undefined,
+      grossPremium:     storedPremium.grossPremium,
+      discountAmount:   storedPremium.discountAmount,
+      discountRatePct:  pct,
+      serviceTaxRate:   storedPremium.serviceTaxRate,
+      serviceTaxAmount: storedPremium.serviceTaxAmount,
+      stampDuty:        storedPremium.stampDutyAmount,
+      addOns:           storedPremium.addOnBreakdown.map((a) => ({ name: a.name, premium: a.premium })),
+      valuables:        declared.length ? declared : undefined,
+    }
   }
 
   const handleWantToDeclare = () => {
@@ -161,6 +192,8 @@ export default function DeclareValuables() {
         return
       }
 
+      // Keep the carried premium snapshot in sync with the valuables-inclusive total
+      patchQuotationPremiumTotals(response.data.totalPremium, response.data.monthlyPremium)
       router.push("/dashboard/quotation/fill-details")
     } catch (err) {
       console.error("[DeclareValuables Error]", err)
@@ -173,7 +206,7 @@ export default function DeclareValuables() {
 
   if (!showDeclaration) {
     return (
-      <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
+      <div className="max-w-4xl mx-auto px-4">
         <QuotationStepper currentStep={2} />
 
         <div className="bg-white rounded-2xl p-8 shadow-sm">
@@ -224,14 +257,13 @@ export default function DeclareValuables() {
             </AlertDescription>
           </Alert>
         </div>
-
-        <CalculationSummary step="declare" planData={planData} valuablesData={valuablesData} />
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto pr-0 lg:pr-8">
+    <>
+    <div className="max-w-4xl mx-auto px-4 pb-6">
       <QuotationStepper currentStep={2} />
 
       <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -368,23 +400,18 @@ export default function DeclareValuables() {
           </Alert>
         )}
 
-        <div className="flex justify-center">
-          <Button
-            onClick={handleContinue}
-            className="bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 px-12 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E] transition-all duration-150"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>{t("declare.saving")}</span>
-              </div>
-            ) : t("declare.continue")}
-          </Button>
-        </div>
       </div>
-
-      <CalculationSummary step="declare" planData={planData} valuablesData={valuablesData} />
     </div>
+
+      <SummaryBar
+        total={storedPremium?.totalPremium}
+        totalBeforeDiscount={storedPremium?.totalBeforeDiscount}
+        monthly={storedPremium?.monthlyPremium}
+        breakdown={buildBreakdown()}
+        onProceed={handleContinue}
+        proceedLabel={t("declare.continue")}
+        proceedLoading={isLoading}
+      />
+    </>
   )
 }
