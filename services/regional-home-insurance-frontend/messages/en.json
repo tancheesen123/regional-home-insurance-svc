@@ -279,7 +279,11 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Get a Quote",
       "gettingQuote": "Getting Quote...",
-      "failedToGetQuote": "Failed to get quote. Please try again."
+      "failedToGetQuote": "Failed to get quote. Please try again.",
+      "floodChecking": "Checking flood risk for this area…",
+      "floodAtRisk": "Active flooding has been reported in this area. We cannot proceed while the property is in a flood zone.",
+      "floodClear": "No active flooding reported in this area.",
+      "floodSource": "Source: PetaBencana.id (real-time)"
     },
     "customize": {
       "title": "Customise your protection",
@@ -447,7 +451,8 @@
       "accountLabel": "Current / Saving Account no.",
       "continueToSummary": "Continue to Summary",
       "processing": "Processing...",
-      "failedToCreate": "Failed to create proposal. Please try again."
+      "failedToCreate": "Failed to create proposal. Please try again.",
+      "optional": "optional"
     },
     "summary": {
       "loadingProposal": "Loading your proposal...",
@@ -526,6 +531,17 @@
       "claimsHotline": "Claims Hotline",
       "emergencyClaims": "For emergency claims",
       "returnToDashboard": "Return to Dashboard"
+    },
+    "validation": {
+      "required": "This field is required",
+      "selectDate": "Please select a date",
+      "postcode5": "Postcode must be 5 digits",
+      "floodingBlock": "Sorry, we cannot provide a quote for a property currently experiencing flooding. Please contact our branch for assistance.",
+      "passportFormat": "Passport number must be 6-9 letters or digits",
+      "ktpFormat": "KTP (NIK) number must be 16 digits",
+      "emailFormat": "Please enter a valid email address",
+      "fixHighlighted": "Please complete the highlighted fields before continuing.",
+      "completeAddress": "Please complete the property address (province, city, postcode)"
     }
   }
 }

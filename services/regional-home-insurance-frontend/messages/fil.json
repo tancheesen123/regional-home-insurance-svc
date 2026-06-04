@@ -279,7 +279,11 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Kumuha ng Quote",
       "gettingQuote": "Kinukuha ang Quote...",
-      "failedToGetQuote": "Nabigo ang pagkuha ng quote. Mangyaring subukan muli."
+      "failedToGetQuote": "Nabigo ang pagkuha ng quote. Mangyaring subukan muli.",
+      "floodChecking": "Sinusuri ang panganib ng baha para sa lugar na ito…",
+      "floodAtRisk": "May aktibong pagbaha na naiulat sa lugar na ito. Hindi kami makakapagpatuloy habang ang ari-arian ay nasa flood zone.",
+      "floodClear": "Walang aktibong pagbaha na naiulat sa lugar na ito.",
+      "floodSource": "Pinagmulan: PetaBencana.id (real-time)"
     },
     "customize": {
       "title": "I-customize ang iyong proteksyon",
@@ -447,7 +451,8 @@
       "accountLabel": "Kasalukuyan / Saving Account no.",
       "continueToSummary": "Magpatuloy sa Buod",
       "processing": "Pinoproseso...",
-      "failedToCreate": "Nabigo ang paglikha ng proposal. Mangyaring subukan muli."
+      "failedToCreate": "Nabigo ang paglikha ng proposal. Mangyaring subukan muli.",
+      "optional": "opsyonal"
     },
     "summary": {
       "loadingProposal": "Nilo-load ang iyong proposal...",
@@ -526,6 +531,17 @@
       "claimsHotline": "Hotline ng mga Claim",
       "emergencyClaims": "Para sa mga emergency na claim",
       "returnToDashboard": "Bumalik sa Dashboard"
+    },
+    "validation": {
+      "required": "Kinakailangan ang field na ito",
+      "selectDate": "Pumili ng petsa",
+      "postcode5": "Ang postcode ay dapat 5 na digit",
+      "floodingBlock": "Paumanhin, hindi kami makapagbigay ng quote para sa ari-arian na kasalukuyang binabaha. Makipag-ugnayan sa aming sangay para sa tulong.",
+      "passportFormat": "Ang passport number ay dapat 6-9 na letra o digit",
+      "ktpFormat": "Ang ID number ay dapat 16 na digit",
+      "emailFormat": "Maglagay ng wastong email address",
+      "fixHighlighted": "Kumpletuhin ang mga naka-highlight na field bago magpatuloy.",
+      "completeAddress": "Kumpletuhin ang address ng ari-arian (lalawigan, lungsod, postcode)"
     }
   }
 }

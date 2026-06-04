@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils"
 import CalculationSummary from "./calculation-summary"
 import QuotationStepper from "./quotation-stepper"
 import AddressSelect, { type AddressValues } from "./address-select"
-import { createProposal, saveProposalId, getQuotationId } from "@/lib/api"
+import { createProposal, saveProposalId, getQuotationId, getQuotationIdentity } from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getScanSession, markFieldManual, type ScanSessionField } from "@/lib/scan-session"
 import { getMappingsForStep } from "@/lib/scan-field-map"
@@ -106,7 +106,26 @@ function getDefaultNationality(cc: string): string {
 
 // ─── Static constants (never recreated) ──────────────────────────────────────
 
+/** International dialling code per region (hard-coded per requirement). */
+const PHONE_DIAL_CODE: Record<string, string> = {
+  MY: "+60",
+  ID: "+62",
+  PH: "+63",
+  KH: "+855",
+}
+function getDialCode(cc: string): string {
+  return PHONE_DIAL_CODE[cc.toUpperCase()] ?? "+62"
+}
+
 const RACES = ["MALAY", "CHINESE", "INDIAN", "OTHERS"]
+
+/** Inline field error message + red styling helper. */
+function FErr({ msg }: { msg?: string }) {
+  if (!msg) return null
+  return <p className="mt-1 text-xs text-[#D32F2F]">{msg}</p>
+}
+/** Returns red-border class when an error is present. */
+const errCls = (msg?: string) => (msg ? "border-[#D32F2F] focus-visible:ring-[#D32F2F]" : "")
 
 const BANKS = [
   "MAYBANK", "CIMB BANK", "PUBLIC BANK", "RHB BANK", "HONG LEONG BANK",
@@ -122,6 +141,7 @@ interface PersonalSectionProps {
   onChange: (field: keyof PersonalData, value: string) => void
   countryCode: string
   scanFields?: Record<string, ScanSessionField>
+  errors?: Record<string, string>
 }
 
 const PersonalDetailsSection = memo(function PersonalDetailsSection({
@@ -131,6 +151,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
   onChange,
   countryCode,
   scanFields = {},
+  errors = {},
 }: PersonalSectionProps) {
   const sf = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
   const t = useTranslations("quotation")
@@ -184,7 +205,9 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
               placeholder={t("fillDetails.namePlaceholder")}
               value={data.name}
               onChange={(e) => onChange("name", e.target.value)}
+              className={errCls(errors.name)}
             />
+            <FErr msg={errors.name} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -222,7 +245,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
               <div>
                 <Label>{t("fillDetails.nationality")}</Label>
                 <Select value={data.nationality} onValueChange={(value) => onChange("nationality", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={errCls(errors.nationality)}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -234,13 +257,14 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                     <SelectItem value="OTHER">OTHER</SelectItem>
                   </SelectContent>
                 </Select>
+                <FErr msg={errors.nationality} />
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>{t("fillDetails.race")}</Label>
+              <Label>{t("fillDetails.race")} <span className="text-[#9E9E9E] font-normal">({t("fillDetails.optional")})</span></Label>
               <Select value={data.race} onValueChange={(value) => onChange("race", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("fillDetails.selectRace")} />
@@ -258,7 +282,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
 
           <div>
             <Label>{t("fillDetails.gender")}</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className={cn("grid grid-cols-2 gap-3 mt-2 rounded-md", errors.gender && "ring-1 ring-[#D32F2F] p-1")}>
               <Button
                 type="button"
                 variant={data.gender === "MALE" ? "default" : "outline"}
@@ -284,6 +308,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                 {t("fillDetails.female")}
               </Button>
             </div>
+            <FErr msg={errors.gender} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -302,6 +327,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                     className={cn(
                       "w-full justify-start text-left font-normal",
                       !data.dateOfBirth && "text-muted-foreground",
+                      errCls(errors.dateOfBirth),
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
@@ -311,29 +337,35 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
+                    captionLayout="dropdown"
+                    startMonth={new Date(1900, 0)}
+                    endMonth={new Date()}
                     selected={dobDate}
                     onSelect={handleDobSelect}
                     disabled={{ after: new Date() }}
-                    defaultMonth={dobDate}
-                    initialFocus
+                    defaultMonth={dobDate ?? new Date(new Date().getFullYear() - 30, 0, 1)}
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
+              <FErr msg={errors.dateOfBirth} />
             </div>
 
             <div>
               <Label htmlFor="mobile">{t("fillDetails.mobileLabel")}</Label>
               <div className="flex">
                 <span className="inline-flex items-center px-3 text-sm text-[#1A1A1A] bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
-                  +60
+                  {getDialCode(countryCode)}
                 </span>
                 <Input
                   id="mobile"
-                  className="rounded-l-none"
+                  inputMode="numeric"
+                  className={cn("rounded-l-none", errCls(errors.mobileNumber))}
                   value={data.mobileNumber}
-                  onChange={(e) => onChange("mobileNumber", e.target.value)}
+                  onChange={(e) => onChange("mobileNumber", e.target.value.replace(/\D/g, ""))}
                 />
               </div>
+              <FErr msg={errors.mobileNumber} />
             </div>
           </div>
 
@@ -345,7 +377,9 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
               placeholder={t("fillDetails.emailPlaceholder")}
               value={data.email}
               onChange={(e) => onChange("email", e.target.value)}
+              className={errCls(errors.email)}
             />
+            <FErr msg={errors.email} />
           </div>
         </CardContent>
       )}
@@ -362,6 +396,7 @@ interface PropertySectionProps {
   onChange: (field: keyof PropertyData, value: string) => void
   countryCode: string
   scanFields?: Record<string, ScanSessionField>
+  errors?: Record<string, string>
 }
 
 const PropertyDetailsSection = memo(function PropertyDetailsSection({
@@ -371,6 +406,7 @@ const PropertyDetailsSection = memo(function PropertyDetailsSection({
   onChange,
   countryCode,
   scanFields = {},
+  errors = {},
 }: PropertySectionProps) {
   const sf = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
   const t = useTranslations("quotation")
@@ -397,7 +433,12 @@ const PropertyDetailsSection = memo(function PropertyDetailsSection({
               placeholder={t("fillDetails.address1Placeholder")}
               value={data.propertyAddress1}
               onChange={(e) => onChange("propertyAddress1", e.target.value)}
+              className={errCls(errors.propertyAddress1)}
             />
+            <FErr msg={errors.propertyAddress1} />
+            {(errors.propertyState || errors.propertyCity || errors.propertyPostcode) && (
+              <FErr msg={t("validation.completeAddress")} />
+            )}
           </div>
 
           <div>
@@ -441,6 +482,7 @@ interface MailingSectionProps {
   onToggle: () => void
   onChange: (field: keyof MailingData, value: string | boolean) => void
   countryCode: string
+  errors?: Record<string, string>
 }
 
 const MailingAddressSection = memo(function MailingAddressSection({
@@ -449,6 +491,7 @@ const MailingAddressSection = memo(function MailingAddressSection({
   onToggle,
   onChange,
   countryCode,
+  errors = {},
 }: MailingSectionProps) {
   const t = useTranslations("quotation")
   return (
@@ -481,8 +524,10 @@ const MailingAddressSection = memo(function MailingAddressSection({
               value={data.mailingAddress1}
               onChange={(e) => onChange("mailingAddress1", e.target.value)}
               readOnly={data.sameAsPropertyAddress}
-              className={data.sameAsPropertyAddress ? "bg-gray-100" : ""}
+              className={cn(data.sameAsPropertyAddress ? "bg-gray-100" : "", errCls(errors.mailingAddress1))}
             />
+            <FErr msg={errors.mailingAddress1} />
+            {errors.mailingPostcode && <FErr msg={t("validation.completeAddress")} />}
           </div>
 
           <div>
@@ -591,6 +636,7 @@ interface BankSectionProps {
   isExpanded: boolean
   onToggle: () => void
   onChange: (field: keyof BankData, value: string) => void
+  errors?: Record<string, string>
 }
 
 const BankDetailsSection = memo(function BankDetailsSection({
@@ -598,6 +644,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
   isExpanded,
   onToggle,
   onChange,
+  errors = {},
 }: BankSectionProps) {
   const t = useTranslations("quotation")
   return (
@@ -618,7 +665,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
           <div>
             <Label>{t("fillDetails.bankName")}</Label>
             <Select value={data.bankName} onValueChange={(value) => onChange("bankName", value)}>
-              <SelectTrigger>
+              <SelectTrigger className={errCls(errors.bankName)}>
                 <SelectValue placeholder={t("fillDetails.selectBank")} />
               </SelectTrigger>
               <SelectContent>
@@ -629,6 +676,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
                 ))}
               </SelectContent>
             </Select>
+            <FErr msg={errors.bankName} />
           </div>
 
           <div>
@@ -637,7 +685,9 @@ const BankDetailsSection = memo(function BankDetailsSection({
               id="account"
               value={data.accountNumber}
               onChange={(e) => onChange("accountNumber", e.target.value)}
+              className={errCls(errors.accountNumber)}
             />
+            <FErr msg={errors.accountNumber} />
           </div>
         </CardContent>
       )}
@@ -662,6 +712,8 @@ export default function FillDetailsForm() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Per-field validation errors, keyed by field name (matches input ids where possible)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [expandedSections, setExpandedSections] = useState({
     personal: true,
@@ -672,13 +724,17 @@ export default function FillDetailsForm() {
 
   // ── Separate state per section — typing in one section won't re-render others ──
 
-  const defaultIdType = getIdTypeOptions(countryCode)[0].value
+  // Identity carried over from the quotation page — locks idType + idNumber here.
+  const quotationIdentity = getQuotationIdentity()
+  const defaultIdType = quotationIdentity?.idType
+    ? quotationIdentity.idType.toUpperCase()              // "ktp" → "KTP", "passport" → "PASSPORT"
+    : getIdTypeOptions(countryCode)[0].value
   const defaultNationality = getDefaultNationality(countryCode)
 
   const [personalData, setPersonalData] = useState<PersonalData>({
     name:         "",
     idType:       defaultIdType,
-    nricNumber:   "",
+    nricNumber:   quotationIdentity?.idNumber ?? "",
     nationality:  defaultNationality,
     race:         "",
     gender:       "",
@@ -820,6 +876,13 @@ export default function FillDetailsForm() {
   const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
 
   // Wrap personal / property change handlers to mark fields manual on edit
+  const clearFieldError = useCallback((key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev
+      const n = { ...prev }; delete n[key]; return n
+    })
+  }, [])
+
   const handlePersonalChangeScan = useCallback((field: keyof PersonalData, value: string) => {
     getMappingsForStep(4, "personal").forEach(({ aiKey, formKey }) => {
       if (formKey === field) {
@@ -828,7 +891,8 @@ export default function FillDetailsForm() {
       }
     })
     setPersonalData((prev) => ({ ...prev, [field]: value }))
-  }, [])
+    clearFieldError(field as string)
+  }, [clearFieldError])
 
   const handlePropertyChangeScan = useCallback((field: keyof PropertyData, value: string) => {
     getMappingsForStep(4, "property").forEach(({ aiKey, formKey }) => {
@@ -838,7 +902,8 @@ export default function FillDetailsForm() {
       }
     })
     setPropertyData((prev) => ({ ...prev, [field]: value }))
-  }, [])
+    clearFieldError(field as string)
+  }, [clearFieldError])
 
   // Ref keeps latest propertyData accessible inside mailing handler without
   // causing the handler to be recreated on every property field change.
@@ -872,11 +937,13 @@ export default function FillDetailsForm() {
       }
       return updated
     })
-  }, [])
+    clearFieldError(field as string)
+  }, [clearFieldError])
 
   const handleBankChange = useCallback((field: keyof BankData, value: string) => {
     setBankData((prev) => ({ ...prev, [field]: value }))
-  }, [])
+    clearFieldError(field as string)
+  }, [clearFieldError])
 
   // ── Toggle handlers (stable) ──────────────────────────────────────────────────
 
@@ -887,9 +954,56 @@ export default function FillDetailsForm() {
 
   // ── Submit ────────────────────────────────────────────────────────────────────
 
+  // ── Validation — required fields across all sections ───────────────────────
+  // Note: race is intentionally OPTIONAL. Ethnicity/"suku" is not a standard
+  // field on Indonesian insurance forms (unlike Malaysia), so we never block on it.
+  const validateDetails = (): Record<string, string> => {
+    const e: Record<string, string> = {}
+    const req = t("validation.required")
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    // Personal
+    if (!personalData.name.trim())         e.name        = req
+    if (!personalData.gender)              e.gender      = req
+    if (!personalData.dateOfBirth)         e.dateOfBirth = req
+    if (!personalData.mobileNumber.trim()) e.mobileNumber = req
+    if (!personalData.email.trim())        e.email       = req
+    else if (!emailRe.test(personalData.email.trim())) e.email = t("validation.emailFormat")
+    if (personalData.idType === "PASSPORT" && !personalData.nationality) e.nationality = req
+
+    // Property address
+    if (!propertyData.propertyAddress1.trim()) e.propertyAddress1 = req
+    if (!propertyData.propertyState.trim())    e.propertyState    = req
+    if (!propertyData.propertyCity.trim())     e.propertyCity     = req
+    if (!propertyData.propertyPostcode.trim()) e.propertyPostcode = req
+
+    // Mailing — only when not same as property
+    if (!mailingData.sameAsPropertyAddress) {
+      if (!mailingData.mailingAddress1.trim()) e.mailingAddress1 = req
+      if (!mailingData.mailingPostcode.trim()) e.mailingPostcode = req
+    }
+
+    // Bank
+    if (!bankData.bankName)              e.bankName      = req
+    if (!bankData.accountNumber.trim()) e.accountNumber = req
+
+    return e
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Validate before anything else
+    const errs = validateDetails()
+    setFieldErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      // Expand every section so the highlighted fields are visible
+      setExpandedSections({ personal: true, property: true, mailing: true, bank: true })
+      setError(t("validation.fixHighlighted"))
+      return
+    }
+
     setIsLoading(true)
 
     const session = getSession()
@@ -1006,6 +1120,7 @@ export default function FillDetailsForm() {
             onChange={handlePersonalChangeScan}
             countryCode={countryCode}
             scanFields={scanFields}
+            errors={fieldErrors}
           />
 
           <PropertyDetailsSection
@@ -1015,6 +1130,7 @@ export default function FillDetailsForm() {
             onChange={handlePropertyChangeScan}
             countryCode={countryCode}
             scanFields={scanFields}
+            errors={fieldErrors}
           />
 
           <MailingAddressSection
@@ -1023,6 +1139,7 @@ export default function FillDetailsForm() {
             onToggle={toggleMailing}
             onChange={handleMailingChange}
             countryCode={countryCode}
+            errors={fieldErrors}
           />
 
           <BankDetailsSection
@@ -1030,6 +1147,7 @@ export default function FillDetailsForm() {
             isExpanded={expandedSections.bank}
             onToggle={toggleBank}
             onChange={handleBankChange}
+            errors={fieldErrors}
           />
 
           {/* Error */}
