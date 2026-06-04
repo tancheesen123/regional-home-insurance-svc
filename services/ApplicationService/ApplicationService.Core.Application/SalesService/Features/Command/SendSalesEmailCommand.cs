@@ -130,7 +130,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Command
                 try
                 {
                     var q  = proposal.Quotation;
-                    var qp = q?.QuotationPremium;
 
                     var xmlDoc = new XmlDocument();
                     var root   = xmlDoc.CreateElement("Policy");
@@ -150,7 +149,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Command
                     AddNode("PlanType",       q?.PlanType);
                     AddNode("BuildingSum",    (q?.BuildingSum  ?? 0m).ToString("N2"));
                     AddNode("ContentsSum",    (q?.ContentsSum  ?? 0m).ToString("N2"));
-                    AddNode("TotalPremium",   (qp?.TotalPremium ?? 0m).ToString("N2"));
+                    AddNode("TotalPremium",   (q?.Premium ?? 0m).ToString("N2"));
                     AddNode("StartDate",      proposal.Policy?.StartDate.ToString("yyyy-MM-dd") ?? string.Empty);
                     AddNode("EndDate",        proposal.Policy?.EndDate.ToString("yyyy-MM-dd")   ?? string.Empty);
 

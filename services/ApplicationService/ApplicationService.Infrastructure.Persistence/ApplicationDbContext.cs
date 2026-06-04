@@ -15,42 +15,23 @@ namespace ApplicationService.Infrastructure.Persistence
         {
         }
 
+        // ── Core domain ───────────────────────────────────────────────────────
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<Customer> Customers { get; set; }
-        public DbSet<AddressEntity> Addresses { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
-        public DbSet<ValuableItem> ValuableItems { get; set; }
-        public DbSet<Product> Products { get; set; }
         public DbSet<Proposal> Proposals { get; set; }
         public DbSet<Policy> Policies { get; set; }
-        public DbSet<PolicyDocument> PolicyDocuments { get; set; }
         public DbSet<Payment> Payments { get; set; }
 
-        // ── Product / Rate tables ─────────────────────────────────────────────
-        public DbSet<ProductPremiumRate> ProductPremiumRates { get; set; }
+        // ── Rate configuration ────────────────────────────────────────────────
+        public DbSet<RegionConfig> RegionConfigs { get; set; }
         public DbSet<AddOn> AddOns { get; set; }
-        public DbSet<AddOnRate> AddOnRates { get; set; }
-        public DbSet<TaxConfig> TaxConfigs { get; set; }
-
-        // ── Quotation premium breakdown ───────────────────────────────────────
-        public DbSet<QuotationPremium> QuotationPremiums { get; set; }
-
-        // ── Valuable item category rates (per region) ─────────────────────────
-        public DbSet<ValuableCategoryRate> ValuableCategoryRates { get; set; }
-
-        // ── Building cost estimator & risk config (admin-adjustable) ──────────
-        public DbSet<BuildingConstructionRate> BuildingConstructionRates { get; set; }
-        public DbSet<RegionRateConfig>         RegionRateConfigs          { get; set; }
-        public DbSet<LocationTierConfig>       LocationTierConfigs        { get; set; }
-        public DbSet<RiskMultiplierConfig>     RiskMultiplierConfigs      { get; set; }
-
-        // ── Rate config audit trail ───────────────────────────────────────────
-        public DbSet<RateConfigSnapshot>   RateConfigSnapshots  { get; set; }
-        public DbSet<RateConfigChangeLog>  RateConfigChangeLogs { get; set; }
+        public DbSet<RateMultiplierConfig> RateMultiplierConfigs { get; set; }
+        public DbSet<RateConfigSnapshot> RateConfigSnapshots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // UserAccount
+            // ── UserAccount ───────────────────────────────────────────────────
             modelBuilder.Entity<UserAccount>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -62,22 +43,7 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.Role).IsRequired().HasMaxLength(20).HasDefaultValue("User");
             });
 
-            // Address
-            modelBuilder.Entity<AddressEntity>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.AddressLine1).HasMaxLength(100);
-                entity.Property(e => e.AddressLine2).HasMaxLength(100);
-                entity.Property(e => e.City).HasMaxLength(100);
-                entity.Property(e => e.Postcode).HasMaxLength(10);
-                entity.Property(e => e.State).HasMaxLength(100);
-                entity.Property(e => e.Country).HasMaxLength(100);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-            });
-
-            // Customer
+            // ── Customer (address embedded) ───────────────────────────────────
             modelBuilder.Entity<Customer>(entity =>
             {
                 entity.HasKey(e => e.CustomerId);
@@ -90,37 +56,25 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.Nationality).HasMaxLength(100);
                 entity.Property(e => e.IdType).HasMaxLength(20);
                 entity.Property(e => e.IdNumber).HasMaxLength(30);
-                entity.Property(e => e.AddressId).HasMaxLength(50);
                 entity.Property(e => e.Contact).HasMaxLength(20);
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
                 entity.Property(e => e.UserId).HasMaxLength(50);
+                entity.Property(e => e.AddressLine1).HasMaxLength(100);
+                entity.Property(e => e.AddressLine2).HasMaxLength(100);
+                entity.Property(e => e.City).HasMaxLength(100);
+                entity.Property(e => e.Postcode).HasMaxLength(10);
+                entity.Property(e => e.State).HasMaxLength(100);
+                entity.Property(e => e.Country).HasMaxLength(100);
                 entity.Property(e => e.CreatedBy).HasMaxLength(50);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
                 entity.HasOne(e => e.UserAccount)
                       .WithOne(u => u.Customer)
                       .HasForeignKey<Customer>(e => e.UserId);
-
-                entity.HasOne(e => e.Address)
-                      .WithOne(a => a.Customer)
-                      .HasForeignKey<Customer>(e => e.AddressId)
-                      .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // Product
-            modelBuilder.Entity<Product>(entity =>
-            {
-                entity.HasKey(e => e.ProductId);
-                entity.Ignore(e => e.Id);
-                entity.Property(e => e.ProductId).HasMaxLength(50);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.RegionalRate).HasColumnType("TEXT");
-                entity.Property(e => e.Description).HasColumnType("TEXT");
-                entity.Property(e => e.IsActive).IsRequired();
-            });
-
-            // Quotation
+            // ── Quotation (premium breakdown + valuables embedded) ─────────────
             modelBuilder.Entity<Quotation>(entity =>
             {
                 entity.HasKey(e => e.QuotationId);
@@ -131,7 +85,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.ExpiryDate).IsRequired();
                 entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
                 entity.Property(e => e.CustomerId).HasMaxLength(50);
-                entity.Property(e => e.ProductId).HasMaxLength(50);
                 entity.Property(e => e.OwnershipType).HasMaxLength(10);
                 entity.Property(e => e.PropertyType).HasMaxLength(20);
                 entity.Property(e => e.PropertySubType).HasMaxLength(50);
@@ -141,45 +94,31 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.IdNumber).HasMaxLength(30);
                 entity.Property(e => e.Nationality).HasMaxLength(50);
                 entity.Property(e => e.DateOfBirth).HasMaxLength(20);
-
-                // Plan & Sums Insured
                 entity.Property(e => e.PlanType).HasMaxLength(20);
                 entity.Property(e => e.BuildingSum).HasColumnType("decimal(15,2)");
                 entity.Property(e => e.ContentsSum).HasColumnType("decimal(15,2)");
-
-                // Add-on flags stored as bit columns (EF Core default for bool)
                 entity.Property(e => e.HasRiotStrike).HasDefaultValue(false);
                 entity.Property(e => e.HasExtendedTheft).HasDefaultValue(false);
                 entity.Property(e => e.HasAlternativeAccommodation).HasDefaultValue(false);
                 entity.Property(e => e.HasPublicLiability).HasDefaultValue(false);
+                // Premium breakdown columns
+                entity.Property(e => e.PlanPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.AddOnPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.GrossPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.NetPremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TaxRate).HasColumnType("decimal(5,2)");
+                entity.Property(e => e.TaxAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.StampDuty).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalBeforeDiscount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ValuableItemsJson).HasColumnType("TEXT");
 
                 entity.HasOne(e => e.Customer)
                       .WithMany(c => c.Quotations)
                       .HasForeignKey(e => e.CustomerId);
-
-                entity.HasOne(e => e.Product)
-                      .WithMany(p => p.Quotations)
-                      .HasForeignKey(e => e.ProductId)
-                      .IsRequired(false);
             });
 
-            // ValuableItem
-            modelBuilder.Entity<ValuableItem>(entity =>
-            {
-                entity.HasKey(e => e.ItemId);
-                entity.Ignore(e => e.Id);
-                entity.Property(e => e.ItemId).HasMaxLength(50);
-                entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
-                entity.Property(e => e.Description).HasColumnType("TEXT");
-                entity.Property(e => e.Value).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.QuotationId).HasMaxLength(50);
-
-                entity.HasOne(e => e.Quotation)
-                      .WithMany(q => q.ValuableItems)
-                      .HasForeignKey(e => e.QuotationId);
-            });
-
-            // Proposal
+            // ── Proposal ──────────────────────────────────────────────────────
             modelBuilder.Entity<Proposal>(entity =>
             {
                 entity.HasKey(e => e.ProposalId);
@@ -222,7 +161,7 @@ namespace ApplicationService.Infrastructure.Persistence
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
-            // Policy
+            // ── Policy (documents embedded) ───────────────────────────────────
             modelBuilder.Entity<Policy>(entity =>
             {
                 entity.HasKey(e => e.PolicyId);
@@ -235,260 +174,14 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.IssuedAt).IsRequired();
                 entity.Property(e => e.IssuedBy).HasMaxLength(100);
                 entity.Property(e => e.ProposalId).HasMaxLength(50);
+                entity.Property(e => e.DocumentsJson).HasColumnType("TEXT");
 
                 entity.HasOne(e => e.Proposal)
                       .WithOne(p => p.Policy)
                       .HasForeignKey<Policy>(e => e.ProposalId);
             });
 
-            // PolicyDocument
-            modelBuilder.Entity<PolicyDocument>(entity =>
-            {
-                entity.HasKey(e => e.DocumentId);
-                entity.Ignore(e => e.Id);
-                entity.Property(e => e.DocumentId).HasMaxLength(50);
-                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FileUrl).IsRequired().HasColumnType("TEXT");
-                entity.Property(e => e.UploadedAt).IsRequired();
-                entity.Property(e => e.FileType).HasMaxLength(20);
-                entity.Property(e => e.PolicyId).HasMaxLength(50);
-
-                entity.HasOne(e => e.Policy)
-                      .WithMany(p => p.PolicyDocuments)
-                      .HasForeignKey(e => e.PolicyId);
-            });
-
-            // ProductPremiumRate
-            modelBuilder.Entity<ProductPremiumRate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.BuildingRate).HasColumnType("decimal(10,6)");
-                entity.Property(e => e.ContentRate).HasColumnType("decimal(10,6)");
-                entity.Property(e => e.MinBuildingSum).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.MaxBuildingSum).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.MinContentSum).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.MaxContentSum).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.IsActive });
-            });
-
-            // AddOn
-            modelBuilder.Entity<AddOn>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Description).HasColumnType("TEXT");
-                entity.Property(e => e.EligiblePlanTypes).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.SumInsuredBasis).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => e.Code).IsUnique();
-            });
-
-            // AddOnRate
-            modelBuilder.Entity<AddOnRate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.AddOnCode).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.Rate).HasColumnType("decimal(10,6)");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.AddOnCode, e.Region }).IsUnique();
-
-                entity.HasOne(e => e.AddOn)
-                      .WithMany(a => a.Rates)
-                      .HasForeignKey(e => e.AddOnCode)
-                      .HasPrincipalKey(a => a.Code)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // TaxConfig
-            modelBuilder.Entity<TaxConfig>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.ServiceTaxRate).HasColumnType("decimal(5,2)");
-                entity.Property(e => e.StampDutyAmount).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.StampDutyWaiverEligiblePremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.IsActive });
-            });
-
-            // ValuableCategoryRate
-            modelBuilder.Entity<ValuableCategoryRate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
-                entity.Property(e => e.MaxPerItem).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.MaxTotal).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.Rate).HasColumnType("decimal(10,6)");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.Category, e.IsActive });
-            });
-
-            // QuotationPremium
-            modelBuilder.Entity<QuotationPremium>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.QuotationId).IsRequired().HasMaxLength(50);
-
-                entity.Property(e => e.PlanPremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.AddOnPremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.GrossPremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.NetPremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.TaxRate).HasColumnType("decimal(5,2)");
-                entity.Property(e => e.TaxAmount).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.StampDuty).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.TotalPremium).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.TotalBeforeDiscount).HasColumnType("decimal(18,2)");
-
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasOne(e => e.Quotation)
-                      .WithOne(q => q.QuotationPremium)
-                      .HasForeignKey<QuotationPremium>(e => e.QuotationId)
-                      .HasPrincipalKey<Quotation>(q => q.QuotationId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // BuildingConstructionRate
-            modelBuilder.Entity<BuildingConstructionRate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.PropertySubType).IsRequired().HasMaxLength(30);
-                entity.Property(e => e.ConstructionType).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.RatePerUnit).HasColumnType("decimal(18,4)");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                // One active rate per region + property subtype + construction type
-                entity.HasIndex(e => new { e.Region, e.PropertySubType, e.ConstructionType, e.IsActive });
-            });
-
-            // RegionRateConfig
-            modelBuilder.Entity<RegionRateConfig>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.AreaUnit).IsRequired().HasMaxLength(5);
-                entity.Property(e => e.AreaMin).HasColumnType("decimal(10,2)");
-                entity.Property(e => e.AreaMax).HasColumnType("decimal(10,2)");
-                entity.Property(e => e.StoreyIncrementPct).HasColumnType("decimal(5,4)");
-                entity.Property(e => e.MaxStoreys).IsRequired();
-                entity.Property(e => e.ProfessionalFeeRate).HasColumnType("decimal(5,4)");
-                entity.Property(e => e.BenchmarkYear).IsRequired();
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.IsActive });
-            });
-
-            // LocationTierConfig
-            modelBuilder.Entity<LocationTierConfig>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.Tier).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.Multiplier).HasColumnType("decimal(5,4)");
-                entity.Property(e => e.Label).IsRequired().HasMaxLength(150);
-                entity.Property(e => e.KeywordsJson).IsRequired().HasColumnType("TEXT");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                // One row per region + tier
-                entity.HasIndex(e => new { e.Region, e.Tier, e.IsActive });
-            });
-
-            // RiskMultiplierConfig
-            modelBuilder.Entity<RiskMultiplierConfig>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(5); // "ALL" | "PH" | "ID" | "KH"
-                entity.Property(e => e.FactorKey).IsRequired().HasMaxLength(40);
-                entity.Property(e => e.Multiplier).HasColumnType("decimal(10,4)");
-                entity.Property(e => e.Description).HasColumnType("TEXT");
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.FactorKey, e.IsActive });
-            });
-
-            // RateConfigSnapshot
-            modelBuilder.Entity<RateConfigSnapshot>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.Label).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.SnapshotJson).IsRequired().HasColumnType("TEXT");
-                entity.Property(e => e.SnapshotType).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.CreatedAt });
-            });
-
-            // RateConfigChangeLog
-            modelBuilder.Entity<RateConfigChangeLog>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasMaxLength(50);
-                entity.Property(e => e.SnapshotId).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
-                entity.Property(e => e.TableName).IsRequired().HasMaxLength(60);
-                entity.Property(e => e.RecordId).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.FieldName).IsRequired().HasMaxLength(150);
-                entity.Property(e => e.OldValue).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.NewValue).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ChangedBy).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.ChangedAt).IsRequired();
-                entity.Property(e => e.CreatedBy).HasMaxLength(50);
-                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
-
-                entity.HasIndex(e => new { e.Region, e.ChangedAt });
-                entity.HasIndex(e => e.SnapshotId);
-
-                entity.HasOne(e => e.Snapshot)
-                      .WithMany(s => s.ChangeLogs)
-                      .HasForeignKey(e => e.SnapshotId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Payment
+            // ── Payment ───────────────────────────────────────────────────────
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.PaymentId);
@@ -510,6 +203,88 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasOne(e => e.Proposal)
                       .WithMany(p => p.Payments)
                       .HasForeignKey(e => e.ProposalId);
+            });
+
+            // ── RegionConfig ──────────────────────────────────────────────────
+            modelBuilder.Entity<RegionConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.BuildingRate).HasColumnType("decimal(10,6)");
+                entity.Property(e => e.ContentRate).HasColumnType("decimal(10,6)");
+                entity.Property(e => e.MinBuildingSum).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.MaxBuildingSum).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.MinContentSum).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.MaxContentSum).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ServiceTaxRate).HasColumnType("decimal(5,2)");
+                entity.Property(e => e.StampDutyAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.StampDutyWaiverEligiblePremium).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.AreaUnit).IsRequired().HasMaxLength(5);
+                entity.Property(e => e.AreaMin).HasColumnType("decimal(10,2)");
+                entity.Property(e => e.AreaMax).HasColumnType("decimal(10,2)");
+                entity.Property(e => e.StoreyIncrementPct).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.ProfessionalFeeRate).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.BuildingRatesJson).HasColumnType("TEXT");
+                entity.Property(e => e.ValuableRatesJson).HasColumnType("TEXT");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.IsActive });
+            });
+
+            // ── AddOn ─────────────────────────────────────────────────────────
+            modelBuilder.Entity<AddOn>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasColumnType("TEXT");
+                entity.Property(e => e.EligiblePlanTypes).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.SumInsuredBasis).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.RatesJson).HasColumnType("TEXT");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => e.Code).IsUnique();
+            });
+
+            // ── RateMultiplierConfig ──────────────────────────────────────────
+            modelBuilder.Entity<RateMultiplierConfig>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(5);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.FactorKey).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Multiplier).HasColumnType("decimal(10,4)");
+                entity.Property(e => e.Label).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.KeywordsJson).HasColumnType("TEXT");
+                entity.Property(e => e.Description).HasColumnType("TEXT");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.Type, e.FactorKey, e.IsActive });
+            });
+
+            // ── RateConfigSnapshot ────────────────────────────────────────────
+            modelBuilder.Entity<RateConfigSnapshot>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(50);
+                entity.Property(e => e.Region).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.Label).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.SnapshotJson).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.SnapshotType).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.ChangeLogsJson).HasColumnType("TEXT");
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.Region, e.CreatedAt });
             });
         }
     }

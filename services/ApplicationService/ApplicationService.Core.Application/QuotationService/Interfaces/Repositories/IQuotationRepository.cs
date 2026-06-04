@@ -10,21 +10,9 @@ namespace ApplicationService.Core.Application.QuotationService.Interfaces.Reposi
         Task AddPolicyAsync(Policy policy);
         Task UpdateQuotationStatusAsync(string quotationId, string status);
         Task UpdateQuotationPlanAsync(Quotation quotation);
-        Task<List<ValuableItem>> GetValuablesByQuotationIdAsync(string quotationId);
-        Task ReplaceValuableItemsAsync(string quotationId, List<ValuableItem> newItems);
 
-        /// <summary>
-        /// Insert or replace the premium breakdown row for a quotation.
-        /// If a row already exists for the quotation it is deleted first,
-        /// then the new record is inserted (upsert via delete+insert).
-        /// </summary>
-        Task UpsertQuotationPremiumAsync(QuotationPremium premium);
-
-        /// <summary>
-        /// Returns all active valuable category rate rows for the given region,
-        /// keyed by the lowercase category string.
-        /// </summary>
-        Task<Dictionary<string, ValuableCategoryRate>> GetValuableCategoryRatesAsync(string region);
+        /// <summary>Returns the active region config for the given region — used to validate valuable item limits.</summary>
+        Task<RegionConfig?> GetRegionConfigAsync(string region);
 
         Task SaveChangesAsync();
     }

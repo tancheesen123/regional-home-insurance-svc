@@ -260,7 +260,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
             // ── Field mapping helpers ───────────────────────────────────────────
 
             private static decimal GetPremium(Proposal p)
-                => p.Quotation?.QuotationPremium?.TotalPremium ?? p.Policy?.CoverageAmount ?? 0m;
+                => p.Quotation?.Premium ?? p.Policy?.CoverageAmount ?? 0m;
 
             private static Payment? LatestSuccessfulPayment(Proposal p)
                 => p.Payments?

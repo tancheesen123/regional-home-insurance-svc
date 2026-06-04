@@ -48,44 +48,11 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             return Task.CompletedTask;
         }
 
-        public async Task<List<ValuableItem>> GetValuablesByQuotationIdAsync(string quotationId)
+        public async Task<RegionConfig?> GetRegionConfigAsync(string region)
         {
-            return await _resolver.Resolve().ValuableItems
-                .Where(v => v.QuotationId == quotationId)
-                .ToListAsync();
-        }
-
-        public async Task ReplaceValuableItemsAsync(string quotationId, List<ValuableItem> newItems)
-        {
-            var context  = _resolver.Resolve();
-            var existing = await context.ValuableItems
-                .Where(v => v.QuotationId == quotationId)
-                .ToListAsync();
-
-            if (existing.Any())
-                context.ValuableItems.RemoveRange(existing);
-
-            if (newItems.Any())
-                await context.ValuableItems.AddRangeAsync(newItems);
-        }
-
-        public async Task<Dictionary<string, ValuableCategoryRate>> GetValuableCategoryRatesAsync(string region)
-        {
-            return await _resolver.Resolve().ValuableCategoryRates
+            return await _resolver.Resolve().RegionConfigs
                 .Where(r => r.Region == region && r.IsActive)
-                .ToDictionaryAsync(r => r.Category.ToLower());
-        }
-
-        public async Task UpsertQuotationPremiumAsync(QuotationPremium premium)
-        {
-            var context  = _resolver.Resolve();
-            var existing = await context.QuotationPremiums
-                .FirstOrDefaultAsync(p => p.QuotationId == premium.QuotationId);
-
-            if (existing != null)
-                context.QuotationPremiums.Remove(existing);
-
-            await context.QuotationPremiums.AddAsync(premium);
+                .FirstOrDefaultAsync();
         }
 
         public async Task SaveChangesAsync()

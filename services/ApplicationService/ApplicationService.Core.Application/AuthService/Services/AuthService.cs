@@ -116,16 +116,12 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 Contact     = request.Contact,
                 Region      = request.Region.ToUpper(),
                 UserId      = userId,
-                Address     = request.Address == null ? null : new AddressEntity
-                {
-                    Id           = Guid.NewGuid().ToString(),
-                    AddressLine1 = request.Address.AddressLine1,
-                    AddressLine2 = request.Address.AddressLine2,
-                    City         = request.Address.City,
-                    Postcode     = request.Address.Postcode,
-                    State        = request.Address.State,
-                    Country      = request.Address.Country
-                }
+                AddressLine1 = request.Address?.AddressLine1,
+                AddressLine2 = request.Address?.AddressLine2,
+                City         = request.Address?.City,
+                Postcode     = request.Address?.Postcode,
+                State        = request.Address?.State,
+                Country      = request.Address?.Country
             };
 
             await _authRepository.RegisterAsync(userAccount, customer);

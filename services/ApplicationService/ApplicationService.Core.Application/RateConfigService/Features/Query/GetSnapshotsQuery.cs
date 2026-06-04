@@ -1,6 +1,7 @@
 using ApplicationService.Core.Application.RateConfigService.DTOs;
 using ApplicationService.Core.Application.RateConfigService.Interfaces.Repositories;
 using MediatR;
+using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Query
 {
@@ -26,7 +27,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     Region       = s.Region,
                     Label        = s.Label,
                     SnapshotType = s.SnapshotType,
-                    CreatedBy    = s.CreatedBy,
+                    CreatedBy    = s.CreatedBy ?? string.Empty,
                     CreatedAt    = s.CreatedAt,
                     // ChangeLogs intentionally empty on list view
                 }).ToList();
@@ -49,8 +50,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 GetSnapshotByIdQuery request, CancellationToken ct)
             {
                 var s = await _repo.GetSnapshotByIdAsync(request.SnapshotId)
-                    ?? throw new KeyNotFoundException(
-                        $"Snapshot '{request.SnapshotId}' not found.");
+                    ?? throw new KeyNotFoundException($"Snapshot '{request.SnapshotId}' not found.");
 
                 return new RateConfigSnapshotDto
                 {
@@ -58,20 +58,21 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     Region       = s.Region,
                     Label        = s.Label,
                     SnapshotType = s.SnapshotType,
-                    CreatedBy    = s.CreatedBy,
+                    CreatedBy    = s.CreatedBy ?? string.Empty,
                     CreatedAt    = s.CreatedAt,
-                    ChangeLogs   = s.ChangeLogs.Select(l => new RateConfigChangeLogDto
-                    {
-                        Id        = l.Id,
-                        TableName = l.TableName,
-                        RecordId  = l.RecordId,
-                        FieldName = l.FieldName,
-                        OldValue  = l.OldValue,
-                        NewValue  = l.NewValue,
-                        ChangedBy = l.ChangedBy,
-                        ChangedAt = l.ChangedAt,
-                    }).ToList(),
+                    ChangeLogs   = ParseChangeLogs(s.ChangeLogsJson),
                 };
+            }
+
+            private static List<RateConfigChangeLogDto> ParseChangeLogs(string? json)
+            {
+                if (string.IsNullOrWhiteSpace(json)) return new();
+                try
+                {
+                    return JsonSerializer.Deserialize<List<RateConfigChangeLogDto>>(json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                catch { return new(); }
             }
         }
     }
@@ -95,20 +96,29 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 var page     = Math.Max(1, request.Page);
                 var pageSize = Math.Clamp(request.PageSize, 1, 200);
 
-                var logs = await _repo.GetChangeLogsAsync(
-                    request.Region.ToUpper(), pageSize, page);
+                // Change logs are now embedded in each snapshot's ChangeLogsJson.
+                // Collect all logs for the region across all snapshots, then paginate.
+                var snapshots = await _repo.GetSnapshotsAsync(request.Region.ToUpper());
 
-                return logs.Select(l => new RateConfigChangeLogDto
+                var allLogs = snapshots
+                    .SelectMany(s => ParseChangeLogs(s.ChangeLogsJson))
+                    .OrderByDescending(l => l.ChangedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                return allLogs;
+            }
+
+            private static List<RateConfigChangeLogDto> ParseChangeLogs(string? json)
+            {
+                if (string.IsNullOrWhiteSpace(json)) return new();
+                try
                 {
-                    Id        = l.Id,
-                    TableName = l.TableName,
-                    RecordId  = l.RecordId,
-                    FieldName = l.FieldName,
-                    OldValue  = l.OldValue,
-                    NewValue  = l.NewValue,
-                    ChangedBy = l.ChangedBy,
-                    ChangedAt = l.ChangedAt,
-                }).ToList();
+                    return JsonSerializer.Deserialize<List<RateConfigChangeLogDto>>(json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                catch { return new(); }
             }
         }
     }

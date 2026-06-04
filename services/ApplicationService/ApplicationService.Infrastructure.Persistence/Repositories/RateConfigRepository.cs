@@ -15,85 +15,59 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
 
         private ApplicationDbContext Db => _resolver.Resolve();
 
-        // ── BuildingConstructionRates ──────────────────────────────────────────
+        // ── RegionConfig ──────────────────────────────────────────────────────
 
-        public Task<List<BuildingConstructionRate>> GetBuildingRatesAsync(string region) =>
-            Db.BuildingConstructionRates
-              .Where(r => r.Region == region && r.IsActive)
-              .OrderBy(r => r.PropertySubType).ThenBy(r => r.ConstructionType)
-              .ToListAsync();
-
-        public Task<BuildingConstructionRate?> GetBuildingRateByIdAsync(string id) =>
-            Db.BuildingConstructionRates.FirstOrDefaultAsync(r => r.Id == id);
-
-        public async Task UpdateBuildingRateAsync(BuildingConstructionRate rate)
-        {
-            Db.BuildingConstructionRates.Update(rate);
-            await Task.CompletedTask;
-        }
-
-        // ── RegionRateConfig ──────────────────────────────────────────────────
-
-        public Task<RegionRateConfig?> GetRegionConfigAsync(string region) =>
-            Db.RegionRateConfigs
+        public Task<RegionConfig?> GetRegionConfigAsync(string region) =>
+            Db.RegionConfigs
               .Where(r => r.Region == region && r.IsActive)
               .FirstOrDefaultAsync();
 
-        public Task<RegionRateConfig?> GetRegionConfigByIdAsync(string id) =>
-            Db.RegionRateConfigs.FirstOrDefaultAsync(r => r.Id == id);
+        public Task<RegionConfig?> GetRegionConfigByIdAsync(string id) =>
+            Db.RegionConfigs.FirstOrDefaultAsync(r => r.Id == id);
 
-        public async Task UpdateRegionConfigAsync(RegionRateConfig config)
+        public async Task UpdateRegionConfigAsync(RegionConfig config)
         {
-            Db.RegionRateConfigs.Update(config);
+            Db.RegionConfigs.Update(config);
             await Task.CompletedTask;
         }
 
-        // ── LocationTierConfig ────────────────────────────────────────────────
+        // ── RateMultiplierConfig ──────────────────────────────────────────────
 
-        public Task<List<LocationTierConfig>> GetLocationTiersAsync(string region) =>
-            Db.LocationTierConfigs
-              .Where(t => t.Region == region && t.IsActive)
-              .OrderBy(t => t.Tier)
-              .ToListAsync();
-
-        public Task<LocationTierConfig?> GetLocationTierByIdAsync(string id) =>
-            Db.LocationTierConfigs.FirstOrDefaultAsync(t => t.Id == id);
-
-        public async Task UpdateLocationTierAsync(LocationTierConfig tier)
-        {
-            Db.LocationTierConfigs.Update(tier);
-            await Task.CompletedTask;
-        }
-
-        // ── RiskMultiplierConfig ──────────────────────────────────────────────
-
-        public Task<List<RiskMultiplierConfig>> GetRiskMultipliersAsync(string region) =>
-            Db.RiskMultiplierConfigs
-              .Where(r => (r.Region == region || r.Region == "ALL") && r.IsActive)
+        public Task<List<RateMultiplierConfig>> GetMultipliersAsync(string region, string type) =>
+            Db.RateMultiplierConfigs
+              .Where(r => (r.Region == region || r.Region == "ALL") && r.Type == type && r.IsActive)
               .OrderBy(r => r.Region).ThenBy(r => r.FactorKey)
               .ToListAsync();
 
-        public Task<RiskMultiplierConfig?> GetRiskMultiplierByIdAsync(string id) =>
-            Db.RiskMultiplierConfigs.FirstOrDefaultAsync(r => r.Id == id);
+        public Task<RateMultiplierConfig?> GetMultiplierByIdAsync(string id) =>
+            Db.RateMultiplierConfigs.FirstOrDefaultAsync(r => r.Id == id);
 
-        public async Task UpdateRiskMultiplierAsync(RiskMultiplierConfig config)
+        public async Task UpdateMultiplierAsync(RateMultiplierConfig config)
         {
-            Db.RiskMultiplierConfigs.Update(config);
+            Db.RateMultiplierConfigs.Update(config);
             await Task.CompletedTask;
         }
 
-        // ── Snapshots & Change Logs ───────────────────────────────────────────
+        // ── AddOn ─────────────────────────────────────────────────────────────
+
+        public Task<List<AddOn>> GetAddOnsAsync() =>
+            Db.AddOns.Where(a => a.IsActive).OrderBy(a => a.Code).ToListAsync();
+
+        public Task<AddOn?> GetAddOnByCodeAsync(string code) =>
+            Db.AddOns.FirstOrDefaultAsync(a => a.Code == code);
+
+        public async Task UpdateAddOnAsync(AddOn addOn)
+        {
+            Db.AddOns.Update(addOn);
+            await Task.CompletedTask;
+        }
+
+        // ── Snapshots ─────────────────────────────────────────────────────────
 
         public async Task<RateConfigSnapshot> SaveSnapshotAsync(RateConfigSnapshot snapshot)
         {
             await Db.RateConfigSnapshots.AddAsync(snapshot);
             return snapshot;
-        }
-
-        public async Task SaveChangeLogsAsync(List<RateConfigChangeLog> logs)
-        {
-            if (logs.Count > 0)
-                await Db.RateConfigChangeLogs.AddRangeAsync(logs);
         }
 
         public Task<List<RateConfigSnapshot>> GetSnapshotsAsync(string region) =>
@@ -104,47 +78,32 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
 
         public Task<RateConfigSnapshot?> GetSnapshotByIdAsync(string snapshotId) =>
             Db.RateConfigSnapshots
-              .Include(s => s.ChangeLogs)
               .FirstOrDefaultAsync(s => s.Id == snapshotId);
-
-        public Task<List<RateConfigChangeLog>> GetChangeLogsAsync(
-            string region, int pageSize, int page) =>
-            Db.RateConfigChangeLogs
-              .Where(l => l.Region == region)
-              .OrderByDescending(l => l.ChangedAt)
-              .Skip((page - 1) * pageSize)
-              .Take(pageSize)
-              .ToListAsync();
 
         // ── Seeder ────────────────────────────────────────────────────────────
 
-        public Task<bool> HasBuildingRatesAsync(string region) =>
-            Db.BuildingConstructionRates.AnyAsync(r => r.Region == region);
+        public Task<bool> HasRegionConfigAsync(string region) =>
+            Db.RegionConfigs.AnyAsync(r => r.Region == region);
 
-        public async Task SeedBuildingRatesAsync(List<BuildingConstructionRate> rates)
+        public async Task SeedRegionConfigAsync(RegionConfig config)
         {
-            await Db.BuildingConstructionRates.AddRangeAsync(rates);
+            await Db.RegionConfigs.AddAsync(config);
         }
 
-        public async Task SeedRegionConfigAsync(RegionRateConfig config)
+        public async Task SeedMultipliersAsync(List<RateMultiplierConfig> multipliers)
         {
-            await Db.RegionRateConfigs.AddAsync(config);
+            await Db.RateMultiplierConfigs.AddRangeAsync(multipliers);
         }
 
-        public async Task SeedLocationTiersAsync(List<LocationTierConfig> tiers)
+        public async Task SeedAddOnsAsync(List<AddOn> addOns)
         {
-            await Db.LocationTierConfigs.AddRangeAsync(tiers);
+            await Db.AddOns.AddRangeAsync(addOns);
         }
 
-        public async Task SeedRiskMultipliersAsync(List<RiskMultiplierConfig> multipliers)
+        public async Task<HashSet<string>> GetExistingMultiplierKeysAsync(string region, string type)
         {
-            await Db.RiskMultiplierConfigs.AddRangeAsync(multipliers);
-        }
-
-        public async Task<HashSet<string>> GetExistingRiskMultiplierKeysAsync(string region)
-        {
-            var keys = await Db.RiskMultiplierConfigs
-                .Where(r => r.Region == region)
+            var keys = await Db.RateMultiplierConfigs
+                .Where(r => r.Region == region && r.Type == type)
                 .Select(r => r.FactorKey)
                 .ToListAsync();
             return new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
