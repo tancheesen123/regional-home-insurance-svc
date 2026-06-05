@@ -496,7 +496,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 type="button"
                 variant="ghost"
                 className={cn(
-                  "rounded-md text-sm font-medium transition-all duration-150",
+                  "rounded-md text-sm font-medium transition-colors duration-150",
                   formData.ownershipType === "owner"
                     ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                     : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
@@ -509,7 +509,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                 type="button"
                 variant="ghost"
                 className={cn(
-                  "rounded-md text-sm font-medium transition-all duration-150",
+                  "rounded-md text-sm font-medium transition-colors duration-150",
                   formData.ownershipType === "tenant"
                     ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                     : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
@@ -559,7 +559,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               <Card
                 key={type.id}
                 className={cn(
-                  "cursor-pointer transition-all duration-150",
+                  "cursor-pointer transition-colors duration-150",
                   formData.propertyType === type.id
                     ? "border-2 border-[#00A651] bg-[#E6F7EE]"
                     : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
@@ -620,7 +620,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
               <Card
                 key={type.id}
                 className={cn(
-                  "cursor-pointer transition-all duration-150",
+                  "cursor-pointer transition-colors duration-150",
                   formData.constructionType === type.id
                     ? "border-2 border-[#00A651] bg-[#E6F7EE]"
                     : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
@@ -718,7 +718,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                     type="button"
                     variant="ghost"
                     className={cn(
-                      "rounded-md text-sm font-medium transition-all duration-150",
+                      "rounded-md text-sm font-medium transition-colors duration-150",
                       formData[field] === val
                         ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                         : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",
@@ -750,7 +750,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   type="button"
                   variant="ghost"
                   className={cn(
-                    "rounded-md text-sm font-medium transition-all duration-150 h-9",
+                    "rounded-md text-sm font-medium transition-colors duration-150 h-9",
                     formData.idType === opt.value
                       ? "bg-[#333331] text-white shadow-sm hover:bg-[#4a4a48] hover:text-white"
                       : "bg-transparent text-[#555555] hover:bg-[#FEF3DC] hover:text-[#D4891A]",

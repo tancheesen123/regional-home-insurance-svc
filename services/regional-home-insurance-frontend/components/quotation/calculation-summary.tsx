@@ -68,7 +68,7 @@ function CalculationSummary({
           onClick={() => setIsExpanded(!isExpanded)}
           variant="outline"
           className={cn(
-            "rounded-l-lg rounded-r-none h-20 w-8 bg-white border-r-0 shadow-md transition-all duration-300",
+            "rounded-l-lg rounded-r-none h-20 w-8 bg-white border-r-0 shadow-md transition-[opacity] duration-200",
             isExpanded && "opacity-0 pointer-events-none",
           )}
         >
@@ -84,7 +84,7 @@ function CalculationSummary({
       {/* Summary Panel */}
       <div
         className={cn(
-          "fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 z-50 overflow-y-auto",
+          "fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-200 z-50 overflow-y-auto will-change-[transform]",
           isExpanded ? "translate-x-0" : "translate-x-full",
           "lg:w-96",
         )}

@@ -146,7 +146,7 @@ export default function DashboardOverview() {
               onClick={() => handleCategoryClick(cat.id)}
               disabled={cat.comingSoon}
               className={cn(
-                "relative flex flex-col items-center gap-2 px-5 py-4 rounded-xl border-2 transition-all duration-150 min-w-[84px]",
+                "relative flex flex-col items-center gap-2 px-5 py-4 rounded-xl border-2 transition-colors duration-150 min-w-[84px]",
                 isSelected
                   ? "bg-[#FEF3DC] border-[#F5A623] shadow-sm"
                   : "bg-white border-[#E0E0E0] hover:border-[#F5A623]",
@@ -206,7 +206,7 @@ export default function DashboardOverview() {
                 type="button"
                 onClick={() => setActiveFilter(f.id)}
                 className={cn(
-                  "h-8 px-4 rounded-full text-sm font-medium border transition-all duration-150",
+                  "h-8 px-4 rounded-full text-sm font-medium border transition-colors duration-150",
                   activeFilter === f.id
                     ? "bg-[#1A1A1A] text-white border-[#1A1A1A]"
                     : "bg-white text-[#555555] border-[#E0E0E0] hover:border-[#1A1A1A] hover:text-[#1A1A1A]",
@@ -222,7 +222,7 @@ export default function DashboardOverview() {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white border border-[#E0E0E0] rounded-xl p-5 shadow-sm hover:border-[#F5A623] hover:shadow-md transition-all duration-150 flex flex-col"
+                className="bg-white border border-[#E0E0E0] rounded-xl p-5 shadow-sm hover:border-[#F5A623] hover:shadow-md transition-colors duration-150 flex flex-col"
               >
                 {/* Card header */}
                 <div className="flex items-start justify-between gap-4 mb-4">
@@ -287,7 +287,7 @@ export default function DashboardOverview() {
               {mortgageProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#E0E0E0] rounded-xl p-5 shadow-sm hover:border-[#F5A623] hover:shadow-md transition-all duration-150 flex flex-col"
+                  className="bg-white border border-[#E0E0E0] rounded-xl p-5 shadow-sm hover:border-[#F5A623] hover:shadow-md transition-colors duration-150 flex flex-col"
                 >
                   {/* Card header */}
                   <div className="flex items-start justify-between gap-4 mb-4">

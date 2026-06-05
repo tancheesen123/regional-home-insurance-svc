@@ -60,7 +60,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                 onClick={() => handleClick(step)}
                 disabled={!clickable}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-1 py-0.5 transition-all",
+                  "flex items-center gap-2 rounded-lg px-1 py-0.5 transition-colors",
                   clickable
                     ? "cursor-pointer hover:bg-[#E6F7EE] group"
                     : "cursor-default",
@@ -69,7 +69,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                 {/* Circle */}
                 <div
                   className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-all duration-150",
+                    "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-colors duration-150",
                     isDone   && "bg-[#00A651] text-white",
                     isActive && "bg-[#F5A623] text-white",
                     !isDone && !isActive && "bg-[#E0E0E0] text-[#9E9E9E]",
@@ -82,7 +82,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                 {/* Label */}
                 <span
                   className={cn(
-                    "text-sm font-medium whitespace-nowrap transition-all duration-150",
+                    "text-sm font-medium whitespace-nowrap transition-colors duration-150",
                     isDone   && "text-[#00A651]",
                     isActive && "text-[#1A1A1A]",
                     !isDone && !isActive && "text-[#9E9E9E]",
@@ -97,7 +97,7 @@ export default function QuotationStepper({ currentStep }: Props) {
               {!isLast && (
                 <div
                   className={cn(
-                    "w-12 h-0.5 mx-3 rounded-full transition-all duration-150",
+                    "w-12 h-0.5 mx-3 rounded-full transition-colors duration-150",
                     isDone ? "bg-[#00A651]" : "bg-[#E0E0E0]",
                   )}
                 />
@@ -114,7 +114,7 @@ export default function QuotationStepper({ currentStep }: Props) {
           <button
             type="button"
             onClick={() => handleClick(currentStep - 1)}
-            className="flex items-center gap-1 text-xs text-[#00A651] hover:text-[#00A651] mb-2 transition-all duration-150"
+            className="flex items-center gap-1 text-xs text-[#00A651] hover:text-[#00A651] mb-2 transition-colors duration-150"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span>{steps[currentStep - 2]}</span>
@@ -146,7 +146,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                 disabled={!clickable}
                 title={clickable ? `Go back to ${steps[idx]}` : undefined}
                 className={cn(
-                  "flex-1 h-1.5 rounded-full transition-all duration-150",
+                  "flex-1 h-1.5 rounded-full transition-colors duration-150",
                   isDone   && "bg-[#00A651]",
                   isActive && "bg-[#F5A623]",
                   !isDone && !isActive && "bg-[#E0E0E0]",

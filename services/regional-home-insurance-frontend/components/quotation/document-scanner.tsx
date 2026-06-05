@@ -143,7 +143,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     return (
       <div className={cn(
         "rounded-xl border border-[#E0E0E0] bg-white overflow-hidden",
-        "transition-all duration-500 ease-out",
+        "transition-[opacity,transform] duration-200 ease-out",
         stripAnimateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
       )}>
 
@@ -214,14 +214,16 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
           </div>
         </div>
 
-        {/* Animated expand/collapse — CSS grid technique for smooth height */}
+        {/* Animated expand/collapse — max-height (compositable, GPU-accelerated) */}
         <div
-          className={cn(
-            "grid transition-all duration-300 ease-in-out",
-            showDetails && canExpand ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
+          className="overflow-hidden"
+          style={{
+            maxHeight: showDetails && canExpand ? 400 : 0,
+            transition: "max-height 250ms ease-out",
+            willChange: "max-height",
+          }}
         >
-          <div className="overflow-hidden">
+          <div>
             {result && (
               <div className="border-t border-[#F5F5F5]">
                 <ResultFieldList result={result} compact />
@@ -242,7 +244,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
       {!result && (
         <div className={cn(
           "rounded-2xl border-2 border-dashed border-[#F5A623] bg-[#FFFBF0] p-6 text-center",
-          "transition-all duration-500 ease-out",
+          "transition-[opacity,transform] duration-200 ease-out",
           animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}>
 
@@ -264,7 +266,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             onDragLeave={() => setIsDragging(false)}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "border border-dashed rounded-xl px-6 py-8 text-center cursor-pointer transition-all mb-4",
+              "border border-dashed rounded-xl px-6 py-8 text-center cursor-pointer transition-colors mb-4",
               isDragging
                 ? "border-[#F5A623] bg-[#FEF3DC]"
                 : "border-[#E0E0E0] bg-white hover:border-[#F5A623] hover:bg-[#FEFBF3]",
@@ -344,7 +346,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
       {/* ── Scan result — new Journey Readiness Overview ── */}
       {result && (
         <div className={cn(
-          "transition-all duration-500 ease-out",
+          "transition-[opacity,transform] duration-200 ease-out",
           animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}>
           <ScanResultOverview

@@ -275,7 +275,7 @@ export default function ContentScanner({ countryCode, symbol, onApply }: Props) 
               onDragLeave={() => setIsDragging(false)}
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-150",
+                "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors duration-150",
                 isDragging
                   ? "border-[#F5A623] bg-[#FEF3DC]"
                   : "border-[#E0E0E0] bg-[#FAFAFA] hover:border-[#F5A623] hover:bg-[#FEFBF3]",
@@ -383,7 +383,7 @@ export default function ContentScanner({ countryCode, symbol, onApply }: Props) 
                       key={room.roomType}
                       value={room.roomType}
                       className={cn(
-                        "relative h-9 px-3 rounded-lg text-xs font-medium transition-all",
+                        "relative h-9 px-3 rounded-lg text-xs font-medium transition-colors",
                         "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1A1A1A]",
                         "data-[state=inactive]:text-[#555555] data-[state=inactive]:hover:text-[#1A1A1A]",
                       )}
