@@ -206,58 +206,69 @@ export default function DeclareValuables() {
 
   if (!showDeclaration) {
     return (
-      <div className="max-w-4xl mx-auto px-4">
-        <QuotationStepper currentStep={2} />
+      <>
+        <div className="max-w-4xl mx-auto px-4 pb-6">
+          <QuotationStepper currentStep={2} />
 
-        <div className="bg-white rounded-2xl p-8 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#1A1A1A] mb-8">
-            {t("declare.ownMoreThan", { symbol })}
-          </h2>
+          <div className="bg-white rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#1A1A1A] mb-8">
+              {t("declare.ownMoreThan", { symbol })}
+            </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            {categories.map((category) => (
-              <div key={category.id} className="group flex flex-col items-center text-center p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:border-[#F5A623] hover:bg-[#FEF3DC] hover:shadow-md transition-all duration-150 cursor-pointer">
-                <div className="w-12 h-12 rounded-xl bg-white group-hover:bg-[#F5A623] flex items-center justify-center mb-3 transition-colors duration-150">
-                  <category.Icon className="h-6 w-6 text-[#F5A623] group-hover:text-white transition-colors duration-150" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              {categories.map((category) => (
+                <div key={category.id} className="group flex flex-col items-center text-center p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:border-[#F5A623] hover:bg-[#FEF3DC] hover:shadow-md transition-colors duration-150 cursor-pointer">
+                  <div className="w-12 h-12 rounded-xl bg-white group-hover:bg-[#F5A623] flex items-center justify-center mb-3 transition-colors duration-150">
+                    <category.Icon className="h-6 w-6 text-[#F5A623] group-hover:text-white transition-colors duration-150" />
+                  </div>
+                  <h3 className="font-semibold text-[#1A1A1A] text-sm mb-0.5">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
+                  {category.descKey && (
+                    <p className="text-xs text-[#555555] leading-snug">({t(category.descKey as Parameters<typeof t>[0])})</p>
+                  )}
                 </div>
-                <h3 className="font-semibold text-[#1A1A1A] text-sm mb-0.5">{t(category.nameKey as Parameters<typeof t>[0])}</h3>
-                {category.descKey && (
-                  <p className="text-xs text-[#555555] leading-snug">({t(category.descKey as Parameters<typeof t>[0])})</p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="flex gap-4 mb-8">
-            <Button
-              onClick={handleWantToDeclare}
-              className="flex-1 bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 rounded-lg transition-all duration-150"
-            >
-              {t("declare.yesWantToDeclare")}
-            </Button>
-            <Button
-              onClick={handleSkipDeclaration}
-              className="flex-1 bg-white border-[1.5px] border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC] h-12 rounded-lg transition-all duration-150"
-            >
-              {t("declare.noSkip")}
-            </Button>
-          </div>
+            <div className="flex gap-4 mb-8">
+              <Button
+                onClick={handleWantToDeclare}
+                className="flex-1 bg-[#F5A623] hover:bg-[#D4891A] text-white font-semibold h-12 rounded-lg transition-colors duration-150"
+              >
+                {t("declare.yesWantToDeclare")}
+              </Button>
+              <Button
+                onClick={handleSkipDeclaration}
+                className="flex-1 bg-white border-[1.5px] border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC] h-12 rounded-lg transition-colors duration-150"
+              >
+                {t("declare.noSkip")}
+              </Button>
+            </div>
 
-          <Alert className="bg-[#FAFAFA] border-[#E0E0E0]">
-            <AlertDescription>
-              <div className="space-y-2">
-                <p className="font-semibold text-[#1A1A1A]">{t("declare.itemsNotNeededTitle")}</p>
-                <p className="text-sm text-[#555555]">
-                  <span className="text-[#0066CC]">
-                    {t("declare.coverageUpTo", { symbol })}
-                  </span>
-                </p>
-                <p className="text-sm text-[#555555]">{t("declare.furnitureDesc")}</p>
-              </div>
-            </AlertDescription>
-          </Alert>
+            <Alert className="bg-[#FAFAFA] border-[#E0E0E0]">
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-semibold text-[#1A1A1A]">{t("declare.itemsNotNeededTitle")}</p>
+                  <p className="text-sm text-[#555555]">
+                    <span className="text-[#0066CC]">
+                      {t("declare.coverageUpTo", { symbol })}
+                    </span>
+                  </p>
+                  <p className="text-sm text-[#555555]">{t("declare.furnitureDesc")}</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
         </div>
-      </div>
+
+        <SummaryBar
+          total={storedPremium?.totalPremium}
+          totalBeforeDiscount={storedPremium?.totalBeforeDiscount}
+          monthly={storedPremium?.monthlyPremium}
+          breakdown={buildBreakdown()}
+          onProceed={handleSkipDeclaration}
+          proceedLabel={t("declare.continue")}
+        />
+      </>
     )
   }
 
@@ -283,7 +294,7 @@ export default function DeclareValuables() {
             <Card
               key={category.id}
               className={cn(
-                "border-[1.5px] rounded-xl transition-all duration-150",
+                "border-[1.5px] rounded-xl transition-colors duration-150",
                 category.isExpanded
                   ? "border-[#F5A623] shadow-sm"
                   : "border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",

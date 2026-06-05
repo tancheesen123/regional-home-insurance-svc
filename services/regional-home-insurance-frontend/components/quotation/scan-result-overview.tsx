@@ -199,7 +199,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
     <div
       className={cn(
         "rounded-2xl border border-[#E0E0E0] bg-white shadow-sm overflow-hidden",
-        "transition-all duration-500 ease-out",
+        "transition-[opacity,transform] duration-200 ease-out",
       )}
     >
 
@@ -277,7 +277,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
               {/* Animated field list */}
               {hasFields && (
                 <div className={cn(
-                  "grid transition-all duration-300 ease-in-out",
+                  "grid transition-[transform,opacity] duration-200 ease-in-out",
                   isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                 )}>
                   <div className="overflow-hidden">

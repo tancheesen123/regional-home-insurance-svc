@@ -87,7 +87,7 @@ function DocumentCard({
   onDownload: (doc: PolicyDocumentInfo) => void
 }) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:shadow-md transition-all duration-150">
+    <div className="flex items-center justify-between p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:shadow-md transition-colors duration-150">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-[#FEF3DC] rounded-lg flex items-center justify-center flex-shrink-0">
           <FileText className="h-5 w-5 text-[#F5A623]" />

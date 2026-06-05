@@ -180,7 +180,7 @@ export default function ContentCalculator({
                 <div
                   key={key}
                   className={cn(
-                    "h-1.5 w-5 rounded-full transition-all duration-300",
+                    "h-1.5 w-5 rounded-full transition-[transform,opacity] duration-200",
                     done ? "bg-white" : "bg-white/30",
                   )}
                 />
@@ -210,7 +210,7 @@ export default function ContentCalculator({
             <div
               key={room}
               className={cn(
-                "rounded-xl border border-l-4 overflow-hidden transition-all duration-150",
+                "rounded-xl border border-l-4 overflow-hidden transition-colors duration-150",
                 isFilled
                   ? "border-[#E0E0E0] border-l-[#F5A623] shadow-sm"
                   : "border-[#E0E0E0] border-l-[#E0E0E0] hover:border-l-[#F5A623] hover:shadow-sm",
@@ -285,7 +285,7 @@ export default function ContentCalculator({
               />
               {/* Fill */}
               <div
-                className={cn("h-full rounded-full transition-all duration-300", progressColor)}
+                className={cn("h-full rounded-full transition-[transform,opacity] duration-200", progressColor)}
                 style={{ width: `${progressPct}%` }}
               />
             </div>

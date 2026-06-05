@@ -73,6 +73,12 @@ const config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      // Expose will-change utilities for GPU layer promotion
+      willChange: {
+        "transform": "transform",
+        "opacity":   "opacity",
+        "contents":  "contents",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

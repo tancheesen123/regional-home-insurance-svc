@@ -442,7 +442,7 @@ export default function PlanCustomization() {
                   <Card
                     key={id}
                     className={cn(
-                      "cursor-pointer transition-all duration-150",
+                      "cursor-pointer transition-colors duration-150",
                       planState.selectedPlan === id
                         ? "border-2 border-[#00A651] bg-[#E6F7EE]"
                         : "border-[1.5px] border-[#E0E0E0] hover:border-[#F5A623] hover:shadow-md",
@@ -479,7 +479,7 @@ export default function PlanCustomization() {
         {(planState.selectedPlan === "building-contents" ||
           planState.selectedPlan === "building-only") && (
           <div id="field-buildingAmount" className={cn(
-            "border p-6 rounded-lg transition-all duration-150",
+            "border p-6 rounded-lg transition-colors duration-150",
             fieldErrors.buildingAmount
               ? "bg-white border-[#D32F2F]"
               : buildingFromCalc
@@ -585,7 +585,7 @@ export default function PlanCustomization() {
               <Card
                 key={id}
                 className={cn(
-                  "transition-all duration-150",
+                  "transition-colors duration-150",
                   planState.addOns[id]
                     ? "border-[#00A651] bg-[#E6F7EE]"
                     : "border-[#E0E0E0] bg-white",

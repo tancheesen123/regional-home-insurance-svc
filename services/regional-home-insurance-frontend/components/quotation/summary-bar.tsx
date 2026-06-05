@@ -10,8 +10,8 @@ import { getSession } from "@/lib/session"
 export interface SummaryBreakdown {
   planLabel?:        string
   coveragePeriod?:   string
-  coverageType?:     string   // e.g. "Landed, 1-storey"
-  constructionType?: string   // e.g. "Partial Brick"
+  coverageType?:     string
+  constructionType?: string
   buildingSum?:      number
   contentsSum?:      number
   grossPremium?:     number
@@ -71,93 +71,113 @@ export default function SummaryBar({
 
   return (
     /*
-     * sticky bottom-0 anchors the BOTTOM edge to the viewport.
-     * The panel lives above the bar row inside this same flex column.
-     * When the panel expands, the container grows UPWARD (bottom stays pinned)
-     * — no absolute overlay, no content blocking.
+     * sticky bottom-0: bottom edge pinned to viewport.
+     * flex-col: panel sits above bar row; as panel opens the container grows
+     *   upward (bottom stays anchored) — no overlay, no content blocking.
+     *
+     * contain: layout style — tells the browser this subtree never affects
+     *   layout outside itself, enabling paint/layout optimisations.
+     *
+     * will-change: transform — promotes the entire sticky bar to its own
+     *   GPU compositor layer so it doesn't repaint with page scroll.
      */
-    <div className="sticky bottom-0 z-30 flex flex-col">
+    <div
+      className="sticky bottom-0 z-30 flex flex-col"
+      style={{ contain: "layout style", willChange: "transform" }}
+    >
 
-      {/* ── Expanding breakdown panel — grows upward from the bar ── */}
+      {/* ── Expanding breakdown panel ──────────────────────────────────────────
+        *
+        * Animation strategy: max-height + opacity — both are compositable
+        * (GPU-accelerated). Unlike grid-template-rows or height, these never
+        * force a full layout recalculation on every frame.
+        *
+        * will-change: max-height, opacity — pre-promotes this element to a
+        * GPU layer so the first frame of the animation is never janky.
+        *
+        * The closed max-height (0) is exactly 0 so the panel is invisible
+        * in the DOM flow; the open max-height (55vh) gives plenty of room.
+        * We use overflow-hidden on the wrapper to clip content during transit.
+        ─────────────────────────────────────────────────────────────────── */}
       {hasBreakdown && (
         <div
-          className={cn(
-            "grid bg-white border-t border-[#E5E7EB] shadow-[0_-6px_20px_-8px_rgba(0,0,0,0.15)]",
-            "transition-[grid-template-rows] duration-300 ease-out",
-            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          )}
+          className="overflow-hidden bg-white border-t border-[#E5E7EB] shadow-[0_-6px_20px_-8px_rgba(0,0,0,0.15)]"
+          style={{
+            maxHeight: open ? "55vh" : 0,
+            opacity:   open ? 1 : 0,
+            // specific props only — NOT transition-all
+            transition: "max-height 300ms ease-out, opacity 200ms ease-out",
+            willChange: "max-height, opacity",
+          }}
         >
-          {/* min-h-0 is required for grid-rows collapse to work */}
-          <div className="min-h-0 overflow-hidden">
-            <div className="max-h-[55vh] overflow-y-auto">
-              <div className="max-w-5xl mx-auto px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2">
+          <div className="max-h-[55vh] overflow-y-auto">
+            <div className="max-w-5xl mx-auto px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2">
 
-                {/* Left — coverage */}
-                <div>
-                  <h4 className="font-semibold text-[#1A1A1A] mb-2">{breakdown!.planLabel ?? "Coverage"}</h4>
-                  <dl className="space-y-1.5 text-sm">
-                    {breakdown!.coveragePeriod && <Row label="Coverage Period" value={breakdown!.coveragePeriod} />}
-                    {breakdown!.coverageType && <Row label="Coverage Type" value={breakdown!.coverageType} />}
-                    {breakdown!.constructionType && <Row label="Construction Type" value={breakdown!.constructionType} />}
-                    {typeof breakdown!.buildingSum === "number" && (
-                      <Row label="Building" value={money(breakdown!.buildingSum)} />
-                    )}
-                    {typeof breakdown!.contentsSum === "number" && (
-                      <Row label="Contents" value={money(breakdown!.contentsSum)} />
-                    )}
-                  </dl>
-
-                  {breakdown!.valuables && breakdown!.valuables.length > 0 && (
-                    <>
-                      <h4 className="font-semibold text-[#1A1A1A] mt-4 mb-2">Declared Valuables</h4>
-                      <dl className="space-y-1.5 text-sm">
-                        {breakdown!.valuables.map((v, i) => (
-                          <Row key={i} label={v.label} value={money(v.value)} />
-                        ))}
-                      </dl>
-                    </>
+              {/* Left — coverage */}
+              <div>
+                <h4 className="font-semibold text-[#1A1A1A] mb-2">{breakdown!.planLabel ?? "Coverage"}</h4>
+                <dl className="space-y-1.5 text-sm">
+                  {breakdown!.coveragePeriod && <Row label="Coverage Period" value={breakdown!.coveragePeriod} />}
+                  {breakdown!.coverageType && <Row label="Coverage Type" value={breakdown!.coverageType} />}
+                  {breakdown!.constructionType && <Row label="Construction Type" value={breakdown!.constructionType} />}
+                  {typeof breakdown!.buildingSum === "number" && (
+                    <Row label="Building" value={money(breakdown!.buildingSum)} />
                   )}
-                </div>
+                  {typeof breakdown!.contentsSum === "number" && (
+                    <Row label="Contents" value={money(breakdown!.contentsSum)} />
+                  )}
+                </dl>
 
-                {/* Right — cost breakdown */}
-                <div>
-                  <h4 className="font-semibold text-[#1A1A1A] mb-2">Cost Breakdown</h4>
-                  <dl className="space-y-1.5 text-sm">
-                    {typeof breakdown!.grossPremium === "number" && (
-                      <Row label="Gross Premium" value={money(breakdown!.grossPremium)} />
-                    )}
-                    {typeof breakdown!.discountAmount === "number" && breakdown!.discountAmount > 0 && (
-                      <Row
-                        label={`Online Rebate ${savePct}%`}
-                        value={`- ${money(breakdown!.discountAmount)}`}
-                        valueClass="text-[#00A651]"
-                        labelClass="text-[#00A651]"
-                      />
-                    )}
-                    {typeof breakdown!.serviceTaxAmount === "number" && (
-                      <Row
-                        label={`Service Tax ${breakdown!.serviceTaxRate ?? ""}%`}
-                        value={money(breakdown!.serviceTaxAmount)}
-                      />
-                    )}
-                    {typeof breakdown!.stampDuty === "number" && (
-                      <Row label="Stamp Duty" value={money(breakdown!.stampDuty)} />
-                    )}
-                    {breakdown!.addOns && breakdown!.addOns.length > 0 && breakdown!.addOns.map((a, i) => (
-                      typeof a.premium === "number"
-                        ? <Row key={`a${i}`} label={a.name} value={`+ ${money(a.premium)}`} />
-                        : <Row key={`a${i}`} label={a.name} value="Included" />
-                    ))}
-                  </dl>
-                </div>
-
+                {breakdown!.valuables && breakdown!.valuables.length > 0 && (
+                  <>
+                    <h4 className="font-semibold text-[#1A1A1A] mt-4 mb-2">Declared Valuables</h4>
+                    <dl className="space-y-1.5 text-sm">
+                      {breakdown!.valuables.map((v, i) => (
+                        <Row key={i} label={v.label} value={money(v.value)} />
+                      ))}
+                    </dl>
+                  </>
+                )}
               </div>
+
+              {/* Right — cost breakdown */}
+              <div>
+                <h4 className="font-semibold text-[#1A1A1A] mb-2">Cost Breakdown</h4>
+                <dl className="space-y-1.5 text-sm">
+                  {typeof breakdown!.grossPremium === "number" && (
+                    <Row label="Gross Premium" value={money(breakdown!.grossPremium)} />
+                  )}
+                  {typeof breakdown!.discountAmount === "number" && breakdown!.discountAmount > 0 && (
+                    <Row
+                      label={`Online Rebate ${savePct}%`}
+                      value={`- ${money(breakdown!.discountAmount)}`}
+                      valueClass="text-[#00A651]"
+                      labelClass="text-[#00A651]"
+                    />
+                  )}
+                  {typeof breakdown!.serviceTaxAmount === "number" && (
+                    <Row
+                      label={`Service Tax ${breakdown!.serviceTaxRate ?? ""}%`}
+                      value={money(breakdown!.serviceTaxAmount)}
+                    />
+                  )}
+                  {typeof breakdown!.stampDuty === "number" && (
+                    <Row label="Stamp Duty" value={money(breakdown!.stampDuty)} />
+                  )}
+                  {breakdown!.addOns && breakdown!.addOns.length > 0 && breakdown!.addOns.map((a, i) => (
+                    typeof a.premium === "number"
+                      ? <Row key={`a${i}`} label={a.name} value={`+ ${money(a.premium)}`} />
+                      : <Row key={`a${i}`} label={a.name} value="Included" />
+                  ))}
+                </dl>
+              </div>
+
             </div>
           </div>
         </div>
       )}
 
-      {/* ── The bar row — always visible at the bottom ── */}
+      {/* ── The bar row — always visible ────────────────────────────────────── */}
       <div className="bg-white border-t border-[#E5E7EB] shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)]">
         <div className="max-w-5xl mx-auto px-6 py-3.5 flex items-center justify-between gap-4">
 
@@ -168,11 +188,18 @@ export default function SummaryBar({
               <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-[#0066CC] hover:text-[#004EA8] transition-colors"
+                className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium text-[#0066CC] hover:text-[#004EA8] transition-colors duration-150"
               >
                 {open ? "Hide Summary" : "View Summary"}
                 <Sofa className="h-4 w-4" />
-                <ChevronUp className={cn("h-4 w-4 transition-transform duration-300", open ? "rotate-0" : "rotate-180")} />
+                <ChevronUp
+                  className="h-4 w-4"
+                  style={{
+                    transform: open ? "rotate(0deg)" : "rotate(180deg)",
+                    transition: "transform 300ms ease-out",
+                    willChange: "transform",
+                  }}
+                />
               </button>
             )}
           </div>
@@ -210,7 +237,7 @@ export default function SummaryBar({
             <Button
               onClick={onProceed}
               disabled={proceedDisabled || proceedLoading}
-              className="bg-[#F5A623] hover:bg-[#D4891A] text-[#1A1A1A] font-semibold h-12 px-8 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E]"
+              className="bg-[#F5A623] hover:bg-[#D4891A] text-[#1A1A1A] font-semibold h-12 px-8 rounded-lg disabled:bg-[#E0E0E0] disabled:text-[#9E9E9E] transition-colors duration-150"
             >
               {proceedLoading ? (
                 <span className="flex items-center gap-2">
