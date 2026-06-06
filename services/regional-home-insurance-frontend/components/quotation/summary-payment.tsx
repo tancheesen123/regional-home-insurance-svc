@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,20 +14,19 @@ import QuotationStepper from "./quotation-stepper"
 import SummaryBar, { type SummaryBreakdown } from "./summary-bar"
 
 export default function SummaryPayment() {
-  const router = useRouter()
   const t = useTranslations("quotation")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [agreementChecked, setAgreementChecked] = useState(false)
-  const [marketingConsent, setMarketingConsent] = useState(false)
-  const [proposal, setProposal] = useState<GetProposalData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading,        setIsLoading]        = useState(true)
+  const [isProcessing,     setIsProcessing]      = useState(false)
+  const [agreementChecked, setAgreementChecked]  = useState(false)
+  const [marketingConsent, setMarketingConsent]  = useState(false)
+  const [proposal,         setProposal]          = useState<GetProposalData | null>(null)
+  const [error,            setError]             = useState<string | null>(null)
 
   useEffect(() => {
-    const session = getSession()
+    const session    = getSession()
     const proposalId = getProposalId()
 
-    if (!session) { setError(t("common.sessionExpired")); setIsLoading(false); return }
+    if (!session)    { setError(t("common.sessionExpired"));    setIsLoading(false); return }
     if (!proposalId) { setError(t("summary.proposalNotFound")); setIsLoading(false); return }
 
     getProposal(proposalId, session.countryCode)
@@ -39,7 +37,8 @@ export default function SummaryPayment() {
       })
       .catch(() => setError(t("summary.failedToLoad")))
       .finally(() => setIsLoading(false))
-  }, [t])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handlePay = async () => {
     if (!agreementChecked) {
@@ -47,7 +46,7 @@ export default function SummaryPayment() {
       return
     }
 
-    const session = getSession()
+    const session    = getSession()
     const proposalId = getProposalId()
     if (!session || !proposalId) { setError(t("common.sessionExpired")); return }
 
@@ -57,7 +56,7 @@ export default function SummaryPayment() {
     try {
       const response = await initiatePayment(
         { proposalId, paymentMethod: "card" },
-        session.countryCode
+        session.countryCode,
       )
 
       console.log("[InitiatePayment Response]", response)
@@ -67,18 +66,22 @@ export default function SummaryPayment() {
         return
       }
 
-      // Persist payment info so the success page can display it
+      // Persist so the success page can display payment details
       savePaymentResult({
-        paymentId:     response.data.paymentId,
+        paymentId:       response.data.paymentId,
         referenceNumber: response.data.referenceNumber,
-        paymentMethod: response.data.paymentMethod,
-        gatewayName:   response.data.gatewayName,
-        amount:        response.data.amount,
-        currency:      response.data.currency,
+        paymentMethod:   response.data.paymentMethod,
+        gatewayName:     response.data.gatewayName,
+        amount:          response.data.amount,
+        currency:        response.data.currency,
       })
 
-      // Redirect to Stripe checkout
-      window.location.href = response.data.stripeSession.checkoutUrl
+      // All regions use Stripe — it handles PHP / IDR / KHR / MYR natively
+      if (response.data.stripeSession?.checkoutUrl) {
+        window.location.href = response.data.stripeSession.checkoutUrl
+      } else {
+        setError("Payment gateway did not return a checkout URL.")
+      }
     } catch (err) {
       console.error("[InitiatePayment Error]", err)
       setError(t("common.somethingWentWrong"))
@@ -108,17 +111,17 @@ export default function SummaryPayment() {
 
   const buildBreakdown = (): SummaryBreakdown | undefined => {
     if (!q) return undefined
-    const pb = q.premiumBreakdown
+    const pb    = q.premiumBreakdown
     const gross = pb?.grossPremium ?? 0
-    const pct = gross > 0 && pb ? Math.round((pb.discountAmount / gross) * 100) : undefined
+    const pct   = gross > 0 && pb ? Math.round((pb.discountAmount / gross) * 100) : undefined
     const valuables = q.valuableItems.map((v) => ({ label: v.description || v.category, value: v.value }))
     return {
       planLabel:        PLAN_LABEL[q.planType] ?? q.planType,
       coveragePeriod:   `${q.coverageStartDate} – ${q.expiryDate}`,
       coverageType:     `${q.propertyType === "landed" ? "Landed" : "Non-landed"}, ${q.numberOfStorey}-storey`,
       constructionType: q.constructionType === "full-brick" ? "Full Brick" : "Partial Brick",
-      buildingSum:      q.buildingSum > 0 ? q.buildingSum : undefined,
-      contentsSum:      q.contentsSum > 0 ? q.contentsSum : undefined,
+      buildingSum:      q.buildingSum  > 0 ? q.buildingSum  : undefined,
+      contentsSum:      q.contentsSum  > 0 ? q.contentsSum  : undefined,
       grossPremium:     pb?.grossPremium,
       discountAmount:   pb?.discountAmount,
       discountRatePct:  pct,
@@ -131,16 +134,15 @@ export default function SummaryPayment() {
 
   return (
     <>
-    <div className="max-w-3xl mx-auto px-4 pb-6">
-      <QuotationStepper currentStep={4} />
+      <div className="max-w-3xl mx-auto px-4 pb-6">
+        <QuotationStepper currentStep={4} />
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <div className="space-y-6">
         <div className="space-y-6">
 
           {/* Personal Details */}
@@ -149,14 +151,33 @@ export default function SummaryPayment() {
               <CardHeader><CardTitle>{t("summary.personalDetails")}</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="grid grid-cols-2 gap-2">
-                  <span className="text-[#555555]">Name</span><span>{proposal.personalDetails.name}</span>
-                  <span className="text-[#555555]">ID Type</span><span>{proposal.personalDetails.idType}</span>
-                  <span className="text-[#555555]">ID Number</span><span>{proposal.personalDetails.idNumber}</span>
-                  <span className="text-[#555555]">Nationality</span><span>{proposal.personalDetails.nationality}</span>
-                  <span className="text-[#555555]">Gender</span><span>{proposal.personalDetails.gender}</span>
-                  <span className="text-[#555555]">Date of Birth</span><span>{proposal.personalDetails.dateOfBirth}</span>
-                  <span className="text-[#555555]">Mobile</span><span>{proposal.personalDetails.mobileNumber}</span>
-                  <span className="text-[#555555]">Email</span><span>{proposal.personalDetails.email}</span>
+                  <span className="text-[#555555]">Name</span>
+                  <span>{proposal.personalDetails.name}</span>
+
+                  <span className="text-[#555555]">ID Type</span>
+                  <span>{proposal.personalDetails.idType}</span>
+
+                  <span className="text-[#555555]">ID Number</span>
+                  <span>{proposal.personalDetails.idNumber}</span>
+
+                  {proposal.personalDetails.nationality && (
+                    <>
+                      <span className="text-[#555555]">Nationality</span>
+                      <span>{proposal.personalDetails.nationality}</span>
+                    </>
+                  )}
+
+                  <span className="text-[#555555]">Gender</span>
+                  <span>{proposal.personalDetails.gender}</span>
+
+                  <span className="text-[#555555]">Date of Birth</span>
+                  <span>{proposal.personalDetails.dateOfBirth}</span>
+
+                  <span className="text-[#555555]">Mobile</span>
+                  <span>{proposal.personalDetails.mobileNumber}</span>
+
+                  <span className="text-[#555555]">Email</span>
+                  <span>{proposal.personalDetails.email}</span>
                 </div>
               </CardContent>
             </Card>
@@ -168,7 +189,9 @@ export default function SummaryPayment() {
               <CardHeader><CardTitle>{t("summary.propertyAddress")}</CardTitle></CardHeader>
               <CardContent className="text-sm space-y-1">
                 <p>{proposal.propertyAddress.addressLine1}</p>
-                {proposal.propertyAddress.addressLine2 && <p>{proposal.propertyAddress.addressLine2}</p>}
+                {proposal.propertyAddress.addressLine2 && (
+                  <p>{proposal.propertyAddress.addressLine2}</p>
+                )}
                 <p>{proposal.propertyAddress.city}, {proposal.propertyAddress.postcode}</p>
                 <p>{proposal.propertyAddress.state}, {proposal.propertyAddress.country}</p>
               </CardContent>
@@ -209,7 +232,8 @@ export default function SummaryPayment() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {t("summary.marketingConsent")} <span className="text-sm font-normal text-[#555555]">{t("summary.marketingOptional")}</span>
+                {t("summary.marketingConsent")}{" "}
+                <span className="text-sm font-normal text-[#555555]">{t("summary.marketingOptional")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -229,18 +253,17 @@ export default function SummaryPayment() {
 
         </div>
       </div>
-    </div>
 
-    <SummaryBar
-      total={q?.totalPremium}
-      totalBeforeDiscount={q?.premiumBreakdown?.totalBeforeDiscount ?? null}
-      monthly={q?.monthlyPremium}
-      breakdown={buildBreakdown()}
-      onProceed={handlePay}
-      proceedLabel={t("customize.proceed")}
-      proceedLoading={isProcessing}
-      proceedDisabled={!agreementChecked || isProcessing}
-    />
+      <SummaryBar
+        total={q?.totalPremium}
+        totalBeforeDiscount={q?.premiumBreakdown?.totalBeforeDiscount ?? null}
+        monthly={q?.monthlyPremium}
+        breakdown={buildBreakdown()}
+        onProceed={handlePay}
+        proceedLabel={t("customize.proceed")}
+        proceedLoading={isProcessing}
+        proceedDisabled={!agreementChecked || isProcessing}
+      />
     </>
   )
 }

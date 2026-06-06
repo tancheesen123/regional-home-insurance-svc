@@ -122,6 +122,43 @@ function getDialCode(cc: string): string {
 
 const RACES = ["MALAY", "CHINESE", "INDIAN", "OTHERS"]
 
+/** Banks list per region — used in the Bank Details section for claims payout reference. */
+function getBanks(cc: string): string[] {
+  switch (cc.toUpperCase()) {
+    case "PH":
+      return [
+        "BDO", "BPI", "METROBANK", "UNIONBANK", "PNB",
+        "SECURITY BANK", "CHINA BANK", "EASTWEST BANK", "RCBC", "LANDBANK",
+      ]
+    case "ID":
+      return [
+        "BANK MANDIRI", "BCA", "BNI", "BRI", "CIMB NIAGA",
+        "BANK PERMATA", "BANK DANAMON", "BANK PANIN",
+      ]
+    case "KH":
+      return [
+        "ABA BANK", "ACLEDA BANK", "CANADIA BANK",
+        "MAYBANK CAMBODIA", "ANZ ROYAL BANK",
+      ]
+    default: // MY
+      return [
+        "MAYBANK", "CIMB BANK", "PUBLIC BANK", "RHB BANK", "HONG LEONG BANK",
+        "AMBANK", "BANK ISLAM", "BANK RAKYAT", "AFFIN BANK", "ALLIANCE BANK",
+      ]
+  }
+}
+
+/** Human-readable label for the ID number field. */
+function getIdNumberLabel(cc: string, idType: string): string {
+  if (idType === "PASSPORT") return "Passport Number"
+  switch (cc.toUpperCase()) {
+    case "PH": return "PhilID Number"
+    case "ID": return "KTP Number (NIK)"
+    case "KH": return "Khmer ID Number"
+    default:   return "IC Number"
+  }
+}
+
 /** Inline field error message + red styling helper. */
 function FErr({ msg }: { msg?: string }) {
   if (!msg) return null
@@ -130,10 +167,6 @@ function FErr({ msg }: { msg?: string }) {
 /** Returns red-border class when an error is present. */
 const errCls = (msg?: string) => (msg ? "border-[#D32F2F] focus-visible:ring-[#D32F2F]" : "")
 
-const BANKS = [
-  "MAYBANK", "CIMB BANK", "PUBLIC BANK", "RHB BANK", "HONG LEONG BANK",
-  "AMBANK", "BANK ISLAM", "BANK RAKYAT", "AFFIN BANK", "ALLIANCE BANK",
-]
 
 // ─── Memoized section components ─────────────────────────────────────────────
 
@@ -231,7 +264,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
 
             <div>
-              <Label htmlFor="nric">{t("fillDetails.nricLabel")}</Label>
+              <Label htmlFor="nric">{getIdNumberLabel(countryCode, data.idType)}</Label>
               <Input
                 id="nric"
                 value={data.nricNumber}
@@ -265,23 +298,26 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>{t("fillDetails.race")} <span className="text-[#9E9E9E] font-normal">({t("fillDetails.optional")})</span></Label>
-              <Select value={data.race} onValueChange={(value) => onChange("race", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("fillDetails.selectRace")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {RACES.map((race) => (
-                    <SelectItem key={race} value={race}>
-                      {race}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Race — not applicable for PH (insurance forms don't collect ethnicity there) */}
+          {countryCode.toUpperCase() !== "PH" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>{t("fillDetails.race")} <span className="text-[#9E9E9E] font-normal">({t("fillDetails.optional")})</span></Label>
+                <Select value={data.race} onValueChange={(value) => onChange("race", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("fillDetails.selectRace")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RACES.map((race) => (
+                      <SelectItem key={race} value={race}>
+                        {race}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <Label>{t("fillDetails.gender")}</Label>
@@ -639,6 +675,7 @@ interface BankSectionProps {
   isExpanded: boolean
   onToggle: () => void
   onChange: (field: keyof BankData, value: string) => void
+  countryCode: string
   errors?: Record<string, string>
 }
 
@@ -647,9 +684,11 @@ const BankDetailsSection = memo(function BankDetailsSection({
   isExpanded,
   onToggle,
   onChange,
+  countryCode,
   errors = {},
 }: BankSectionProps) {
   const t = useTranslations("quotation")
+  const banks = getBanks(countryCode)
   return (
     <Card className="border border-gray-200">
       <CardHeader className="cursor-pointer" onClick={onToggle}>
@@ -663,7 +702,13 @@ const BankDetailsSection = memo(function BankDetailsSection({
       </CardHeader>
       {isExpanded && (
         <CardContent className="space-y-4">
-          <p className="text-sm text-[#555555]">{t("fillDetails.bankDetailsDesc")}</p>
+          <p className="text-sm text-[#555555]">
+            {countryCode.toUpperCase() === "PH"
+              ? "Provide your bank account for claims payout purposes (optional)."
+              : countryCode.toUpperCase() === "MY"
+              ? t("fillDetails.bankDetailsDesc")
+              : "Provide your bank account for claims payout purposes (optional)."}
+          </p>
 
           <div>
             <Label>{t("fillDetails.bankName")}</Label>
@@ -672,7 +717,7 @@ const BankDetailsSection = memo(function BankDetailsSection({
                 <SelectValue placeholder={t("fillDetails.selectBank")} />
               </SelectTrigger>
               <SelectContent>
-                {BANKS.map((bank) => (
+                {banks.map((bank) => (
                   <SelectItem key={bank} value={bank}>
                     {bank}
                   </SelectItem>
@@ -986,9 +1031,11 @@ export default function FillDetailsForm() {
       if (!mailingData.mailingPostcode.trim()) e.mailingPostcode = req
     }
 
-    // Bank
-    if (!bankData.bankName)              e.bankName      = req
-    if (!bankData.accountNumber.trim()) e.accountNumber = req
+    // Bank — required for MY (auto-debit source); optional for PH/ID/KH (claims payout reference)
+    if (countryCode.toUpperCase() === "MY") {
+      if (!bankData.bankName)             e.bankName      = req
+      if (!bankData.accountNumber.trim()) e.accountNumber = req
+    }
 
     return e
   }
@@ -1172,6 +1219,7 @@ export default function FillDetailsForm() {
             isExpanded={expandedSections.bank}
             onToggle={toggleBank}
             onChange={handleBankChange}
+            countryCode={countryCode}
             errors={fieldErrors}
           />
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronUp, Sofa, Tag, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -48,7 +48,11 @@ export default function SummaryBar({
   proceedDisabled,
 }: SummaryBarProps) {
   const [open, setOpen] = useState(false)
-  const { symbol } = getRegionConfig(getSession()?.countryCode ?? "")
+  // Defer session-dependent symbol to client — sessionStorage unavailable during SSR
+  const [symbol, setSymbol] = useState<string>("")
+  useEffect(() => {
+    setSymbol(getRegionConfig(getSession()?.countryCode ?? "").symbol)
+  }, [])
 
   const money = (n: number) =>
     `${symbol} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

@@ -75,9 +75,16 @@ export default function DeclareValuables() {
   const isAtLimit          = totalDeclaredAmount >= MAX_TOTAL_DECLARED
   const isNearLimit        = !isAtLimit && totalDeclaredAmount >= MAX_TOTAL_DECLARED * 0.8
 
-  // ── Summary bar data (real premium carried from the customize step) ──────────
-  const storedPremium = getQuotationPremium()
-  const propSummary   = getQuotationPropertySummary()
+  // ── Summary bar data — deferred to client to avoid SSR/hydration mismatch.
+  // localStorage is unavailable during server rendering so both functions return
+  // null on the server. If we read them synchronously the breakdown prop would be
+  // undefined on the server but populated on the client, causing a DOM mismatch.
+  const [storedPremium, setStoredPremium] = useState<ReturnType<typeof getQuotationPremium>>(null)
+  const [propSummary,   setPropSummary]   = useState<ReturnType<typeof getQuotationPropertySummary>>(null)
+  useEffect(() => {
+    setStoredPremium(getQuotationPremium())
+    setPropSummary(getQuotationPropertySummary())
+  }, [])
 
   const PLAN_LABEL: Record<string, string> = {
     "building-contents": "Building + Contents",
