@@ -298,8 +298,8 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
           )}
 
-          {/* Race — not applicable for PH (insurance forms don't collect ethnicity there) */}
-          {countryCode.toUpperCase() !== "PH" && (
+          {/* Race — not applicable for PH or KH (not collected on insurance forms there) */}
+          {countryCode.toUpperCase() !== "PH" && countryCode.toUpperCase() !== "KH" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>{t("fillDetails.race")} <span className="text-[#9E9E9E] font-normal">({t("fillDetails.optional")})</span></Label>

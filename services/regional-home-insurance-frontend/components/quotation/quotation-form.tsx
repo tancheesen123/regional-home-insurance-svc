@@ -57,6 +57,26 @@ const NATIONALITIES = [
   "MALAYSIAN", "SINGAPOREAN", "INDONESIAN", "THAI", "FILIPINO", "CAMBODIAN", "OTHER",
 ]
 
+/** Label for the non-passport ID number input — changes per country. */
+function getIdInputLabel(cc: string): string {
+  switch (cc.toUpperCase()) {
+    case "PH": return "PhilID Number"
+    case "KH": return "Khmer ID Number"
+    case "ID": return "KTP Number (NIK)"
+    default:   return "IC Number (NRIC)"
+  }
+}
+
+/** inputMode for the non-passport ID field — numeric only for KTP (16 digits). */
+function getIdInputMode(cc: string): "numeric" | "text" {
+  return cc.toUpperCase() === "ID" ? "numeric" : "text"
+}
+
+/** Max length for non-passport ID field — KTP is exactly 16 digits, others unrestricted. */
+function getIdMaxLength(cc: string): number | undefined {
+  return cc.toUpperCase() === "ID" ? 16 : undefined
+}
+
 /**
  * Normalise a raw nationality string from the scanner to one of the
  * NATIONALITIES options. e.g. "INDONESIA" / "WNI" → "INDONESIAN".
@@ -782,13 +802,13 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             ) : (
               <>
                 <Label htmlFor="nric" className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center">
-                  {t("form.nricLabel")}
+                  {getIdInputLabel(countryCode)}
                   <ScanFieldBadge field={badge("idNumber")} />
                 </Label>
                 <Input
                   id="nric"
-                  inputMode={countryCode === "ID" ? "numeric" : "text"}
-                  maxLength={countryCode === "ID" ? 16 : undefined}
+                  inputMode={getIdInputMode(countryCode)}
+                  maxLength={getIdMaxLength(countryCode)}
                   value={formData.nricNumber}
                   onChange={(e) => handleInputChange(
                     "nricNumber",
