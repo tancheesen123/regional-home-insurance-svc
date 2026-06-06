@@ -580,6 +580,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
 
+                    b.Property<string>("RegionConfigId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal?>("StampDuty")
                         .HasColumnType("decimal(18,2)");
 
@@ -613,7 +617,26 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
 
                     b.HasIndex("CustomerId");
 
+                    b.HasIndex("RegionConfigId");
+
                     b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.QuotationAddOn", b =>
+                {
+                    b.Property<string>("QuotationId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AddOnId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("QuotationId", "AddOnId");
+
+                    b.HasIndex("AddOnId");
+
+                    b.ToTable("QuotationAddOns");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigSnapshot", b =>
@@ -643,6 +666,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
 
+                    b.Property<string>("RegionConfigId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("SnapshotJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -660,6 +687,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RegionConfigId");
 
                     b.HasIndex("Region", "CreatedAt");
 
@@ -708,6 +737,10 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
+                    b.Property<string>("RegionConfigId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -721,6 +754,8 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RegionConfigId");
 
                     b.HasIndex("Region", "Type", "FactorKey", "IsActive");
 
@@ -924,7 +959,58 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ApplicationService.Core.Domain.Entities.RegionConfig", "RegionConfig")
+                        .WithMany("Quotations")
+                        .HasForeignKey("RegionConfigId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Customer");
+
+                    b.Navigation("RegionConfig");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.QuotationAddOn", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.AddOn", "AddOn")
+                        .WithMany("QuotationAddOns")
+                        .HasForeignKey("AddOnId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationService.Core.Domain.Entities.Quotation", "Quotation")
+                        .WithMany("QuotationAddOns")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddOn");
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateConfigSnapshot", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.RegionConfig", "RegionConfig")
+                        .WithMany("RateConfigSnapshots")
+                        .HasForeignKey("RegionConfigId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("RegionConfig");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RateMultiplierConfig", b =>
+                {
+                    b.HasOne("ApplicationService.Core.Domain.Entities.RegionConfig", "RegionConfig")
+                        .WithMany("RateMultiplierConfigs")
+                        .HasForeignKey("RegionConfigId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("RegionConfig");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.AddOn", b =>
+                {
+                    b.Navigation("QuotationAddOns");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.Customer", b =>
@@ -946,6 +1032,17 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                 {
                     b.Navigation("Proposal")
                         .IsRequired();
+
+                    b.Navigation("QuotationAddOns");
+                });
+
+            modelBuilder.Entity("ApplicationService.Core.Domain.Entities.RegionConfig", b =>
+                {
+                    b.Navigation("Quotations");
+
+                    b.Navigation("RateConfigSnapshots");
+
+                    b.Navigation("RateMultiplierConfigs");
                 });
 
             modelBuilder.Entity("ApplicationService.Core.Domain.Entities.UserAccount", b =>

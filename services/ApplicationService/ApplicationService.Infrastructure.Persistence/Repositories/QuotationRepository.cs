@@ -1,6 +1,8 @@
 using ApplicationService.Core.Application.QuotationService.Interfaces.Repositories;
 using ApplicationService.Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ApplicationService.Infrastructure.Persistence.Repositories
 {
@@ -53,6 +55,33 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             return await _resolver.Resolve().RegionConfigs
                 .Where(r => r.Region == region && r.IsActive)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<Dictionary<string, string>> GetAddOnIdsByCodesAsync(IEnumerable<string> codes)
+        {
+            var codeList = codes.ToList();
+            return await _resolver.Resolve().AddOns
+                .Where(a => codeList.Contains(a.Code) && a.IsActive)
+                .ToDictionaryAsync(a => a.Code, a => a.Id);
+        }
+
+        public async Task ReplaceAddOnsAsync(string quotationId, IEnumerable<string> addOnIds)
+        {
+            var ctx      = _resolver.Resolve();
+            var existing = await ctx.QuotationAddOns
+                .Where(qa => qa.QuotationId == quotationId)
+                .ToListAsync();
+
+            ctx.QuotationAddOns.RemoveRange(existing);
+
+            foreach (var addOnId in addOnIds)
+            {
+                ctx.QuotationAddOns.Add(new QuotationAddOn
+                {
+                    QuotationId = quotationId,
+                    AddOnId     = addOnId
+                });
+            }
         }
 
         public async Task SaveChangesAsync()

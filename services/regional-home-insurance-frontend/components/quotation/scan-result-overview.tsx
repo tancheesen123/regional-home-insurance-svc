@@ -297,7 +297,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
                             }}
                             title={
                               !canScroll
-                                ? "This field will be pre-filled when you reach that step"
+                                ? "This value will be auto-applied when you reach that step"
                                 : isMissing
                                 ? "Jump to this field in the form"
                                 : "Jump to review this value in the form"

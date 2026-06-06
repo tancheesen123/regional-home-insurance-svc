@@ -41,9 +41,13 @@ namespace ApplicationService.Core.Application.RateConfigService.Services
 
             var changeLogsJson = JsonSerializer.Serialize(changeLogs);
 
+            // Resolve the active RegionConfig.Id so the snapshot has a proper FK
+            var regionConfig = await _repo.GetRegionConfigAsync(region);
+
             var snapshot = new RateConfigSnapshot
             {
                 Region          = region,
+                RegionConfigId  = regionConfig?.Id,
                 Label           = label,
                 SnapshotJson    = snapshotJson,
                 SnapshotType    = snapshotType,

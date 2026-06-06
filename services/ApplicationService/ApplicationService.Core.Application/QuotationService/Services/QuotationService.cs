@@ -119,6 +119,21 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 DiscountAmount     = request.DiscountAmount
             }, quotation.Region);
 
+            // ── Record which RegionConfig was used to price this quote ────────
+            var regionConfig = await _quotationRepository.GetRegionConfigAsync(quotation.Region);
+            quotation.RegionConfigId = regionConfig?.Id;
+
+            // ── Sync QuotationAddOn junction table ────────────────────────────
+            if (addOnCodes.Count > 0)
+            {
+                var addOnIdMap = await _quotationRepository.GetAddOnIdsByCodesAsync(addOnCodes);
+                await _quotationRepository.ReplaceAddOnsAsync(quotation.QuotationId, addOnIdMap.Values);
+            }
+            else
+            {
+                await _quotationRepository.ReplaceAddOnsAsync(quotation.QuotationId, Enumerable.Empty<string>());
+            }
+
             // ── Persist plan + premium breakdown on Quotation ─────────────────
             quotation.PlanType                    = request.PlanType;
             quotation.BuildingSum                 = request.BuildingSum;

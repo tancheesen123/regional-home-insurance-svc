@@ -34,5 +34,8 @@ namespace ApplicationService.Core.Domain.Entities
         /// Shape: { "PH": 0.001, "ID": 0.0012, "KH": 0.0008 }
         /// </summary>
         public string RatesJson { get; set; } = "{}";
+
+        // Navigation
+        public ICollection<QuotationAddOn> QuotationAddOns { get; set; } = new List<QuotationAddOn>();
     }
 }
