@@ -1,157 +1,220 @@
 "use client"
 
 import { useState } from "react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-interface PaynamicsPaymentProps {
-  amount: number
-  currency: string
-  orderId: string
-  customerEmail: string
-  customerName: string
-  onPaymentInitiated: (paymentData: any) => void
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface PaynamicsCustomerAddress {
+  addressLine1?: string
+  addressLine2?: string
+  city?:         string
+  state?:        string
+  postcode?:     string
+  country?:      string
 }
 
+export interface PaynamicsPaymentProps {
+  /** referenceNumber returned by InitiatePayment — used as Paynamics request_id */
+  orderId:        string
+  amount:         number
+  currency:       string   // "PHP"
+  customerEmail:  string
+  customerName:   string
+  mobileNumber?:  string
+  address?:       PaynamicsCustomerAddress | null
+}
+
+// ── Payment methods ───────────────────────────────────────────────────────────
+
+const PAYMENT_METHODS = [
+  { id: "visa-master", code: "CC",      name: "Visa / MasterCard",   icon: "💳", desc: "Credit or debit card" },
+  { id: "gcash",       code: "GCASH",   name: "GCash",               icon: "📱", desc: "GCash mobile wallet" },
+  { id: "paymaya",     code: "PAYMAYA", name: "Maya (PayMaya)",       icon: "💜", desc: "Maya digital wallet" },
+  { id: "bpi",         code: "BPI",     name: "BPI Online Banking",   icon: "🏦", desc: "Bank of the Philippine Islands" },
+  { id: "bdo",         code: "BDO",     name: "BDO Online Banking",   icon: "🏦", desc: "Banco de Oro" },
+] as const
+
+type MethodId = (typeof PAYMENT_METHODS)[number]["id"]
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function PaynamicsPayment({
+  orderId,
   amount,
   currency,
-  orderId,
   customerEmail,
   customerName,
-  onPaymentInitiated,
+  mobileNumber = "",
+  address = null,
 }: PaynamicsPaymentProps) {
-  const [selectedMethod, setSelectedMethod] = useState("visa-master")
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState<MethodId>("visa-master")
+  const [isProcessing,   setIsProcessing]   = useState(false)
+  const [signError,      setSignError]      = useState<string | null>(null)
 
-  const paymentMethods = [
-    { id: "visa-master", name: "Visa/MasterCard", logo: "💳", description: "Credit/Debit Cards" },
-    { id: "gcash", name: "GCash", logo: "📱", description: "GCash Mobile Wallet" },
-    { id: "paymaya", name: "PayMaya", logo: "💰", description: "PayMaya Digital Wallet" },
-    { id: "bpi", name: "BPI Online", logo: "🏦", description: "BPI Online Banking" },
-    { id: "bdo", name: "BDO Online", logo: "🏦", description: "BDO Online Banking" },
-  ]
+  // Split name into first / last (Paynamics requires fname + lname separately)
+  const nameParts = customerName.trim().split(/\s+/)
+  const fname = nameParts[0] ?? "N"
+  const lname = nameParts.length > 1 ? nameParts.slice(1).join(" ") : fname
 
-  const generateSignature = (data: any) => {
-    // In production, this should be done on the server side
-    const crypto = require("crypto")
-    const merchantKey = process.env.PAYNAMICS_MERCHANT_KEY || ""
-    const signatureString = `${data.merchantid}${data.request_id}${data.notification_url}${data.response_url}${data.fname}${data.lname}${data.mname}${data.address1}${data.address2}${data.city}${data.state}${data.country}${data.zip}${data.secure3d}${data.trxtype}${data.amount}${data.currency}${merchantKey}`
-    return crypto.createHash("sha1").update(signatureString).digest("hex")
-  }
-
-  const handlePayment = async () => {
+  const handlePay = async () => {
+    setSignError(null)
     setIsProcessing(true)
 
-    try {
-      const [firstName, ...lastNameParts] = customerName.split(" ")
-      const lastName = lastNameParts.join(" ") || firstName
+    const origin = window.location.origin
+    const notificationUrl = `${origin}/api/payment/paynamics/notification`
+    const responseUrl     = `${origin}/api/payment/paynamics/response`
+    const cancelUrl       = `${origin}/dashboard/quotation/summary`
 
-      const paymentData = {
-        merchantid: process.env.NEXT_PUBLIC_PAYNAMICS_MERCHANT_ID,
-        request_id: orderId,
-        notification_url: `${window.location.origin}/api/payment/paynamics/notification`,
-        response_url: `${window.location.origin}/api/payment/paynamics/response`,
-        cancel_url: `${window.location.origin}/dashboard/quotation/summary`,
-        fname: firstName,
-        lname: lastName,
-        mname: "",
-        address1: "N/A",
-        address2: "",
-        city: "Manila",
-        state: "NCR",
-        country: "PH",
-        zip: "1000",
-        email: customerEmail,
-        phone: "",
-        secure3d: "try3d",
-        trxtype: "sale",
-        amount: amount.toFixed(2),
-        currency: currency,
-        payment_method: getPaymentMethodCode(selectedMethod),
-        description: "Etiqa Home Insurance Premium",
+    const addr1    = address?.addressLine1 ?? "N/A"
+    const addr2    = address?.addressLine2 ?? ""
+    const city     = address?.city         ?? "N/A"
+    const state    = address?.state        ?? "N/A"
+    const country  = "PH"                            // always PH for this component
+    const zip      = address?.postcode     ?? "0000"
+
+    const unsigned = {
+      request_id:       orderId,
+      notification_url: notificationUrl,
+      response_url:     responseUrl,
+      cancel_url:       cancelUrl,
+      fname,
+      lname,
+      mname:            "",
+      address1:         addr1,
+      address2:         addr2,
+      city,
+      state,
+      country,
+      zip,
+      email:            customerEmail,
+      phone:            mobileNumber,
+      secure3d:         "try3d",
+      trxtype:          "sale",
+      amount:           amount.toFixed(2),
+      currency,
+      payment_method:   PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.code ?? "CC",
+      description:      "Home Insurance Premium",
+    }
+
+    try {
+      // Signature is generated server-side so the merchant key is never in the browser
+      const res = await fetch("/api/payment/paynamics/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(unsigned),
+      })
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(errBody.error ?? `Sign endpoint returned ${res.status}`)
       }
 
-      // Generate signature (should be done server-side in production)
-      paymentData.signature = generateSignature(paymentData)
+      const signed: Record<string, string> = await res.json()
 
-      // Create form and submit to Paynamics
+      // Build and submit the hidden form directly to Paynamics gateway
       const form = document.createElement("form")
       form.method = "POST"
-      form.action =
-        process.env.NODE_ENV === "production"
-          ? "https://api.paynamics.net/paygate.aspx"
-          : "https://testapi.paynamics.net/paygate.aspx"
+      form.action = signed.gatewayUrl  // returned by sign endpoint (prod vs sandbox)
 
-      Object.keys(paymentData).forEach((key) => {
+      // Remove our internal helper field before posting
+      delete signed.gatewayUrl
+
+      for (const [key, value] of Object.entries(signed)) {
         const input = document.createElement("input")
-        input.type = "hidden"
-        input.name = key
-        input.value = paymentData[key]
+        input.type  = "hidden"
+        input.name  = key
+        input.value = String(value ?? "")
         form.appendChild(input)
-      })
+      }
 
       document.body.appendChild(form)
       form.submit()
-
-      onPaymentInitiated(paymentData)
-    } catch (error) {
-      console.error("Payment initiation failed:", error)
+      // Browser navigates away — no further JS execution here
+    } catch (err) {
+      console.error("[PaynamicsPayment] Error:", err)
+      setSignError(
+        err instanceof Error ? err.message : "Failed to initiate payment. Please try again.",
+      )
       setIsProcessing(false)
     }
   }
 
-  const getPaymentMethodCode = (method: string) => {
-    const methodMap = {
-      "visa-master": "CC",
-      gcash: "GCASH",
-      paymaya: "PAYMAYA",
-      bpi: "BPI",
-      bdo: "BDO",
-    }
-    return methodMap[method] || "CC"
-  }
+  const selected = PAYMENT_METHODS.find((m) => m.id === selectedMethod)!
 
   return (
-    <Card>
+    <Card className="border border-gray-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <img src="/images/paynamics-logo.png" alt="Paynamics" className="h-6" />
-          Paynamics Payment Gateway
+        <CardTitle className="text-base font-semibold text-[#1A1A1A]">
+          Select Payment Method
         </CardTitle>
+        <p className="text-sm text-[#555555]">You will be redirected to Paynamics to complete payment.</p>
       </CardHeader>
+
       <CardContent className="space-y-4">
-        <RadioGroup value={selectedMethod} onValueChange={setSelectedMethod}>
-          {paymentMethods.map((method) => (
-            <div key={method.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+        {/* Method selector */}
+        <RadioGroup
+          value={selectedMethod}
+          onValueChange={(v) => setSelectedMethod(v as MethodId)}
+        >
+          {PAYMENT_METHODS.map((method) => (
+            <label
+              key={method.id}
+              htmlFor={method.id}
+              className={[
+                "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                selectedMethod === method.id
+                  ? "border-[#F5A623] bg-[#FEF3DC]"
+                  : "border-gray-200 hover:bg-gray-50",
+              ].join(" ")}
+            >
               <RadioGroupItem value={method.id} id={method.id} />
-              <div className="flex items-center space-x-3 flex-1">
-                <span className="text-2xl">{method.logo}</span>
-                <div>
-                  <Label htmlFor={method.id} className="font-medium cursor-pointer">
-                    {method.name}
-                  </Label>
-                  <p className="text-sm text-gray-600">{method.description}</p>
-                </div>
+              <span className="text-xl">{method.icon}</span>
+              <div className="min-w-0">
+                <p className="font-medium text-sm text-[#1A1A1A]">{method.name}</p>
+                <p className="text-xs text-[#555555]">{method.desc}</p>
               </div>
-            </div>
+            </label>
           ))}
         </RadioGroup>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="font-medium">Total Amount:</span>
-            <span className="text-xl font-bold">
-              {currency} {amount.toLocaleString()}
-            </span>
-          </div>
+        {/* Amount */}
+        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+          <span className="text-sm font-medium text-[#555555]">Total Amount</span>
+          <span className="text-lg font-bold text-[#1A1A1A]">
+            {currency} {amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
         </div>
 
-        <Button onClick={handlePayment} disabled={isProcessing} className="w-full bg-[#0056b3] hover:bg-[#004494]">
-          {isProcessing ? "Processing..." : `Pay with ${paymentMethods.find((m) => m.id === selectedMethod)?.name}`}
+        {signError && (
+          <Alert variant="destructive">
+            <AlertDescription>{signError}</AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          onClick={handlePay}
+          disabled={isProcessing}
+          className="w-full bg-[#F5A623] hover:bg-[#D4891A] text-[#1A1A1A] font-semibold h-12"
+        >
+          {isProcessing ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Redirecting to Paynamics…
+            </span>
+          ) : (
+            `Pay with ${selected.name}`
+          )}
         </Button>
+
+        <p className="text-xs text-center text-[#9E9E9E]">
+          Secured by Paynamics • Your payment is encrypted and protected
+        </p>
       </CardContent>
     </Card>
   )

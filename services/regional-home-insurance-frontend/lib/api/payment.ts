@@ -15,7 +15,8 @@ export interface InitiatePaymentData {
   currency: string
   paymentMethod: string
   gatewayName: string
-  stripeSession: {
+  /** Only present for Stripe regions (MY). Absent for Paynamics (PH), DOKU (ID), iPay88 (KH). */
+  stripeSession?: {
     sessionId: string
     checkoutUrl: string
   }
