@@ -41,9 +41,12 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 
                 _logger.LogInformation("SeedRateConfig | Seeding region {Region}…", region);
 
-                await _repo.SeedRegionConfigAsync(BuildRegionConfig(region));
-                await _repo.SeedMultipliersAsync(BuildLocationTiers(region));
-                await _repo.SeedMultipliersAsync(BuildRiskMultipliers(region));
+                // Build RegionConfig first so its auto-generated Id is available
+                // as a FK reference on every multiplier row.
+                var regionConfig = BuildRegionConfig(region);
+                await _repo.SeedRegionConfigAsync(regionConfig);
+                await _repo.SeedMultipliersAsync(BuildLocationTiers(region, regionConfig.Id));
+                await _repo.SeedMultipliersAsync(BuildRiskMultipliers(region, regionConfig.Id));
                 await _repo.SeedAddOnsAsync(BuildAddOns());
                 await _repo.SaveChangesAsync();
 
@@ -190,7 +193,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 };
             }
 
-            private static List<RateMultiplierConfig> BuildLocationTiers(string region)
+            private static List<RateMultiplierConfig> BuildLocationTiers(string region, string regionConfigId)
             {
                 var tiers = region switch
                 {
@@ -225,17 +228,19 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 
                 return tiers.Select(t => New<RateMultiplierConfig>(cfg =>
                 {
-                    cfg.Region       = region;
-                    cfg.Type         = "location_tier";
-                    cfg.FactorKey    = t.Item1;
-                    cfg.Multiplier   = t.Item2;
-                    cfg.Label        = t.Item3;
-                    cfg.KeywordsJson = JsonSerializer.Serialize(t.Item4);
+                    cfg.Region          = region;
+                    cfg.RegionConfigId  = regionConfigId;
+                    cfg.Type            = "location_tier";
+                    cfg.FactorKey       = t.Item1;
+                    cfg.Multiplier      = t.Item2;
+                    cfg.Label           = t.Item3;
+                    cfg.KeywordsJson    = JsonSerializer.Serialize(t.Item4);
                 })).ToList();
             }
 
-            private static List<RateMultiplierConfig> BuildRiskMultipliers(string region) =>
-                new()
+            private static List<RateMultiplierConfig> BuildRiskMultipliers(string region, string regionConfigId)
+            {
+                var items = new List<RateMultiplierConfig>
                 {
                     Risk(region, "base.premium",               500m,  "Fixed base amount before any multipliers (initial quote only)"),
                     Risk(region, "construction.full-brick",    1.00m, "Full-brick construction — base rate (no surcharge)"),
@@ -259,6 +264,9 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     Risk(region, "site.confined",              1.10m, "Confined site — 10% surcharge for restricted access"),
                     Risk(region, "site.city-centre",           1.15m, "City centre — 15% surcharge for logistics and access"),
                 };
+                items.ForEach(r => r.RegionConfigId = regionConfigId);
+                return items;
+            }
 
             private static List<AddOn> BuildAddOns() => new()
             {

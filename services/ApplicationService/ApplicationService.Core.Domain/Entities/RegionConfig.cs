@@ -47,5 +47,10 @@ namespace ApplicationService.Core.Domain.Entities
         /// Shape: [{ "category": "jewellery", "maxPerItem": 5000, "maxTotal": 20000, "rate": 0.02 }, ...]
         /// </summary>
         public string ValuableRatesJson { get; set; } = "[]";
+
+        // Navigation
+        public ICollection<Quotation>           Quotations           { get; set; } = new List<Quotation>();
+        public ICollection<RateConfigSnapshot>  RateConfigSnapshots  { get; set; } = new List<RateConfigSnapshot>();
+        public ICollection<RateMultiplierConfig> RateMultiplierConfigs { get; set; } = new List<RateMultiplierConfig>();
     }
 }

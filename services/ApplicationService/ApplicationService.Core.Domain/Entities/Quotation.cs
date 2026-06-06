@@ -12,6 +12,9 @@ namespace ApplicationService.Core.Domain.Entities
         public string Region { get; set; }           // "KH", "PH", "ID"
         public string CustomerId { get; set; }
 
+        // FK to the RegionConfig whose rates were used to price this quote
+        public string? RegionConfigId { get; set; }
+
         // Property & Risk Info
         public string OwnershipType { get; set; }    // "owner" | "tenant"
         public string PropertyType { get; set; }     // "landed" | "non-landed"
@@ -59,7 +62,9 @@ namespace ApplicationService.Core.Domain.Entities
         public string? ValuableItemsJson { get; set; }
 
         // Navigation
-        public Customer Customer { get; set; }
-        public Proposal Proposal { get; set; }
+        public Customer    Customer      { get; set; }
+        public Proposal    Proposal      { get; set; }
+        public RegionConfig? RegionConfig { get; set; }
+        public ICollection<QuotationAddOn> QuotationAddOns { get; set; } = new List<QuotationAddOn>();
     }
 }

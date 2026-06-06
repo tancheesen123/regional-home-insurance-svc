@@ -37,5 +37,11 @@ namespace ApplicationService.Core.Domain.Entities
         /// Shape: [{ "tableName": "...", "recordId": "...", "fieldName": "...", "oldValue": "...", "newValue": "...", "changedBy": "...", "changedAt": "..." }]
         /// </summary>
         public string ChangeLogsJson { get; set; } = "[]";
+
+        // FK to the RegionConfig whose state this snapshot captured
+        public string? RegionConfigId { get; set; }
+
+        // Navigation
+        public RegionConfig? RegionConfig { get; set; }
     }
 }

@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
-  Plus, Minus, Edit, Trash2,
+  Plus, Minus, Edit, Trash2, AlertTriangle,
   Medal, Gem, Coins, Diamond, Shirt, Dumbbell, Archive,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -40,7 +40,13 @@ interface ValuableCategory {
 export default function DeclareValuables() {
   const router = useRouter()
   const t = useTranslations("quotation")
-  const { symbol } = getRegionConfig(getSession()?.countryCode ?? "")
+
+  // Defer session-dependent values to the client only — avoids SSR/client hydration
+  // mismatch caused by sessionStorage being unavailable during server rendering.
+  const [symbol, setSymbol] = useState<string>("")
+  useEffect(() => {
+    setSymbol(getRegionConfig(getSession()?.countryCode ?? "").symbol)
+  }, [])
   const [showDeclaration, setShowDeclaration] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,14 +60,20 @@ export default function DeclareValuables() {
     { id: "collectibles", nameKey: "declare.collectibles", descKey: "declare.collectiblesDesc", Icon: Archive, items: [], isExpanded: false },
   ])
 
-  const [newItem, setNewItem] = useState({ description: "", value: "" })
+  // Per-category input state — keyed by category id so multiple open cards don't share one input
+  const [newItems, setNewItems] = useState<Record<string, { description: string; value: string }>>({})
 
-  const maxDeclarableAmount = 20000
+  const MAX_ITEM_VALUE    = 20000   // per-item ceiling
+  const MIN_ITEM_VALUE    = 3000    // per-item floor
+  const MAX_TOTAL_DECLARED = 60000  // coverage cap across all declared valuables
+
   const totalDeclaredAmount = categories.reduce(
     (total, category) => total + category.items.reduce((sum, item) => sum + item.value, 0),
     0,
   )
-  const undeclaredAmount = 60000 - totalDeclaredAmount
+  const remainingCoverage  = MAX_TOTAL_DECLARED - totalDeclaredAmount
+  const isAtLimit          = totalDeclaredAmount >= MAX_TOTAL_DECLARED
+  const isNearLimit        = !isAtLimit && totalDeclaredAmount >= MAX_TOTAL_DECLARED * 0.8
 
   // ── Summary bar data (real premium carried from the customize step) ──────────
   const storedPremium = getQuotationPremium()
@@ -115,26 +127,37 @@ export default function DeclareValuables() {
     router.push("/dashboard/quotation/fill-details")
   }
 
+  // Toggle a single card; other cards stay as-is (multi-expand allowed)
   const toggleCategory = (categoryId: string) => {
     setCategories((prev) =>
       prev.map((cat) => ({
         ...cat,
-        isExpanded: cat.id === categoryId ? !cat.isExpanded : false,
+        isExpanded: cat.id === categoryId ? !cat.isExpanded : cat.isExpanded,
       })),
     )
-    setNewItem({ description: "", value: "" })
   }
 
-  const addItem = (categoryId: string) => {
-    if (!newItem.description || !newItem.value) return
+  const getNewItem = (categoryId: string) =>
+    newItems[categoryId] ?? { description: "", value: "" }
 
-    const value = Number.parseFloat(newItem.value)
-    if (value < 3000 || value > 20000) return
+  const setNewItemField = (categoryId: string, field: "description" | "value", val: string) =>
+    setNewItems((prev) => ({
+      ...prev,
+      [categoryId]: { ...getNewItem(categoryId), [field]: val },
+    }))
+
+  const addItem = (categoryId: string) => {
+    const item = getNewItem(categoryId)
+    if (!item.description || !item.value) return
+
+    const value = Number.parseFloat(item.value)
+    if (value < MIN_ITEM_VALUE || value > MAX_ITEM_VALUE) return
+    if (totalDeclaredAmount + value > MAX_TOTAL_DECLARED) return   // hard cap
 
     const newItemObj: ValuableItem = {
       id: Date.now().toString(),
-      description: newItem.description,
-      value: value,
+      description: item.description,
+      value,
     }
 
     setCategories((prev) =>
@@ -145,7 +168,8 @@ export default function DeclareValuables() {
       ),
     )
 
-    setNewItem({ description: "", value: "" })
+    // Clear only this card's inputs
+    setNewItems((prev) => ({ ...prev, [categoryId]: { description: "", value: "" } }))
   }
 
   const deleteItem = (categoryId: string, itemId: string) => {
@@ -289,8 +313,39 @@ export default function DeclareValuables() {
           </Button>
         </div>
 
+        {/* ── Coverage limit banner ──────────────────────────────────────── */}
+        {(isAtLimit || isNearLimit) && (
+          <div className={cn(
+            "flex items-start gap-3 rounded-xl px-4 py-3 mb-4 border",
+            isAtLimit
+              ? "bg-[#FFF3F3] border-[#FFCDD2] text-[#C62828]"
+              : "bg-[#FFFBE6] border-[#FFE082] text-[#E65100]",
+          )}>
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="text-sm leading-snug">
+              {isAtLimit ? (
+                <>
+                  <span className="font-semibold">Coverage limit reached.</span>{" "}
+                  You have declared {symbol} {totalDeclaredAmount.toLocaleString()}, which is the maximum
+                  coverable amount ({symbol} {MAX_TOTAL_DECLARED.toLocaleString()}). No more items can be added.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">Approaching limit.</span>{" "}
+                  {symbol} {remainingCoverage.toLocaleString()} remaining out of{" "}
+                  {symbol} {MAX_TOTAL_DECLARED.toLocaleString()} total coverage.
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3 mb-8">
-          {categories.map((category) => (
+          {categories.map((category) => {
+            const catTotal    = category.items.reduce((s, i) => s + i.value, 0)
+            const cardNewItem = getNewItem(category.id)
+
+            return (
             <Card
               key={category.id}
               className={cn(
@@ -322,87 +377,102 @@ export default function DeclareValuables() {
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-[#9E9E9E] hover:text-[#1A1A1A]">
-                    {category.isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* Per-card declared total badge */}
+                    {catTotal > 0 && (
+                      <span className="text-xs font-semibold bg-[#FEF3DC] text-[#D4891A] px-2 py-0.5 rounded-full">
+                        {symbol} {catTotal.toLocaleString()}
+                      </span>
+                    )}
+                    <Button variant="ghost" size="icon" className="text-[#9E9E9E] hover:text-[#1A1A1A]">
+                      {category.isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
 
-                {category.isExpanded && (
-                  <div className="mt-4 space-y-4 pt-4 border-t border-[#F5F5F5]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="description" className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
-                          {t("declare.descriptionLabel")}
-                        </Label>
-                        <Input
-                          id="description"
-                          placeholder={t("declare.descriptionPlaceholder")}
-                          value={newItem.description}
-                          onChange={(e) => setNewItem((prev) => ({ ...prev, description: e.target.value }))}
-                          className="border-[#E0E0E0] rounded-lg h-10"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="value" className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
-                          {t("declare.valueLabel")}
-                        </Label>
-                        <div className="flex">
-                          <span className="inline-flex items-center px-3 text-sm text-[#1A1A1A] bg-[#FAFAFA] border border-r-0 border-[#E0E0E0] rounded-l-lg">
-                            {symbol}
-                          </span>
+                <div className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                  category.isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}>
+                  <div className="overflow-hidden">
+                    <div className="mt-4 space-y-4 pt-4 border-t border-[#F5F5F5]">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`desc-${category.id}`} className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
+                            {t("declare.descriptionLabel")}
+                          </Label>
                           <Input
-                            id="value"
-                            type="number"
-                            className="rounded-l-none border-[#E0E0E0] h-10"
-                            value={newItem.value}
-                            onChange={(e) => setNewItem((prev) => ({ ...prev, value: e.target.value }))}
+                            id={`desc-${category.id}`}
+                            placeholder={t("declare.descriptionPlaceholder")}
+                            value={cardNewItem.description}
+                            onChange={(e) => setNewItemField(category.id, "description", e.target.value)}
+                            className="border-[#E0E0E0] rounded-lg h-10"
                           />
                         </div>
-                        <p className="text-xs text-[#9E9E9E] mt-1.5">{t("declare.minMax", { symbol })}</p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => addItem(category.id)}
-                      className="text-[#0066CC] hover:text-[#004EA8] bg-transparent hover:bg-transparent hover:underline p-0 h-auto font-medium transition-colors duration-150"
-                      disabled={!newItem.description || !newItem.value}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      {t("declare.addItem")}
-                    </Button>
-
-                    {category.items.length > 0 && (
-                      <div className="space-y-2">
-                        {category.items.map((item, index) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg">
-                            <span className="text-sm text-[#1A1A1A]">
-                              {index + 1}. {item.description}
-                              <span className="text-[#9E9E9E] mx-1">·</span>
-                              <span className="font-medium">{symbol} {item.value.toLocaleString()}</span>
+                        <div>
+                          <Label htmlFor={`val-${category.id}`} className="text-sm font-medium text-[#1A1A1A] mb-1.5 block">
+                            {t("declare.valueLabel")}
+                          </Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-3 text-sm text-[#1A1A1A] bg-[#FAFAFA] border border-r-0 border-[#E0E0E0] rounded-l-lg">
+                              {symbol}
                             </span>
-                            <div className="flex items-center space-x-1">
-                              <Button variant="ghost" size="sm" className="text-[#0066CC] hover:text-[#004EA8] hover:bg-[#E0F0FF] h-8 px-2">
-                                <Edit className="h-3.5 w-3.5" />
-                                <span className="ml-1 text-xs">{t("declare.edit")}</span>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#FFEBEE] h-8 px-2"
-                                onClick={() => deleteItem(category.id, item.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                            <Input
+                              id={`val-${category.id}`}
+                              type="number"
+                              className="rounded-l-none border-[#E0E0E0] h-10"
+                              value={cardNewItem.value}
+                              onChange={(e) => setNewItemField(category.id, "value", e.target.value)}
+                              disabled={isAtLimit}
+                            />
                           </div>
-                        ))}
+                          <p className="text-xs text-[#9E9E9E] mt-1.5">{t("declare.minMax", { symbol })}</p>
+                        </div>
                       </div>
-                    )}
+
+                      <Button
+                        onClick={() => addItem(category.id)}
+                        className="text-[#0066CC] hover:text-[#004EA8] bg-transparent hover:bg-transparent hover:underline p-0 h-auto font-medium transition-colors duration-150"
+                        disabled={isAtLimit || !cardNewItem.description || !cardNewItem.value}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        {t("declare.addItem")}
+                      </Button>
+
+                      {category.items.length > 0 && (
+                        <div className="space-y-2">
+                          {category.items.map((item, index) => (
+                            <div key={item.id} className="flex items-center justify-between p-3 bg-[#FAFAFA] border border-[#E0E0E0] rounded-lg">
+                              <span className="text-sm text-[#1A1A1A]">
+                                {index + 1}. {item.description}
+                                <span className="text-[#9E9E9E] mx-1">·</span>
+                                <span className="font-medium">{symbol} {item.value.toLocaleString()}</span>
+                              </span>
+                              <div className="flex items-center space-x-1">
+                                <Button variant="ghost" size="sm" className="text-[#0066CC] hover:text-[#004EA8] hover:bg-[#E0F0FF] h-8 px-2">
+                                  <Edit className="h-3.5 w-3.5" />
+                                  <span className="ml-1 text-xs">{t("declare.edit")}</span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#FFEBEE] h-8 px-2"
+                                  onClick={() => deleteItem(category.id, item.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
-          ))}
+          )
+          })}
         </div>
 
         {error && (

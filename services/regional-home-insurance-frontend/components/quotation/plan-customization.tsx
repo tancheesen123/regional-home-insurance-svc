@@ -30,6 +30,7 @@ import {
 } from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getRegionConfig, fmtAmount, clampAndRound } from "@/lib/region"
+import { getScanSession, CONFIDENCE_THRESHOLD } from "@/lib/scan-session"
 
 // ── Static constants ──────────────────────────────────────────────────────────
 
@@ -74,6 +75,38 @@ interface PlanState {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Scan-session helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Map the raw cover-type string the AI returns on a policy document
+ * (e.g. "HOUSEOWNER/HOUSEHOLDER", "HOUSEOWNER", "HOUSEHOLDER") to our
+ * internal plan-id strings.
+ *
+ * Malaysian insurance terminology:
+ *   Houseowner   = building structure only
+ *   Householder  = home contents only
+ *   Both present = building + contents
+ */
+function parseCoverType(raw: string): PlanId | "" {
+  const u = raw.toUpperCase()
+  const hasOwner  = u.includes("HOUSEOWNER") || u.includes("OWNER")
+  const hasHolder = u.includes("HOUSEHOLDER") || u.includes("HOLDER") || u.includes("CONTENT")
+  if (hasOwner && hasHolder) return "building-contents"
+  if (hasOwner)              return "building-only"
+  if (hasHolder)             return "content-only"
+  return ""
+}
+
+/**
+ * Strip any currency prefix / symbols / commas and parse to a plain integer.
+ * e.g. "RM 3,790,266,600.00" → 3790266600
+ */
+function parseSumInsuredStr(raw: string): number {
+  return parseInt(raw.replace(/[^0-9]/g, ""), 10) || 0
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PlanCustomization() {
   const router = useRouter()
@@ -111,6 +144,54 @@ export default function PlanCustomization() {
   const [showBuildingCalculator, setShowBuildingCalculator] = useState(false)
   // True while the building amount was last set by the calculator (cleared on manual edit)
   const [buildingFromCalc, setBuildingFromCalc] = useState(false)
+
+  // ── Auto-fill from scan session (runs once on mount) ──────────────────────
+  useEffect(() => {
+    const session = getScanSession()
+    if (!session) return
+
+    const f = session.fields
+
+    // Resolve coverType — try "coverType" first, fall back to "planName"
+    const coverField =
+      f["coverType"]?.filled  && f["coverType"]?.value  ? f["coverType"]  :
+      f["planName"]?.filled   && f["planName"]?.value   ? f["planName"]   :
+      null
+
+    // Resolve sumInsured — the total sum shown on the scanned document
+    const sumField =
+      f["sumInsured"]?.filled && f["sumInsured"]?.value ? f["sumInsured"] :
+      null
+
+    if (!coverField && !sumField) return   // nothing scanned for this step
+
+    setPlanState((prev) => {
+      let next = { ...prev }
+
+      // 1. Apply cover type → selectedPlan
+      if (coverField && coverField.confidence >= CONFIDENCE_THRESHOLD) {
+        const plan = parseCoverType(coverField.value ?? "")
+        if (plan) next = { ...next, selectedPlan: plan }
+      }
+
+      // 2. Apply sum insured → the correct amount field
+      if (sumField && sumField.confidence >= CONFIDENCE_THRESHOLD) {
+        const amount = parseSumInsuredStr(sumField.value ?? "")
+        if (amount > 0) {
+          const plan = next.selectedPlan   // use the plan we just resolved above
+          if (plan === "content-only") {
+            next = { ...next, contentAmount: amount }
+          } else {
+            // "building-only", "building-contents", or not yet resolved → building
+            next = { ...next, buildingAmount: amount }
+          }
+        }
+      }
+
+      return next
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])  // intentionally empty — read scan session once on mount only
 
   // ── Live preview ──────────────────────────────────────────────────────────
 

@@ -29,6 +29,9 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<RateMultiplierConfig> RateMultiplierConfigs { get; set; }
         public DbSet<RateConfigSnapshot> RateConfigSnapshots { get; set; }
 
+        // ── Junction tables ───────────────────────────────────────────────────
+        public DbSet<QuotationAddOn> QuotationAddOns { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // ── UserAccount ───────────────────────────────────────────────────
@@ -113,9 +116,17 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.TotalBeforeDiscount).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.ValuableItemsJson).HasColumnType("TEXT");
 
+                entity.Property(e => e.RegionConfigId).HasMaxLength(50);
+
                 entity.HasOne(e => e.Customer)
                       .WithMany(c => c.Quotations)
                       .HasForeignKey(e => e.CustomerId);
+
+                entity.HasOne(e => e.RegionConfig)
+                      .WithMany(r => r.Quotations)
+                      .HasForeignKey(e => e.RegionConfigId)
+                      .IsRequired(false)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // ── Proposal ──────────────────────────────────────────────────────
@@ -268,7 +279,14 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.CreatedBy).HasMaxLength(50);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
 
+                entity.Property(e => e.RegionConfigId).HasMaxLength(50);
                 entity.HasIndex(e => new { e.Region, e.Type, e.FactorKey, e.IsActive });
+
+                entity.HasOne(e => e.RegionConfig)
+                      .WithMany(r => r.RateMultiplierConfigs)
+                      .HasForeignKey(e => e.RegionConfigId)
+                      .IsRequired(false)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // ── RateConfigSnapshot ────────────────────────────────────────────
@@ -283,8 +301,33 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.ChangeLogsJson).HasColumnType("TEXT");
                 entity.Property(e => e.CreatedBy).HasMaxLength(50);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+                entity.Property(e => e.RegionConfigId).HasMaxLength(50);
 
                 entity.HasIndex(e => new { e.Region, e.CreatedAt });
+
+                entity.HasOne(e => e.RegionConfig)
+                      .WithMany(r => r.RateConfigSnapshots)
+                      .HasForeignKey(e => e.RegionConfigId)
+                      .IsRequired(false)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ── QuotationAddOn (junction: Quotation ↔ AddOn M:N) ─────────────
+            modelBuilder.Entity<QuotationAddOn>(entity =>
+            {
+                entity.HasKey(e => new { e.QuotationId, e.AddOnId });
+                entity.Property(e => e.QuotationId).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.AddOnId).HasMaxLength(50).IsRequired();
+
+                entity.HasOne(e => e.Quotation)
+                      .WithMany(q => q.QuotationAddOns)
+                      .HasForeignKey(e => e.QuotationId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.AddOn)
+                      .WithMany(a => a.QuotationAddOns)
+                      .HasForeignKey(e => e.AddOnId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

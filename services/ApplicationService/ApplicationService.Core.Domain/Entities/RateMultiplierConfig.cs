@@ -21,5 +21,11 @@ namespace ApplicationService.Core.Domain.Entities
         public string? Description { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        // FK to the RegionConfig this multiplier belongs to (null for Region="ALL")
+        public string? RegionConfigId { get; set; }
+
+        // Navigation
+        public RegionConfig? RegionConfig { get; set; }
     }
 }
