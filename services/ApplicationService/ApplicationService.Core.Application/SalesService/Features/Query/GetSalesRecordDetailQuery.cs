@@ -37,10 +37,31 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 if (p == null)
                     throw new KeyNotFoundException($"Sales record '{query.RecordId}' not found.");
 
-                var payment  = LatestSuccessfulPayment(p);
-                var premium  = GetPremium(p);
-                var q        = p.Quotation;
-                var now      = DateTime.UtcNow;
+                var result = BuildSalesRecordDetail(p);
+
+                _logger.LogInformation(
+                    "GetSalesRecordDetail | RecordId={RecordId} PolicyNumber={PolicyNumber}",
+                    query.RecordId, p.Policy?.PolicyNumber ?? "N/A");
+
+                return result;
+            }
+
+            // ── Helpers ────────────────────────────────────────────────────────
+
+            /// <summary>
+            /// Single entry point that assembles the full <see cref="GetSalesRecordDetailResult"/>
+            /// from the loaded entity graph: picks the latest successful payment, computes
+            /// premium/commission/totals, builds CustomerInfo/PolicyDetails/FinancialInfo/SalesInfo,
+            /// maps status/payment/region/coverage labels, deserializes Policy.DocumentsJson,
+            /// and builds the Timeline. Kept as one cohesive mapping step so callers (and the
+            /// sequence diagram) only need to know "BuildSalesRecordDetail(entity graph)".
+            /// </summary>
+            private static GetSalesRecordDetailResult BuildSalesRecordDetail(Proposal p)
+            {
+                var payment = LatestSuccessfulPayment(p);
+                var premium = GetPremium(p);
+                var q       = p.Quotation;
+                var now     = DateTime.UtcNow;
 
                 // ── Customer info ──────────────────────────────────────────────
                 var address = string.Join(", ", new[]
@@ -142,10 +163,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 // ── Timeline ───────────────────────────────────────────────────
                 var timeline = BuildTimeline(p, payment);
 
-                _logger.LogInformation(
-                    "GetSalesRecordDetail | RecordId={RecordId} PolicyNumber={PolicyNumber}",
-                    query.RecordId, p.Policy?.PolicyNumber ?? "N/A");
-
                 return new GetSalesRecordDetailResult
                 {
                     Id            = p.ProposalId,
@@ -158,8 +175,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     Timeline      = timeline,
                 };
             }
-
-            // ── Helpers ────────────────────────────────────────────────────────
 
             private static List<SalesTimelineEvent> BuildTimeline(Proposal p, Payment? payment)
             {
