@@ -1,0 +1,105 @@
+@startuml
+title RhiOPs — Entity Relationship Diagram (Indonesia / ID region)
+note as SCOPE
+  Scope: Indonesia-specific schema changes only.
+  Compare against erd-diagram.puml for the base schema.
+  New columns are marked <<ID only>>.
+end note
+
+skinparam linetype ortho
+skinparam entity {
+    BackgroundColor #DDEEFF
+    BorderColor     #2980B9
+    FontName        Arial
+    FontSize        10
+}
+skinparam package {
+    BackgroundColor #FEF9E7
+    BorderColor     #F39C12
+    FontStyle       bold
+    FontName        Arial
+}
+skinparam arrow {
+    Color    #2C3E50
+    FontSize 9
+}
+
+' ═══════════════════════════════════════════════════════
+' PROPOSAL & PAYMENT
+' ═══════════════════════════════════════════════════════
+package "Proposal & Payment" {
+    entity "Proposal" as PR {
+        * proposal_id            : NVARCHAR(50) <<PK>>
+        --
+        status                   : NVARCHAR(20)
+        .. Personal Snapshot ..
+        name                     : NVARCHAR(200)
+        id_type                  : NVARCHAR(20)
+        id_number                : NVARCHAR(50)
+        nationality              : NVARCHAR(50)
+        gender                   : NVARCHAR(10)
+        date_of_birth            : NVARCHAR(20)
+        mobile_number            : NVARCHAR(30)
+        email                    : NVARCHAR(100)
+        .. Property Address ..
+        prop_address_line1       : NVARCHAR(100)
+        prop_address_line2       : NVARCHAR(100)
+        prop_city                : NVARCHAR(100)
+        prop_postcode            : NVARCHAR(10)
+        prop_state               : NVARCHAR(100)
+        prop_country             : NVARCHAR(100)
+        prop_district            : NVARCHAR(100) <<ID only>>
+        prop_village             : NVARCHAR(100) <<ID only>>
+        .. Mailing Address ..
+        mailing_same_as_property : BIT
+        mail_address_line1       : NVARCHAR(100)
+        mail_address_line2       : NVARCHAR(100)
+        mail_city                : NVARCHAR(100)
+        mail_postcode            : NVARCHAR(10)
+        mail_state               : NVARCHAR(100)
+        mail_country             : NVARCHAR(100)
+        mail_district            : NVARCHAR(100) <<ID only>>
+        mail_village             : NVARCHAR(100) <<ID only>>
+        .. Bank ..
+        bank_name                : NVARCHAR(100)
+        bank_account_number      : NVARCHAR(50)
+        # customer_id            : NVARCHAR(50) <<FK>>
+        # quotation_id           : NVARCHAR(50) <<FK>>
+    }
+
+    entity "Payment" as PY {
+        * payment_id       : NVARCHAR(50) <<PK>>
+        --
+        reference_number   : NVARCHAR(100)
+        amount             : DECIMAL(18,2)
+        currency           : NVARCHAR(10)
+        status             : NVARCHAR(20)
+        payment_method     : NVARCHAR(50)
+        transaction_id     : NVARCHAR(200)
+        payment_url        : NVARCHAR(MAX)
+        expires_at         : DATETIME2
+        payment_date       : DATETIME2
+        # proposal_id      : NVARCHAR(50) <<FK>>
+    }
+}
+
+' ═══════════════════════════════════════════════════════
+' RELATIONSHIPS
+' ═══════════════════════════════════════════════════════
+PR ||--o{ PY : "1 triggers many"
+
+note as N1
+  prop_district  = Kecamatan
+  prop_village   = Kelurahan / Desa
+  mail_district  = Kecamatan (mailing)
+  mail_village   = Kelurahan / Desa (mailing)
+
+  Populated from:
+    - KTP OCR extraction (kecamatan / kelurahan keywords)
+    - Manual cascade dropdown (alamat.thecloudalert.com API)
+
+  NULL for all non-ID regions (PH, KH, MY).
+  Migration: IDApplicationDb 20260609000001_AddDistrictVillageToProposal
+end note
+
+@enduml
