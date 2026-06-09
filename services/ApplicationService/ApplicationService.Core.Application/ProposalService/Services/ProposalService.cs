@@ -124,7 +124,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     City         = proposal.PropCity,
                     Postcode     = proposal.PropPostcode,
                     State        = proposal.PropState,
-                    Country      = proposal.PropCountry
+                    Country      = proposal.PropCountry,
+                    District     = proposal.PropDistrict,
+                    Village      = proposal.PropVillage,
                 },
 
                 MailingAddress = new ProposalMailingAddressDto
@@ -135,7 +137,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     City                  = proposal.MailCity,
                     Postcode              = proposal.MailPostcode,
                     State                 = proposal.MailState,
-                    Country               = proposal.MailCountry
+                    Country               = proposal.MailCountry,
+                    District              = proposal.MailDistrict,
+                    Village               = proposal.MailVillage,
                 },
 
                 BankDetails = new ProposalBankDetailsDto
@@ -243,6 +247,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 PropPostcode          = prop.Postcode,
                 PropState             = prop.State,
                 PropCountry           = prop.Country,
+                PropDistrict          = prop.District,
+                PropVillage           = prop.Village,
                 MailingSameAsProperty = mailing.SameAsPropertyAddress,
                 MailAddressLine1      = mailing.SameAsPropertyAddress ? prop.AddressLine1 : mailing.AddressLine1,
                 MailAddressLine2      = mailing.SameAsPropertyAddress ? prop.AddressLine2 : mailing.AddressLine2,
@@ -250,6 +256,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 MailPostcode          = mailing.SameAsPropertyAddress ? prop.Postcode     : mailing.Postcode,
                 MailState             = mailing.SameAsPropertyAddress ? prop.State        : mailing.State,
                 MailCountry           = mailing.SameAsPropertyAddress ? prop.Country      : mailing.Country,
+                MailDistrict          = mailing.SameAsPropertyAddress ? prop.District     : mailing.District,
+                MailVillage           = mailing.SameAsPropertyAddress ? prop.Village      : mailing.Village,
                 BankName              = request.BankDetails.BankName,
                 BankAccountNumber     = request.BankDetails.AccountNumber,
                 CreatedAt             = DateTime.UtcNow

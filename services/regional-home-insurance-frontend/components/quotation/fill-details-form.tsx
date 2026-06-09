@@ -298,8 +298,8 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
           )}
 
-          {/* Race — not applicable for PH or KH (not collected on insurance forms there) */}
-          {countryCode.toUpperCase() !== "PH" && countryCode.toUpperCase() !== "KH" && (
+          {/* Race — MY only; ID/PH/KH do not collect ethnicity on standard insurance forms */}
+          {countryCode.toUpperCase() === "MY" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>{t("fillDetails.race")} <span className="text-[#9E9E9E] font-normal">({t("fillDetails.optional")})</span></Label>
@@ -497,6 +497,8 @@ const PropertyDetailsSection = memo(function PropertyDetailsSection({
               postcode: data.propertyPostcode,
               state:    data.propertyState,
               country:  data.propertyCountry,
+              district: data.propertyDistrict,
+              village:  data.propertyVillage,
             }}
             onChange={(partial) => {
               if (partial.city     !== undefined) onChange("propertyCity",     partial.city)
@@ -821,7 +823,7 @@ export default function FillDetailsForm() {
 
   // ── Scan session auto-fill ────────────────────────────────────────────────
 
-  const [scanSession,  setScanSession]  = useState(() => getScanSession())
+  const [scanSession,  setScanSession]  = useState<ReturnType<typeof getScanSession>>(null)
   const [scanFields,   setScanFields]   = useState<Record<string, ScanSessionField>>({})
 
   useEffect(() => {
@@ -912,6 +914,19 @@ export default function FillDetailsForm() {
       if (postcode && !prev.propertyPostcode) {
         next.propertyPostcode = postcode.f.value!
         applied[postcode.k] = { ...postcode.f, source: "scanned" }
+      }
+
+      // ID (KTP) only — parsed from address line keywords "Kecamatan" / "Kel/Desa"
+      const district = resolve(["kecamatan", "district"])
+      if (district && !prev.propertyDistrict) {
+        next.propertyDistrict = district.f.value!
+        applied[district.k] = { ...district.f, source: "scanned" }
+      }
+
+      const village = resolve(["kelurahan", "village"])
+      if (village && !prev.propertyVillage) {
+        next.propertyVillage = village.f.value!
+        applied[village.k] = { ...village.f, source: "scanned" }
       }
 
       return next

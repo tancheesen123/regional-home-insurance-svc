@@ -38,10 +38,13 @@ export const SCAN_FIELD_MAP: ScanFieldMapping[] = [
   { aiKey: "gender",       step: 4, section: "personal",  formKey: "gender",           label: "Gender"        },
 
   // ── Step 4 — Property address ───────────────────────────────────────────────
-  { aiKey: "insuredAddress", step: 4, section: "property", formKey: "propertyAddress1", label: "Address"       },
-  { aiKey: "city",           step: 4, section: "property", formKey: "propertyCity",     label: "City"          },
-  { aiKey: "state",          step: 4, section: "property", formKey: "propertyState",    label: "State"         },
-  { aiKey: "postcode",       step: 4, section: "property", formKey: "propertyPostcode", label: "Postcode"      },
+  { aiKey: "insuredAddress", step: 4, section: "property", formKey: "propertyAddress1", label: "Address"          },
+  { aiKey: "city",           step: 4, section: "property", formKey: "propertyCity",     label: "City"             },
+  { aiKey: "state",          step: 4, section: "property", formKey: "propertyState",    label: "State"            },
+  { aiKey: "postcode",       step: 4, section: "property", formKey: "propertyPostcode", label: "Postcode"         },
+  // ID (KTP) only — extracted from address line keywords "Kecamatan" / "Kel/Desa"
+  { aiKey: "kecamatan",      step: 4, section: "property", formKey: "propertyDistrict", label: "Kecamatan"        },
+  { aiKey: "kelurahan",      step: 4, section: "property", formKey: "propertyVillage",  label: "Kelurahan / Desa" },
 ]
 
 /** Return mappings for a specific step (and optional section). */

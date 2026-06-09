@@ -22,7 +22,13 @@ standard keys so the form can auto-fill correctly:
 - "gender"         : "MALE" or "FEMALE" (map L / Laki-laki -> MALE, P / Perempuan -> FEMALE; M -> MALE, F -> FEMALE)
 - "nationality"    : nationality / citizenship (e.g. INDONESIAN)
 - "placeOfBirth"   : place of birth
-- "address"        : full residential address if present
+- "address"        : street portion only — everything before "RT/RW" or "Kel/Desa" keyword (KTP); full address for PASSPORT
+
+For KTP documents (countryCode = ID), also extract these address sub-fields when present:
+- "state"          : province name from the card header — text after "PROVINSI" (e.g. "JAWA TIMUR")
+- "city"           : kabupaten/kota name from the card header — text after "KABUPATEN" or "KOTA" (e.g. "KEDIRI"), exclude the "KABUPATEN"/"KOTA" prefix
+- "kecamatan"      : district name — text immediately after the "Kecamatan" label on the address section
+- "kelurahan"      : village/kelurahan name — text immediately after "Kel/Desa" or "Kelurahan" label on the address section
 
 For other document types choose descriptive camelCase keys, e.g.:
   policyNumber, insuredName, insuredAddress, periodFrom, periodTo,

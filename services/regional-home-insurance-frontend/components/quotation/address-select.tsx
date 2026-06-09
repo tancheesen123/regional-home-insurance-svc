@@ -9,7 +9,7 @@
  * KH  → Province → District → Commune (pumi static data)
  */
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Loader2 } from "lucide-react"
 import { Input }  from "@/components/ui/input"
 import { Label }  from "@/components/ui/label"
@@ -165,6 +165,11 @@ function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
 
 // ── Indonesia component ───────────────────────────────────────────────────────
 
+// Normalise a name for fuzzy matching: lowercase, strip "kabupaten"/"kota" prefix
+function normName(s: string) {
+  return s.toLowerCase().replace(/^(kabupaten|kota)\s+/i, "").trim()
+}
+
 function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCode">) {
   const [provinces,  setProvinces]  = useState<IdOption[]>([])
   const [cities,     setCities]     = useState<IdOption[]>([])
@@ -178,12 +183,74 @@ function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
 
   const [loading, setLoading] = useState({ prov: true, city: false, dist: false, vill: false, post: false })
 
+  // Track auto-fill attempts so we don't retry after a failed match
+  const autoFilled = useRef({ prov: false, city: false, dist: false, vill: false })
+
   useEffect(() => {
     fetchIdProvinces().then((data) => {
       setProvinces(data)
       setLoading((p) => ({ ...p, prov: false }))
     })
   }, [])
+
+  // Auto-match province from OCR value (values.state)
+  useEffect(() => {
+    if (autoFilled.current.prov || selProv || !values.state || provinces.length === 0) return
+    const target = normName(values.state)
+    const match = provinces.find((p) => normName(p.text) === target)
+    if (!match) return
+    autoFilled.current.prov = true
+    setSelProv(match.id)
+    setLoading((p) => ({ ...p, city: true }))
+    fetchIdCities(match.id).then((list) => {
+      setCities(list)
+      setLoading((p) => ({ ...p, city: false }))
+    })
+  }, [provinces, selProv, values.state])
+
+  // Auto-match city/kabupaten from OCR value (values.city)
+  useEffect(() => {
+    if (autoFilled.current.city || selCity || !values.city || cities.length === 0) return
+    const target = normName(values.city)
+    const match = cities.find((c) => normName(c.text) === target)
+    if (!match) return
+    autoFilled.current.city = true
+    setSelCity(match.id)
+    setLoading((p) => ({ ...p, dist: true }))
+    fetchIdDistricts(match.id).then((list) => {
+      setDistricts(list)
+      setLoading((p) => ({ ...p, dist: false }))
+    })
+  }, [cities, selCity, values.city])
+
+  // Auto-match kecamatan from OCR value (values.district)
+  useEffect(() => {
+    if (autoFilled.current.dist || selDist || !values.district || districts.length === 0 || !selCity) return
+    const target = normName(values.district)
+    const match = districts.find((d) => normName(d.text) === target)
+    if (!match) return
+    autoFilled.current.dist = true
+    setSelDist(match.id)
+    setLoading((p) => ({ ...p, vill: true, post: true }))
+    Promise.all([
+      fetchIdVillages(match.id),
+      fetchIdPostcodeByDistrict(selCity, match.id),
+    ]).then(([list, postcode]) => {
+      setVillages(list)
+      setLoading((p) => ({ ...p, vill: false, post: false }))
+      onChange({ postcode })
+    })
+  }, [districts, selDist, selCity, values.district, onChange])
+
+  // Auto-match kelurahan from OCR value (values.village)
+  useEffect(() => {
+    if (autoFilled.current.vill || selVill || !values.village || villages.length === 0) return
+    const target = normName(values.village)
+    const match = villages.find((v) => normName(v.text) === target)
+    if (!match) return
+    autoFilled.current.vill = true
+    setSelVill(match.id)
+  }, [villages, selVill, values.village])
 
   const handleProvince = useCallback(async (id: string) => {
     const prov = provinces.find((p) => p.id === id)
@@ -256,7 +323,13 @@ function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
         id="id-district"
         value={selDist}
         options={districts.map((d) => ({ value: d.id, label: d.text }))}
-        placeholder={selCity ? "Pilih kecamatan" : "Pilih kab/kota dulu"}
+        placeholder={
+          selCity
+            ? "Pilih kecamatan"
+            : values.district && !selDist
+              ? `${values.district} — pilih provinsi dulu`
+              : "Pilih kab/kota dulu"
+        }
         loading={loading.dist}
         onChange={handleDistrict}
         disabled={disabled || !selCity}
@@ -266,7 +339,13 @@ function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
         id="id-village"
         value={selVill}
         options={villages.map((v) => ({ value: v.id, label: v.text }))}
-        placeholder={selDist ? "Pilih kelurahan / desa" : "Pilih kecamatan dulu"}
+        placeholder={
+          selDist
+            ? "Pilih kelurahan / desa"
+            : values.village && !selVill
+              ? `${values.village} — pilih kecamatan dulu`
+              : "Pilih kecamatan dulu"
+        }
         loading={loading.vill}
         onChange={handleVillage}
         disabled={disabled || !selDist}

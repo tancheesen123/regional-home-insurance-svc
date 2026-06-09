@@ -27,6 +27,8 @@ namespace ApplicationService.Core.Domain.Entities
         public string? PropPostcode { get; set; }
         public string? PropState { get; set; }
         public string? PropCountry { get; set; }
+        public string? PropDistrict { get; set; }  // Kecamatan (ID only)
+        public string? PropVillage { get; set; }   // Kelurahan/Desa (ID only)
 
         // Mailing address
         public bool MailingSameAsProperty { get; set; }
@@ -36,6 +38,8 @@ namespace ApplicationService.Core.Domain.Entities
         public string? MailPostcode { get; set; }
         public string? MailState { get; set; }
         public string? MailCountry { get; set; }
+        public string? MailDistrict { get; set; }  // Kecamatan (ID only)
+        public string? MailVillage { get; set; }   // Kelurahan/Desa (ID only)
 
         // Bank details
         public string? BankName { get; set; }
