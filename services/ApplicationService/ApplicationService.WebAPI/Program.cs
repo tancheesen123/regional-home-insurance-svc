@@ -123,6 +123,32 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseCors("AllowReact");
+
+// Global exception handler — ensures unhandled exceptions return a JSON 500
+// response *through* the pipeline (so CORS headers set up by UseCors above
+// are still applied), instead of a bare Kestrel 500 with no CORS headers,
+// which the browser reports as a misleading "CORS policy" error.
+app.UseExceptionHandler(errApp =>
+{
+    errApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+
+        var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var ex = feature?.Error;
+
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("GlobalExceptionHandler");
+        logger.LogError(ex, "Unhandled exception processing {Path}", context.Request.Path);
+
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "An unexpected error occurred. Please try again later.",
+        });
+    });
+});
+
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
