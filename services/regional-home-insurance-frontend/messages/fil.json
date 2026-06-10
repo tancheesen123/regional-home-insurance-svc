@@ -109,6 +109,8 @@
       "firstNameRequired": "Kinakailangan ang unang pangalan",
       "lastNameRequired": "Kinakailangan ang apelyido",
       "dateOfBirthRequired": "Kinakailangan ang petsa ng kapanganakan",
+      "dateOfBirthFuture": "Ang petsa ng kapanganakan ay hindi maaaring nasa hinaharap",
+      "dateOfBirthMinAge": "Dapat ka nang 18 taong gulang pataas upang magrehistro",
       "genderRequired": "Mangyaring piliin ang iyong kasarian",
       "nationalityRequired": "Kinakailangan ang nasyonalidad",
       "idTypeRequired": "Mangyaring pumili ng uri ng ID",

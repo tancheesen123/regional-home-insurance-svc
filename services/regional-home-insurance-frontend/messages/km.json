@@ -109,6 +109,8 @@
       "firstNameRequired": "ត្រូវការនាមខ្លួន",
       "lastNameRequired": "ត្រូវការនាមត្រកូល",
       "dateOfBirthRequired": "ត្រូវការថ្ងៃខែឆ្នាំកំណើត",
+      "dateOfBirthFuture": "ថ្ងៃខែឆ្នាំកំណើតមិនអាចជាកាលបរិច្ឆេទនាពេលអនាគតបានទេ",
+      "dateOfBirthMinAge": "អ្នកត្រូវមានអាយុយ៉ាងតិច 18 ឆ្នាំដើម្បីចុះឈ្មោះ",
       "genderRequired": "សូមជ្រើសរើសភេទរបស់អ្នក",
       "nationalityRequired": "ត្រូវការសញ្ជាតិ",
       "idTypeRequired": "សូមជ្រើសរើសប្រភេទអត្តសញ្ញាណប័ណ្ណ",

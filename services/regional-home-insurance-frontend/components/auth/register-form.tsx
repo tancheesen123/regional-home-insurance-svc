@@ -3,16 +3,14 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, CheckCircle, Mail } from "lucide-react"
+import { Eye, EyeOff, CheckCircle, Mail, Loader2, ArrowRight, AlertCircle } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { register } from "@/lib/api"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
 
 interface FormData {
   firstName: string
@@ -21,14 +19,8 @@ interface FormData {
   contact: string
   dateOfBirth: string
   gender: string
-  nationality: string
   idType: string
   idNumber: string
-  addressLine1: string
-  addressLine2: string
-  city: string
-  postcode: string
-  state: string
   region: string
   password: string
   confirmPassword: string
@@ -38,6 +30,22 @@ interface FormData {
 
 interface FormErrors {
   [key: string]: string
+}
+
+const inputClass =
+  "h-10 rounded-lg border-[1.5px] border-[#E0E0E0] text-sm text-[#1A1A1A] placeholder:text-[#9E9E9E] focus-visible:border-[#F5A623] focus-visible:ring-[3px] focus-visible:ring-[#F5A62333]"
+
+const inputErrorClass =
+  "border-[#D32F2F] focus-visible:border-[#D32F2F] focus-visible:ring-[#D32F2F26]"
+
+const selectTriggerClass =
+  "h-10 rounded-lg border-[1.5px] border-[#E0E0E0] text-sm text-[#1A1A1A] focus:border-[#F5A623] focus:ring-[3px] focus:ring-[#F5A62333]"
+
+const labelClass = "text-sm font-medium text-[#1A1A1A]"
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="text-xs text-[#D32F2F]">{message}</p>
 }
 
 export default function RegisterForm() {
@@ -54,14 +62,8 @@ export default function RegisterForm() {
     contact: "",
     dateOfBirth: "",
     gender: "",
-    nationality: "",
     idType: "",
     idNumber: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    postcode: "",
-    state: "",
     region: "",
     password: "",
     confirmPassword: "",
@@ -142,14 +144,25 @@ export default function RegisterForm() {
 
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = t("register.errors.dateOfBirthRequired")
+    } else {
+      const dob = new Date(formData.dateOfBirth)
+      const today = new Date()
+      if (dob > today) {
+        newErrors.dateOfBirth = t("register.errors.dateOfBirthFuture")
+      } else {
+        let age = today.getFullYear() - dob.getFullYear()
+        const monthDiff = today.getMonth() - dob.getMonth()
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--
+        }
+        if (age < 18) {
+          newErrors.dateOfBirth = t("register.errors.dateOfBirthMinAge")
+        }
+      }
     }
 
     if (!formData.gender) {
       newErrors.gender = t("register.errors.genderRequired")
-    }
-
-    if (!formData.nationality.trim()) {
-      newErrors.nationality = t("register.errors.nationalityRequired")
     }
 
     if (!formData.idType) {
@@ -170,19 +183,6 @@ export default function RegisterForm() {
 
     if (!formData.region) {
       newErrors.region = t("register.errors.regionRequired")
-    }
-
-    if (!formData.addressLine1.trim()) {
-      newErrors.addressLine1 = t("register.errors.addressRequired")
-    }
-    if (!formData.city.trim()) {
-      newErrors.city = t("register.errors.cityRequired")
-    }
-    if (!formData.postcode.trim()) {
-      newErrors.postcode = t("register.errors.postcodeRequired")
-    }
-    if (!formData.state.trim()) {
-      newErrors.state = t("register.errors.stateRequired")
     }
 
     if (!formData.password) {
@@ -225,19 +225,10 @@ export default function RegisterForm() {
           password: formData.password,
           dateOfBirth: formData.dateOfBirth,
           gender: formData.gender,
-          nationality: formData.nationality,
           idType: formData.idType,
           idNumber: formData.idNumber,
           contact: `${getContactPrefix()}${formData.contact}`,
           region: formData.region,
-          address: {
-            addressLine1: formData.addressLine1,
-            addressLine2: formData.addressLine2,
-            city: formData.city,
-            postcode: formData.postcode,
-            state: formData.state,
-            country: "",
-          },
         },
         formData.region
       )
@@ -278,361 +269,309 @@ export default function RegisterForm() {
 
   if (showVerificationMessage) {
     return (
-      <Card className="w-full">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-[#E6F7EE] rounded-full mb-4">
+          <CheckCircle className="h-8 w-8 text-[#00A651]" />
+        </div>
+        <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">{t("register.verification.checkEmail")}</h2>
+        <p className="text-sm text-[#555555] mb-4">
+          {t("register.verification.sentTo")} <strong className="text-[#1A1A1A]">{formData.email}</strong>
+        </p>
+        <div className="bg-[#E1F5FE] border border-[#0288D1]/30 rounded-lg p-4 mb-6 text-left">
+          <div className="flex items-start gap-3">
+            <Mail className="h-5 w-5 text-[#0288D1] mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm text-[#1A1A1A] font-medium mb-1">{t("register.verification.nextSteps")}</p>
+              <ul className="text-sm text-[#555555] space-y-1">
+                <li>• {t("register.verification.step1")}</li>
+                <li>• {t("register.verification.step2")}</li>
+                <li>• {t("register.verification.step3")}</li>
+                <li>• {t("register.verification.step4")}</li>
+              </ul>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("register.verification.checkEmail")}</h2>
-            <p className="text-gray-600 mb-4">
-              {t("register.verification.sentTo")} <strong>{formData.email}</strong>
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <Mail className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-                <div className="text-left">
-                  <p className="text-sm text-blue-800 font-medium mb-1">{t("register.verification.nextSteps")}</p>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• {t("register.verification.step1")}</li>
-                    <li>• {t("register.verification.step2")}</li>
-                    <li>• {t("register.verification.step3")}</li>
-                    <li>• {t("register.verification.step4")}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Button onClick={() => setShowVerificationMessage(false)} variant="outline" className="w-full">
-                {t("register.verification.registerAnother")}
-              </Button>
-              <Button onClick={() => router.push("/")} className="w-full bg-[#0056b3] hover:bg-[#004494]">
-                {t("register.verification.returnToLogin")}
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 mt-4">{t("register.verification.didntReceive")}</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowVerificationMessage(false)}
+            className="w-full h-11 rounded-lg border-[1.5px] border-[#E0E0E0] text-sm font-medium text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC] transition-colors duration-150"
+          >
+            {t("register.verification.registerAnother")}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-full h-11 rounded-lg bg-[#F5A623] hover:bg-[#D4891A] text-white text-sm font-semibold transition-colors duration-150"
+          >
+            {t("register.verification.returnToLogin")}
+          </button>
+        </div>
+        <p className="text-xs text-[#9E9E9E] mt-4">{t("register.verification.didntReceive")}</p>
+      </div>
     )
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl">{t("auth.createAccountTitle")}</CardTitle>
-        <CardDescription>{t("auth.createAccountDesc")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {errors.general && (
-            <Alert variant="destructive">
-              <AlertDescription>{errors.general}</AlertDescription>
-            </Alert>
-          )}
+    <div>
+      {/* Heading */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-[#1A1A1A] mb-1.5">{t("auth.createAccountTitle")}</h2>
+        <p className="text-sm text-[#555555]">{t("auth.createAccountDesc")}</p>
+      </div>
 
-          {/* First Name / Last Name */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">{t("register.firstName")} *</Label>
-              <Input
-                id="firstName"
-                type="text"
-                placeholder={t("register.firstNamePlaceholder")}
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-                className={errors.firstName ? "border-red-500" : ""}
-              />
-              {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">{t("register.lastName")} *</Label>
-              <Input
-                id="lastName"
-                type="text"
-                placeholder={t("register.lastNamePlaceholder")}
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-                className={errors.lastName ? "border-red-500" : ""}
-              />
-              {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {errors.general && (
+          <div className="flex items-start gap-2.5 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-4 py-3">
+            <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
+            <p className="text-sm text-[#D32F2F] leading-snug">{errors.general}</p>
           </div>
+        )}
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("register.emailAddress")} *</Label>
+        {/* First Name / Last Name */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="firstName" className={labelClass}>{t("register.firstName")} *</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder={t("register.emailPlaceholder")}
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              className={errors.email ? "border-red-500" : ""}
-            />
-            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-          </div>
-
-          {/* Date of Birth / Gender */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">{t("register.dateOfBirth")} *</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                className={errors.dateOfBirth ? "border-red-500" : ""}
-              />
-              {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gender">{t("register.gender")} *</Label>
-              <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
-                <SelectTrigger className={errors.gender ? "border-red-500" : ""}>
-                  <SelectValue placeholder={t("register.selectGender")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {genderOptions.map((g) => (
-                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.gender && <p className="text-sm text-red-500">{errors.gender}</p>}
-            </div>
-          </div>
-
-          {/* Nationality */}
-          <div className="space-y-2">
-            <Label htmlFor="nationality">{t("register.nationality")} *</Label>
-            <Input
-              id="nationality"
+              id="firstName"
               type="text"
-              placeholder={t("register.nationalityPlaceholder")}
-              value={formData.nationality}
-              onChange={(e) => handleInputChange("nationality", e.target.value)}
-              className={errors.nationality ? "border-red-500" : ""}
+              placeholder={t("register.firstNamePlaceholder")}
+              value={formData.firstName}
+              onChange={(e) => handleInputChange("firstName", e.target.value)}
+              className={cn(inputClass, errors.firstName && inputErrorClass)}
             />
-            {errors.nationality && <p className="text-sm text-red-500">{errors.nationality}</p>}
+            <FieldError message={errors.firstName} />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="lastName" className={labelClass}>{t("register.lastName")} *</Label>
+            <Input
+              id="lastName"
+              type="text"
+              placeholder={t("register.lastNamePlaceholder")}
+              value={formData.lastName}
+              onChange={(e) => handleInputChange("lastName", e.target.value)}
+              className={cn(inputClass, errors.lastName && inputErrorClass)}
+            />
+            <FieldError message={errors.lastName} />
+          </div>
+        </div>
 
-          {/* Region Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="region">{t("register.region")} *</Label>
-            <Select value={formData.region} onValueChange={(value) => handleInputChange("region", value)}>
-              <SelectTrigger className={errors.region ? "border-red-500" : ""}>
-                <SelectValue placeholder={t("register.selectRegion")} />
+        {/* Email */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className={labelClass}>{t("register.emailAddress")} *</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder={t("register.emailPlaceholder")}
+            value={formData.email}
+            onChange={(e) => handleInputChange("email", e.target.value)}
+            className={cn(inputClass, errors.email && inputErrorClass)}
+          />
+          <FieldError message={errors.email} />
+        </div>
+
+        {/* Date of Birth / Gender */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="dateOfBirth" className={labelClass}>{t("register.dateOfBirth")} *</Label>
+            <Input
+              id="dateOfBirth"
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              className={cn(inputClass, errors.dateOfBirth && inputErrorClass)}
+            />
+            <FieldError message={errors.dateOfBirth} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="gender" className={labelClass}>{t("register.gender")} *</Label>
+            <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+              <SelectTrigger className={cn(selectTriggerClass, errors.gender && inputErrorClass)}>
+                <SelectValue placeholder={t("register.selectGender")} />
               </SelectTrigger>
               <SelectContent>
-                {regions.map((region) => (
-                  <SelectItem key={region.value} value={region.value}>
-                    {region.label}
-                  </SelectItem>
+                {genderOptions.map((g) => (
+                  <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.region && <p className="text-sm text-red-500">{errors.region}</p>}
+            <FieldError message={errors.gender} />
           </div>
+        </div>
 
-          {/* ID Type / ID Number */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="idType">{t("register.idType")} *</Label>
-              <Select value={formData.idType} onValueChange={(value) => handleInputChange("idType", value)}>
-                <SelectTrigger className={errors.idType ? "border-red-500" : ""}>
-                  <SelectValue placeholder={t("register.selectIdType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {getIdTypeOptions().map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.idType && <p className="text-sm text-red-500">{errors.idType}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="idNumber">{getIdLabel()} *</Label>
-              <Input
-                id="idNumber"
-                type="text"
-                placeholder={t("register.idLabelDefault")}
-                value={formData.idNumber}
-                onChange={(e) => handleInputChange("idNumber", e.target.value)}
-                className={errors.idNumber ? "border-red-500" : ""}
-              />
-              {errors.idNumber && <p className="text-sm text-red-500">{errors.idNumber}</p>}
-            </div>
+        {/* Region Selection */}
+        <div className="space-y-1.5">
+          <Label htmlFor="region" className={labelClass}>{t("register.region")} *</Label>
+          <Select value={formData.region} onValueChange={(value) => handleInputChange("region", value)}>
+            <SelectTrigger className={cn(selectTriggerClass, errors.region && inputErrorClass)}>
+              <SelectValue placeholder={t("register.selectRegion")} />
+            </SelectTrigger>
+            <SelectContent>
+              {regions.map((region) => (
+                <SelectItem key={region.value} value={region.value}>
+                  {region.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FieldError message={errors.region} />
+        </div>
+
+        {/* ID Type / ID Number */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="idType" className={labelClass}>{t("register.idType")} *</Label>
+            <Select value={formData.idType} onValueChange={(value) => handleInputChange("idType", value)}>
+              <SelectTrigger className={cn(selectTriggerClass, errors.idType && inputErrorClass)}>
+                <SelectValue placeholder={t("register.selectIdType")} />
+              </SelectTrigger>
+              <SelectContent>
+                {getIdTypeOptions().map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldError message={errors.idType} />
           </div>
-
-          {/* Contact Number */}
-          <div className="space-y-2">
-            <Label htmlFor="contact">{t("register.contactNumber")} *</Label>
-            <div className="flex">
-              <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
-                {getContactPrefix()}
-              </span>
-              <Input
-                id="contact"
-                type="tel"
-                placeholder={t("register.contactPlaceholder")}
-                value={formData.contact}
-                onChange={(e) => handleInputChange("contact", e.target.value.replace(/\D/g, ""))}
-                className={`rounded-l-none ${errors.contact ? "border-red-500" : ""}`}
-              />
-            </div>
-            {errors.contact && <p className="text-sm text-red-500">{errors.contact}</p>}
-          </div>
-
-          {/* Address */}
-          <div className="space-y-2">
-            <Label>{t("register.address")} *</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="idNumber" className={labelClass}>{getIdLabel()} *</Label>
             <Input
-              placeholder="Address Line 1 *"
-              value={formData.addressLine1}
-              onChange={(e) => handleInputChange("addressLine1", e.target.value)}
-              className={errors.addressLine1 ? "border-red-500" : ""}
+              id="idNumber"
+              type="text"
+              placeholder={t("register.idLabelDefault")}
+              value={formData.idNumber}
+              onChange={(e) => handleInputChange("idNumber", e.target.value)}
+              className={cn(inputClass, errors.idNumber && inputErrorClass)}
             />
-            {errors.addressLine1 && <p className="text-sm text-red-500">{errors.addressLine1}</p>}
+            <FieldError message={errors.idNumber} />
+          </div>
+        </div>
+
+        {/* Contact Number */}
+        <div className="space-y-1.5">
+          <Label htmlFor="contact" className={labelClass}>{t("register.contactNumber")} *</Label>
+          <div className="flex">
+            <span className="inline-flex items-center px-3 text-sm text-[#555555] bg-[#F5F5F5] border border-r-0 border-[#E0E0E0] rounded-l-lg">
+              {getContactPrefix()}
+            </span>
             <Input
-              placeholder="Address Line 2"
-              value={formData.addressLine2}
-              onChange={(e) => handleInputChange("addressLine2", e.target.value)}
+              id="contact"
+              type="tel"
+              placeholder={t("register.contactPlaceholder")}
+              value={formData.contact}
+              onChange={(e) => handleInputChange("contact", e.target.value.replace(/\D/g, ""))}
+              className={cn(inputClass, "rounded-l-none", errors.contact && inputErrorClass)}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Input
-                  placeholder="City *"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange("city", e.target.value)}
-                  className={errors.city ? "border-red-500" : ""}
-                />
-                {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
-              </div>
-              <div>
-                <Input
-                  placeholder="Postcode *"
-                  value={formData.postcode}
-                  onChange={(e) => handleInputChange("postcode", e.target.value)}
-                  className={errors.postcode ? "border-red-500" : ""}
-                />
-                {errors.postcode && <p className="text-sm text-red-500">{errors.postcode}</p>}
-              </div>
-            </div>
-            <div>
-              <Input
-                placeholder="State *"
-                value={formData.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
-                className={errors.state ? "border-red-500" : ""}
-              />
-              {errors.state && <p className="text-sm text-red-500">{errors.state}</p>}
-            </div>
           </div>
+          <FieldError message={errors.contact} />
+        </div>
 
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password">{t("register.password")} *</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder={t("register.passwordPlaceholder")}
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                className={errors.password ? "border-red-500" : ""}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
-            <p className="text-xs text-gray-500">{t("register.passwordHint")}</p>
+        {/* Password */}
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className={labelClass}>{t("register.password")} *</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder={t("register.passwordPlaceholder")}
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              className={cn(inputClass, "pr-10", errors.password && inputErrorClass)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#555555] transition-colors"
+              tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
+          <FieldError message={errors.password} />
+          <p className="text-xs text-[#9E9E9E]">{t("register.passwordHint")}</p>
+        </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">{t("register.confirmPassword")} *</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder={t("register.confirmPasswordPlaceholder")}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                className={errors.confirmPassword ? "border-red-500" : ""}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
+        {/* Confirm Password */}
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword" className={labelClass}>{t("register.confirmPassword")} *</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder={t("register.confirmPasswordPlaceholder")}
+              value={formData.confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              className={cn(inputClass, "pr-10", errors.confirmPassword && inputErrorClass)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#555555] transition-colors"
+              tabIndex={-1}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
+          <FieldError message={errors.confirmPassword} />
+        </div>
 
-          {/* Terms and Conditions */}
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="terms"
-                checked={formData.agreeToTerms}
-                onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
-                className="mt-1"
-              />
-              <div className="text-sm">
-                <Label htmlFor="terms" className="cursor-pointer">
-                  {t("register.agreeToTerms")}{" "}
-                  <a href="#" className="text-[#0056b3] hover:underline">
-                    {t("register.termsAndConditions")}
-                  </a>{" "}
-                  {t("register.and")}{" "}
-                  <a href="#" className="text-[#0056b3] hover:underline">
-                    {t("register.privacyPolicy")}
-                  </a>{" "}
-                  *
-                </Label>
-              </div>
-            </div>
-            {errors.agreeToTerms && <p className="text-sm text-red-500">{errors.agreeToTerms}</p>}
-
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="marketing"
-                checked={formData.agreeToMarketing}
-                onCheckedChange={(checked) => handleInputChange("agreeToMarketing", checked as boolean)}
-                className="mt-1"
-              />
-              <div className="text-sm">
-                <Label htmlFor="marketing" className="cursor-pointer">
-                  {t("register.marketingConsent")}
-                </Label>
-              </div>
-            </div>
+        {/* Terms and Conditions */}
+        <div className="space-y-3">
+          <div className="flex items-start gap-2.5">
+            <Checkbox
+              id="terms"
+              checked={formData.agreeToTerms}
+              onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
+              className="mt-0.5 data-[state=checked]:bg-[#F5A623] data-[state=checked]:border-[#F5A623]"
+            />
+            <Label htmlFor="terms" className="text-sm text-[#555555] cursor-pointer font-normal leading-snug">
+              {t("register.agreeToTerms")}{" "}
+              <a href="#" className="text-[#0066CC] hover:text-[#004EA8] hover:underline">
+                {t("register.termsAndConditions")}
+              </a>{" "}
+              {t("register.and")}{" "}
+              <a href="#" className="text-[#0066CC] hover:text-[#004EA8] hover:underline">
+                {t("register.privacyPolicy")}
+              </a>{" "}
+              *
+            </Label>
           </div>
+          <FieldError message={errors.agreeToTerms} />
 
-          {/* Submit Button */}
-          <Button type="submit" className="w-full bg-[#0056b3] hover:bg-[#004494]" disabled={isLoading}>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>{t("auth.creatingAccount")}</span>
-              </div>
-            ) : (
-              t("auth.createAccountTitle")
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <div className="flex items-start gap-2.5">
+            <Checkbox
+              id="marketing"
+              checked={formData.agreeToMarketing}
+              onCheckedChange={(checked) => handleInputChange("agreeToMarketing", checked as boolean)}
+              className="mt-0.5 data-[state=checked]:bg-[#F5A623] data-[state=checked]:border-[#F5A623]"
+            />
+            <Label htmlFor="marketing" className="text-sm text-[#555555] cursor-pointer font-normal leading-snug">
+              {t("register.marketingConsent")}
+            </Label>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={cn(
+            "w-full h-11 rounded-lg font-semibold text-sm text-white",
+            "flex items-center justify-center gap-2",
+            "transition-colors duration-150",
+            isLoading
+              ? "bg-[#F5A623]/60 cursor-not-allowed"
+              : "bg-[#F5A623] hover:bg-[#D4891A] active:bg-[#B8751A]",
+          )}
+        >
+          {isLoading
+            ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("auth.creatingAccount")}</>
+            : <>{t("auth.createAccountTitle")} <ArrowRight className="h-4 w-4" /></>
+          }
+        </button>
+      </form>
+    </div>
   )
 }
