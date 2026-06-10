@@ -69,6 +69,19 @@
     <Content Include="libwkhtmltox.so" Condition="Exists('libwkhtmltox.so')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <!--
+      Transitive shared-library dependencies of libwkhtmltox.so
+      (libjpeg, libpng, fontconfig, freetype, X11, etc.) that are not
+      present in the Azure App Service Linux dotnet runtime image.
+      Copied to native-libs/ alongside the app; LD_LIBRARY_PATH must
+      include this folder (set via app setting:
+        LD_LIBRARY_PATH=/home/site/wwwroot/native-libs )
+      so the dynamic linker can resolve them when loading libwkhtmltox.so.
+    -->
+    <Content Include="native-libs\**" Condition="Exists('native-libs')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
