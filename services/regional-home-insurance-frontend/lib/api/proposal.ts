@@ -1,7 +1,7 @@
 import { request, APIResponse } from "./client"
 import { getSession, clearSession } from "@/lib/session"
 
-const BASE_URL = "https://localhost:44337/api"
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:44337"}/api`
 
 // ── Create Proposal ──────────────────────────────────────────────────────────
 

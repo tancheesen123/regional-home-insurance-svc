@@ -98,8 +98,11 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:3000",
-                "https://localhost:3000"
+                "https://localhost:3000",
+                "https://regional-home-insurance-frontend.vercel.app"
             )
+            .SetIsOriginAllowedToAllowWildcardSubdomains()
+            .WithOrigins("https://*.vercel.app")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

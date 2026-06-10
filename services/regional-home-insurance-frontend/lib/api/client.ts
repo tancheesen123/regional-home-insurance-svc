@@ -1,6 +1,6 @@
 import { getSession, clearSession } from "@/lib/session"
 
-const BASE_URL = "https://localhost:44337/api"
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:44337"}/api`
 
 export interface APIResponse<T = unknown> {
   succeeded: boolean

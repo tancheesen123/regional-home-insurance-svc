@@ -1,0 +1,43 @@
+name: Deploy ApplicationService to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/ApplicationService/**'
+      - '.github/workflows/deploy-application-service.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: rhi-application-service
+  AZURE_WEBAPP_PACKAGE_PATH: './publish'
+  PROJECT_PATH: 'services/ApplicationService/ApplicationService.WebAPI/ApplicationService.WebAPI.csproj'
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore "${{ env.PROJECT_PATH }}"
+
+      - name: Build
+        run: dotnet build "${{ env.PROJECT_PATH }}" --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish "${{ env.PROJECT_PATH }}" --configuration Release --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
