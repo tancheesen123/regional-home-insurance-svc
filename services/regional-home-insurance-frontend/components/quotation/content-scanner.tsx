@@ -13,17 +13,32 @@ import type { RoomKey } from "./content-calculator"
 // ── Room type → RoomKey mapping ────────────────────────────────────────────────
 
 const ROOM_TYPE_MAP: Record<string, RoomKey> = {
-  "Living Room":   "livingRoom",
-  "Bedroom":       "bedroom",
-  "Dining Room":   "diningRoom",
-  "Kitchen":       "kitchen",
-  "Bathroom":      "bathroom",
-  "Store Room":    "storeRoom",
-  "Car Park":      "carpark",
-  "Carpark":       "carpark",
-  "Balcony":       "balcony",
-  "Garden":        "garden",
+  "Living Room":        "livingRoom",
+  "Bedroom":            "bedroom",
+  "Dining Room":        "diningRoom",
+  "Kitchen":            "kitchen",
+  "Bathroom":           "bathroom",
+  "Store Room":         "storeRoom",
+  "Car Park":           "carpark",
+  "Carpark":            "carpark",
+  "Balcony":            "balcony",
+  "Garden":             "garden",
+  "Miscellaneous Items": "miscellaneous",
 }
+
+// Options offered to the user when a room couldn't be auto-identified
+const ROOM_TYPE_OPTIONS: { key: RoomKey; label: string }[] = [
+  { key: "livingRoom",   label: "Living Room" },
+  { key: "bedroom",      label: "Bedroom" },
+  { key: "diningRoom",   label: "Dining Room" },
+  { key: "kitchen",      label: "Kitchen" },
+  { key: "bathroom",     label: "Bathroom" },
+  { key: "storeRoom",    label: "Store Room" },
+  { key: "carpark",      label: "Car Park" },
+  { key: "balcony",      label: "Balcony" },
+  { key: "garden",       label: "Garden" },
+  { key: "miscellaneous", label: "Miscellaneous Items" },
+]
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -226,6 +241,11 @@ export default function ContentScanner({ countryCode, symbol, onApply }: Props) 
       i === roomIdx ? { ...r, items: [...r.items, item] } : r,
     ))
 
+  const setRoomType = (roomIdx: number, key: RoomKey, label: string) =>
+    setRooms((prev) => prev.map((r, i) =>
+      i === roomIdx ? { ...r, roomType: label, roomKey: key } : r,
+    ))
+
   // ── Apply / Reset ────────────────────────────────────────────────────────────
 
   const totalEstimate = rooms.reduce((s, r) => s + roomSubtotal(r.items), 0)
@@ -371,27 +391,31 @@ export default function ContentScanner({ countryCode, symbol, onApply }: Props) 
             )}
 
             {/* Room tabs */}
-            <Tabs defaultValue={rooms[0]?.roomType ?? ""}>
+            <Tabs defaultValue="0">
 
               {/* Tab bar */}
               <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-[#F5F5F5] p-1 rounded-xl justify-start">
-                {rooms.map((room) => {
+                {rooms.map((room, roomIdx) => {
                   const sub = roomSubtotal(room.items)
                   const hasWarning = room.items.some((it) => it.lowConfidence)
+                  const unidentified = room.roomKey === null
                   return (
                     <TabsTrigger
-                      key={room.roomType}
-                      value={room.roomType}
+                      key={roomIdx}
+                      value={String(roomIdx)}
                       className={cn(
                         "relative h-9 px-3 rounded-lg text-xs font-medium transition-colors",
                         "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1A1A1A]",
                         "data-[state=inactive]:text-[#555555] data-[state=inactive]:hover:text-[#1A1A1A]",
                       )}
                     >
-                      {hasWarning && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#F5A623]" />
+                      {(hasWarning || unidentified) && (
+                        <span className={cn(
+                          "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full",
+                          unidentified ? "bg-[#D32F2F]" : "bg-[#F5A623]",
+                        )} />
                       )}
-                      <span>{room.roomType}</span>
+                      <span>{unidentified ? "Unidentified Room" : room.roomType}</span>
                       <span className="ml-1.5 text-[10px] text-[#9E9E9E] font-normal">
                         {symbol} {fmt(sub)}
                       </span>
@@ -402,8 +426,36 @@ export default function ContentScanner({ countryCode, symbol, onApply }: Props) 
 
               {/* Tab panels */}
               {rooms.map((room, roomIdx) => (
-                <TabsContent key={room.roomType} value={room.roomType} className="mt-3">
+                <TabsContent key={roomIdx} value={String(roomIdx)} className="mt-3">
                   <div className="border border-[#E0E0E0] rounded-xl overflow-hidden">
+
+                    {/* Unidentified room — ask user to pick a type */}
+                    {room.roomKey === null && (
+                      <div className="flex items-start gap-2 bg-[#FFEBEE] border-b border-[#FECACA] px-4 py-3">
+                        <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-[#D32F2F] font-medium">
+                            We couldn't identify this room.
+                          </p>
+                          <p className="text-[11px] text-[#D32F2F]/80 mt-0.5 mb-2">
+                            Please select the correct room type so these items are added to the right category.
+                          </p>
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const opt = ROOM_TYPE_OPTIONS.find((o) => o.key === e.target.value)
+                              if (opt) setRoomType(roomIdx, opt.key, opt.label)
+                            }}
+                            className="h-8 px-2.5 text-xs border border-[#FECACA] rounded-lg bg-white text-[#1A1A1A] focus:outline-none focus:border-[#F5A623] focus:ring-1 focus:ring-[#F5A623]/20"
+                          >
+                            <option value="" disabled>Select room type…</option>
+                            {ROOM_TYPE_OPTIONS.map((opt) => (
+                              <option key={opt.key} value={opt.key}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Room subtotal header */}
                     <div className="flex items-center justify-between px-4 py-3 bg-[#FAFAFA] border-b border-[#E0E0E0]">
