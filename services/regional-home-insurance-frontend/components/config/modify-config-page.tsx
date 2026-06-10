@@ -457,11 +457,16 @@ function LocationTiersTab({ rows, countryCode, onSaved }: {
     <div className="rounded-xl overflow-hidden border border-[#E0E0E0] bg-white shadow-sm">
       <table className="w-full text-sm border-separate border-spacing-0 table-fixed">
         <colgroup>
-          <col style={{ width: "110px" }} />   {/* Tier */}
-          <col style={{ width: "26%" }} />      {/* Label */}
-          <col style={{ width: "120px" }} />    {/* Multiplier */}
-          <col />                               {/* Keywords — takes the rest */}
-          <col style={{ width: "52px" }} />     {/* Actions */}
+          {/* Tier */}
+          <col style={{ width: "110px" }} />
+          {/* Label */}
+          <col style={{ width: "26%" }} />
+          {/* Multiplier */}
+          <col style={{ width: "120px" }} />
+          {/* Keywords — takes the rest */}
+          <col />
+          {/* Actions */}
+          <col style={{ width: "52px" }} />
         </colgroup>
         <thead>
           <tr className="bg-[#FAFAFA]">

@@ -181,6 +181,13 @@ def build_content_result(
             "please review and verify the highlighted items."
         )
 
+    unknown_count = sum(1 for r in final_rooms if r.roomType.lower() == "unknown")
+    if unknown_count > 0:
+        warnings.append(
+            f"{unknown_count} room(s) could not be identified — "
+            "please select the correct room type."
+        )
+
     if total_items == 0:
         warnings.append(
             "No significant items were detected. "
