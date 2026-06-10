@@ -532,6 +532,22 @@
       "emergencyClaims": "Para sa mga emergency na claim",
       "returnToDashboard": "Bumalik sa Dashboard"
     },
+    "failed": {
+      "title": "Hindi Matagumpay ang Bayad",
+      "cancelledTitle": "Kinansela ang Bayad",
+      "subtitle": "Hindi namin natapos ang iyong bayad. Huwag mag-alala — naka-save ang iyong quotation.",
+      "reference": "Reference:",
+      "errorCode": "Error code:",
+      "whatNext": "Mga susunod na hakbang",
+      "step1Title": "Suriin ang detalye ng iyong bayad",
+      "step1Desc": "Tiyaking sapat ang balanse ng iyong card o account at tama ang mga detalye.",
+      "step2Title": "Subukan muli",
+      "step2Desc": "Bumalik sa buod ng bayad at subukan muli gamit ang parehas o ibang paraan ng pagbabayad.",
+      "step3Title": "Makipag-ugnayan sa suporta",
+      "step3Desc": "Kung patuloy ang problema, available ang aming support team 24/7 upang tumulong.",
+      "tryAgain": "Subukan Muli",
+      "returnToDashboard": "Bumalik sa Dashboard"
+    },
     "validation": {
       "required": "Kinakailangan ang field na ito",
       "selectDate": "Pumili ng petsa",

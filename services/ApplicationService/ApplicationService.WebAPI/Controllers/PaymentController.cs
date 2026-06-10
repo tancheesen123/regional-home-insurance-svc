@@ -116,6 +116,24 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
+        [AllowAnonymous]
+        [HttpPost("[action]")]
+        public async Task<IActionResult> CancelPayment([FromQuery] string @ref)
+        {
+            if (string.IsNullOrWhiteSpace(@ref))
+                return BadRequest(new { message = "Missing 'ref' query parameter." });
+
+            try
+            {
+                var command = new CancelPaymentCommand { ReferenceNumber = @ref };
+                return Ok(await _mediator.Send(command));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("[action]")]
         public async Task<IActionResult> GetPaymentsByProposal([FromBody] GetPaymentsByProposalRequest request)
         {

@@ -532,6 +532,22 @@
       "emergencyClaims": "For emergency claims",
       "returnToDashboard": "Return to Dashboard"
     },
+    "failed": {
+      "title": "Payment Failed",
+      "cancelledTitle": "Payment Cancelled",
+      "subtitle": "We couldn't complete your payment. Don't worry — your quotation has been saved.",
+      "reference": "Reference:",
+      "errorCode": "Error code:",
+      "whatNext": "What to do next",
+      "step1Title": "Check your payment details",
+      "step1Desc": "Make sure your card or account has sufficient funds and your details are correct.",
+      "step2Title": "Try again",
+      "step2Desc": "Return to the payment summary and retry with the same or a different payment method.",
+      "step3Title": "Contact support",
+      "step3Desc": "If the problem persists, our support team is available 24/7 to help.",
+      "tryAgain": "Try Again",
+      "returnToDashboard": "Return to Dashboard"
+    },
     "validation": {
       "required": "This field is required",
       "selectDate": "Please select a date",

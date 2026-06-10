@@ -67,7 +67,9 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 // Stripe replaces {CHECKOUT_SESSION_ID} in the URL.
                 // countryCode is embedded so DbContextResolver can resolve the correct DB on redirect.
                 SuccessUrl = $"{_settings.SuccessUrl}?countryCode={countryCode}&session_id={{CHECKOUT_SESSION_ID}}&ref={referenceNumber}",
-                CancelUrl  = $"{_settings.CancelUrl}?ref={referenceNumber}",
+                // Stripe sends the customer here if they back out of checkout without paying.
+                // "reason=cancelled" lets the frontend payment-failed page show a cancel-specific message.
+                CancelUrl  = $"{_settings.CancelUrl}?ref={referenceNumber}&reason=cancelled",
 
                 // Pre-fill the email field on the Stripe-hosted page
                 CustomerEmail = customerEmail,

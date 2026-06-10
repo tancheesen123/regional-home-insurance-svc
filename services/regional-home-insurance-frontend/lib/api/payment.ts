@@ -36,6 +36,26 @@ export async function initiatePayment(
   })
 }
 
+// ── Cancel Payment ────────────────────────────────────────────────────────────
+
+export interface CancelPaymentData {
+  referenceNumber: string
+  paymentStatus: string
+  message: string
+}
+
+/**
+ * Marks a still-PENDING payment as CANCELLED so the customer can retry payment
+ * for the same proposal. Called from the payment-failed page when Stripe redirects
+ * the customer back with `reason=cancelled`. Public endpoint — no auth required.
+ */
+export async function cancelPayment(referenceNumber: string): Promise<APIResponse<CancelPaymentData>> {
+  return request<CancelPaymentData>(`/payment/CancelPayment?ref=${encodeURIComponent(referenceNumber)}`, {
+    method: "POST",
+    withAuth: false,
+  })
+}
+
 // ── Payment result localStorage helpers ──────────────────────────────────────
 
 const PAYMENT_RESULT_KEY = "etiqa_payment_result"
