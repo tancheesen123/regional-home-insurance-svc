@@ -79,17 +79,17 @@
 					<tr rowspan="2" style="height:35px;" valign="top">
 						<td colspan="1" rowspan="3" style="padding-top:5px;">
 							<p style="position:absolute;top:55px;left:23px;white-space:nowrap" class="ft14">
-								Dataran Maybank, No 1, Jalan Maarof, 59000 Kuala Lumpur, Malaysia<br/>T +603 2297 3888 F +603 2297 3800 E info@etiqa.com.my www.etiqa.com.my
+								<xsl:value-of select="root/P_CompanyAddress"/><br/>T <xsl:value-of select="root/P_ContactPhone"/> E <xsl:value-of select="root/P_ContactEmail"/> <xsl:value-of select="root/P_WebsiteUrl"/>
 							</p>
-							<p style="position:absolute;top:95px;left:23px;white-space:nowrap" class="ft12">Etiqa Oneline :- 1300 13 8888</p>
-							<p style="position:absolute;top:30px;left:23px;white-space:nowrap" class="ft10">Etiqa General Insurance Berhad</p>
+							<p style="position:absolute;top:95px;left:23px;white-space:nowrap" class="ft12">Customer Service :- <xsl:value-of select="root/P_ContactPhone"/></p>
+							<p style="position:absolute;top:30px;left:23px;white-space:nowrap" class="ft10"><xsl:value-of select="root/P_CompanyName"/></p>
 						</td>
 
 						<td colspan="3" style="text-indent: 0px; text-align: left;padding-top:25px; padding-left:550px">
 							<table width="200%">
 								<tr>
 									<td width="100%">
-										<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; margin-left:-3px;">INVOIS CUKAI </span>
+										<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; margin-left:-3px;"> </span>
 									</td>
 									<td width="5%">
 										<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; "></span>
@@ -141,7 +141,7 @@
 								<tr>
 									<td width="100%">
 										<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; margin-left:-3px;">
-											EGIB Service Tax Reg No: <xsl:value-of select="root/P_taxRegNo"/>
+											Service Tax Reg No: <xsl:value-of select="root/P_taxRegNo"/>
 										</span>
 									</td>
 								</tr>
@@ -155,7 +155,7 @@
 					<tr style="height:30px; border-top: 2px solid black; border-left: 2px solid black; border-right: 2px solid black;">
 						<td colspan="4" width="65%"></td>
 						<td colspan="3" style="text-indent: 0px; text-align: left;">
-							<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; ">SALINAN PELANGGAN /</span>
+							<span style="font-family: Arial; color: #000000; font-size: 14px;  font-weight: 500; "></span>
 						</td>
 						<td colspan="2" style="border-right:2px solid black"></td>
 					</tr>
@@ -173,7 +173,7 @@
 								<tr>
 									<td width="45%">
 										<span style="font-family: Arial; color: #000000; font-size: 12px; margin-left:-3px;">
-											Invois Cukai/ Tax Invoice No
+											Tax Invoice No
 										</span>
 									</td>
 									<td width="5%">
@@ -224,11 +224,11 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Tarikh/Date</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Date</span>
 										</td>
 										<td width="30%">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
-												Mod Pembayaran/Payment Mode
+												Payment Mode
 
 											</span>
 										</td>
@@ -237,7 +237,7 @@
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Premium</span>
 										</td>
 										<td width="8%">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; "> RM:</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; "> <xsl:value-of select="root/P_Currency"/>:</span>
 										</td>
 										<td width="5%" style="text-align:right;">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -265,7 +265,7 @@
 														<xsl:value-of select="root/P_taxType"/> ( <xsl:value-of select="root/P_TaxPercentage"/>% )
 													</xsl:when>
 													<xsl:otherwise>
-														Diskaun/Discount ( <xsl:value-of select="root/P_DiscountRate"/>% )
+														Discount ( <xsl:value-of select="root/P_DiscountRate"/>% )
 													</xsl:otherwise>
 												</xsl:choose>
 											</span>
@@ -274,10 +274,10 @@
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
 												<xsl:choose>
 													<xsl:when test="root/P_IsLppsa = 'true'">
-														RM:
+														<xsl:value-of select="root/P_Currency"/>:
 													</xsl:when>
 													<xsl:otherwise>
-														RM:(-)
+														<xsl:value-of select="root/P_Currency"/>:(-)
 													</xsl:otherwise>
 												</xsl:choose>
 											</span>
@@ -298,7 +298,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Nama/Name</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Name</span>
 										</td>
 										<td width="30%">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -310,7 +310,7 @@
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
 												<xsl:choose>
 													<xsl:when test="root/P_IsLppsa = 'true'">
-														Duti Setem/Stamp Duty
+														Stamp Duty
 													</xsl:when>
 													<xsl:otherwise>
 														<xsl:value-of select="root/P_taxType"/> ( <xsl:value-of select="root/P_TaxPercentage"/>% )
@@ -319,7 +319,7 @@
 											</span>
 										</td>
 										<td width="8%">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; "> RM:</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; "> <xsl:value-of select="root/P_Currency"/>:</span>
 										</td>
 										<td width="5%" style="text-align:right;">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -337,7 +337,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Alamat/Address</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Address</span>
 										</td>
 										<td width="30%" rowspan="3">
 											<table>
@@ -370,6 +370,12 @@
 														</span>
 													</td>
 												</tr>
+												<xsl:if test="root/P_MailDistrict != ''">
+													<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_MailDistrict"/></span></td></tr>
+												</xsl:if>
+												<xsl:if test="root/P_MailVillage != ''">
+													<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_MailVillage"/></span></td></tr>
+												</xsl:if>
 											</table>
 										</td>
 										<td width="5%"></td>
@@ -377,10 +383,10 @@
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
 												<xsl:choose>
 													<xsl:when test="root/P_IsLppsa = 'true'">
-														Jumlah Subsidi/Amount Subsidized
+														Amount Subsidized
 													</xsl:when>
 													<xsl:otherwise>
-														Duti Setem/Stamp Duty
+														Stamp Duty
 													</xsl:otherwise>
 												</xsl:choose>
 											</span>
@@ -389,10 +395,10 @@
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
 												<xsl:choose>
 													<xsl:when test="root/P_IsLppsa = 'true'">
-														RM:(-)
+														<xsl:value-of select="root/P_Currency"/>:(-)
 													</xsl:when>
 													<xsl:otherwise>
-														RM:
+														<xsl:value-of select="root/P_Currency"/>:
 													</xsl:otherwise>
 												</xsl:choose>
 											</span>
@@ -415,10 +421,10 @@
 											<td width="25%"></td>
 											<td width="5%"></td>
 											<td width="25%">
-												<span style="font-family: Arial; color: #000000; font-size: 12px; ">Jumlah /Total</span>
+												<span style="font-family: Arial; color: #000000; font-size: 12px; ">Total</span>
 											</td>
 											<td width="8%">
-												<span style="font-family: Arial; color: #000000; font-size: 12px; "> RM:</span>
+												<span style="font-family: Arial; color: #000000; font-size: 12px; "> <xsl:value-of select="root/P_Currency"/>:</span>
 											</td>
 											<td width="5%" style="text-align:right;">
 												<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -432,7 +438,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Nama Produk/Product Name</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Product Name</span>
 										</td>
 										<td colspan="6">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -443,7 +449,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">No. Akaun /Account No.</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Account No.</span>
 										</td>
 										<td colspan="6">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -453,7 +459,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">No. Polisi/Policy No.</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Policy No.</span>
 										</td>
 										<td colspan="6">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -463,7 +469,7 @@
 									</tr>
 									<tr style="height:30px;" valign="top">
 										<td width="25%" style="padding-left:10px;">
-											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Untuk Bayaran/Being Payment</span>
+											<span style="font-family: Arial; color: #000000; font-size: 12px; ">Being Payment</span>
 										</td>
 										<td colspan="6">
 											<span style="font-family: Arial; color: #000000; font-size: 12px; ">
@@ -481,7 +487,7 @@
 					<tr style="height:15px;">
 						<td colspan="6">
 							<span style="font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif; color: #000000; font-size: 10px;">
-								Dokumen janaan komputer ini tidak perlu ditandatangani. <br/> This is a computer generated receipt and no signature is required
+								This is a computer generated receipt and no signature is required
 							</span>
 						</td>
 						<td style="text-align:right; padding-right:60px;">

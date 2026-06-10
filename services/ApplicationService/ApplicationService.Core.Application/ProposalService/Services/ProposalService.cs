@@ -57,6 +57,52 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         private static readonly HashSet<string> AllowedRegions =
             new(StringComparer.OrdinalIgnoreCase) { "PH", "ID", "KH" };
 
+        // ── Per-region display config (currency, company info) ─────────────────
+        private sealed record RegionConfig(
+            string Currency,
+            string CompanyName,
+            string CompanyAddress,
+            string ContactPhone,
+            string ContactEmail,
+            string WebsiteUrl
+        );
+
+        private static RegionConfig GetRegionConfig(string region) => region.ToUpper() switch
+        {
+            "ID" => new RegionConfig(
+                Currency:       "IDR",
+                CompanyName:    "Etiqa General Insurance Berhad",
+                CompanyAddress: "Level 12, Tower C, Dataran Maybank, 1 Jalan Maarof, 59000 Kuala Lumpur",
+                ContactPhone:   "1-300-13-8888",
+                ContactEmail:   "info@etiqa.com.my",
+                WebsiteUrl:     "www.etiqa.com.my"
+            ),
+            "PH" => new RegionConfig(
+                Currency:       "PHP",
+                CompanyName:    "Etiqa General Insurance Berhad",
+                CompanyAddress: "Level 12, Tower C, Dataran Maybank, 1 Jalan Maarof, 59000 Kuala Lumpur",
+                ContactPhone:   "1-300-13-8888",
+                ContactEmail:   "info@etiqa.com.my",
+                WebsiteUrl:     "www.etiqa.com.my"
+            ),
+            "KH" => new RegionConfig(
+                Currency:       "USD",
+                CompanyName:    "Etiqa General Insurance Berhad",
+                CompanyAddress: "Level 12, Tower C, Dataran Maybank, 1 Jalan Maarof, 59000 Kuala Lumpur",
+                ContactPhone:   "1-300-13-8888",
+                ContactEmail:   "info@etiqa.com.my",
+                WebsiteUrl:     "www.etiqa.com.my"
+            ),
+            _ => new RegionConfig(   // MY / unknown — RM defaults
+                Currency:       "RM",
+                CompanyName:    "Etiqa General Insurance Berhad",
+                CompanyAddress: "Level 12, Tower C, Dataran Maybank, 1 Jalan Maarof, 59000 Kuala Lumpur",
+                ContactPhone:   "1-300-13-8888",
+                ContactEmail:   "info@etiqa.com.my",
+                WebsiteUrl:     "www.etiqa.com.my"
+            )
+        };
+
         public ProposalService(
             ILogger<ProposalService>          logger,
             IProposalRepository               proposalRepository,
@@ -965,13 +1011,21 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var questionMarkBase64 = LoadImage("Question_Mark.png");
 
                 var perlindunganTenang = string.Empty;
-                var websiteUrl         = string.Empty;
+                var rc = GetRegionConfig(region);
 
                 var xmlTree = new XDocument(
                     new XElement("root",
 
                         new XElement("ImageEgibEnHeader",   egibHeaderEnImage),
                         new XElement("ImageEgibBmHeader",   egibHeaderBmImage),
+
+                        new XElement("P_CountryRegion",       region),
+                        new XElement("P_Currency",            rc.Currency),
+                        new XElement("P_CompanyName",         rc.CompanyName),
+                        new XElement("P_CompanyAddress",      rc.CompanyAddress),
+                        new XElement("P_ContactPhone",        rc.ContactPhone),
+                        new XElement("P_ContactEmail",        rc.ContactEmail),
+                        new XElement("P_WebsiteUrl",          rc.WebsiteUrl),
 
                         new XElement("P_Date",                DateTime.Now.ToString("dd/MM/yyyy")),
                         new XElement("P_IsBanca",             isBanca),
@@ -1010,8 +1064,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_WebsiteImage",        websiteImageBase64),
                         new XElement("P_EmailImage",          emailImageBase64),
                         new XElement("P_QRCodeImage",         qrCodeImageBase64),
-                        new XElement("P_QuestionMarkImage",   questionMarkBase64),
-                        new XElement("P_WebsiteUrl",          websiteUrl)
+                        new XElement("P_QuestionMarkImage",   questionMarkBase64)
                     )
                 );
 
@@ -1128,6 +1181,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var checkedImg   = LoadEpolicyImage("checked.png");
                 var uncheckedImg = LoadEpolicyImage("uncheck.png");
 
+                var rc = GetRegionConfig(region);
+
                 // ── XML tree ─────────────────────────────────────────────────────────
                 var xmlTree = new XDocument(
                     new XElement("root",
@@ -1138,6 +1193,15 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("ImageChecked",      checkedImg),
                         new XElement("ImageUnchecked",    uncheckedImg),
 
+                        // Region / currency / company
+                        new XElement("P_CountryRegion",  region),
+                        new XElement("P_Currency",       rc.Currency),
+                        new XElement("P_CompanyName",    rc.CompanyName),
+                        new XElement("P_CompanyAddress", rc.CompanyAddress),
+                        new XElement("P_ContactPhone",   rc.ContactPhone),
+                        new XElement("P_ContactEmail",   rc.ContactEmail),
+                        new XElement("P_WebsiteUrl",     rc.WebsiteUrl),
+
                         // Cover letter / schedule header
                         new XElement("P_Date",    DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")),
                         new XElement("P_Name",    (proposal.Name             ?? string.Empty).ToUpper()),
@@ -1146,6 +1210,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_Address3",(proposal.MailCity         ?? string.Empty).ToUpper()),
                         new XElement("P_Address4",
                             $"{proposal.MailPostcode} {proposal.MailState}, {proposal.MailCountry}".ToUpper()),
+                        new XElement("P_MailDistrict",  (proposal.MailDistrict ?? string.Empty).ToUpper()),
+                        new XElement("P_MailVillage",   (proposal.MailVillage  ?? string.Empty).ToUpper()),
 
                         new XElement("P_PolicyNo",          policyNumber),
                         new XElement("P_AgentCode",         "SYSTEM"),
@@ -1181,6 +1247,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_PropertyAddress2", proposal.PropAddressLine2 ?? string.Empty),
                         new XElement("P_PropertyAddress3", $"{proposal.PropPostcode} {proposal.PropCity}"),
                         new XElement("P_PropertyAddress4", $"{proposal.PropState}, {proposal.PropCountry}"),
+                        new XElement("P_PropDistrict",     proposal.PropDistrict ?? string.Empty),
+                        new XElement("P_PropVillage",      proposal.PropVillage  ?? string.Empty),
 
                         // Coverage flags
                         new XElement("P_isBuilding",        isBuilding.ToString().ToLower()),
@@ -1321,6 +1389,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var headerImage = LoadTaxImage("EGIB-ENG.png");
                 var footerImage = LoadTaxImage("egib-footer-EV.png");
 
+                var rc = GetRegionConfig(region);
+
                 // ── XML tree ─────────────────────────────────────────────────────────
                 var xmlTree = new XDocument(
                     new XElement("root",
@@ -1328,6 +1398,15 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         // Images
                         new XElement("ImageEgibEnHeader", headerImage),
                         new XElement("FooterImage",       footerImage),
+
+                        // Region / currency / company
+                        new XElement("P_CountryRegion",  region),
+                        new XElement("P_Currency",       rc.Currency),
+                        new XElement("P_CompanyName",    rc.CompanyName),
+                        new XElement("P_CompanyAddress", rc.CompanyAddress),
+                        new XElement("P_ContactPhone",   rc.ContactPhone),
+                        new XElement("P_ContactEmail",   rc.ContactEmail),
+                        new XElement("P_WebsiteUrl",     rc.WebsiteUrl),
 
                         // Company tax registration (static EGIB value)
                         new XElement("P_taxRegNo",        "W10-1806-30000001"),
@@ -1346,12 +1425,14 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_Address3", proposal.MailCity         ?? string.Empty),
                         new XElement("P_Address4",
                             $"{proposal.MailPostcode} {proposal.MailState}, {proposal.MailCountry}"),
+                        new XElement("P_MailDistrict",  proposal.MailDistrict ?? string.Empty),
+                        new XElement("P_MailVillage",   proposal.MailVillage  ?? string.Empty),
 
                         // Premium breakdown
                         new XElement("P_GrossPremium",  grossPremium.ToString("#,##0.00")),
                         new XElement("P_Discount",      discountAmount.ToString("#,##0.00")),
                         new XElement("P_DiscountRate",  discountRate),
-                        new XElement("P_taxType",       "Cukai Perkhidmatan/Service Tax"),
+                        new XElement("P_taxType",       "Service Tax"),
                         new XElement("P_TaxPercentage", taxRate),
                         new XElement("P_SST",           sstAmount.ToString("#,##0.00")),
                         new XElement("P_StampDuty",     stampDuty.ToString("#,##0.00")),

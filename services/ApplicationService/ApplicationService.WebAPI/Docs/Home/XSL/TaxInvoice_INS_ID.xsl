@@ -193,6 +193,12 @@
 												<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_Address2"/></span></td></tr>
 												<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_Address3"/></span></td></tr>
 												<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_Address4"/></span></td></tr>
+												<xsl:if test="root/P_MailDistrict != ''">
+													<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_MailDistrict"/></span></td></tr>
+												</xsl:if>
+												<xsl:if test="root/P_MailVillage != ''">
+													<tr><td><span style="font-family: Arial; color: #000000; font-size: 12px;margin-left:-3px;"><xsl:value-of select="root/P_MailVillage"/></span></td></tr>
+												</xsl:if>
 											</table>
 										</td>
 										<td width="5%"></td>
