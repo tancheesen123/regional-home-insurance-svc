@@ -20,7 +20,14 @@
 						<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;padding:2px;padding-left:0px;"><xsl:value-of select="root/P_Address1"/></p>
 						<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_Address2"/></p>
 						<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_Address3"/></p>
-						<p style="margin-block-end:60px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_Address4"/></p>
+						<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_Address4"/></p>
+						<xsl:if test="root/P_MailDistrict != ''">
+							<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_MailDistrict"/></p>
+						</xsl:if>
+						<xsl:if test="root/P_MailVillage != ''">
+							<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_MailVillage"/></p>
+						</xsl:if>
+						<p style="margin-block-end:60px;margin-block-start:0px;"></p>
 						<p style="font-size:18px;margin-block-end:25px">
 							<u>TERIMA KASIH TELAH MEMILIH ETIQA. KAMI DENGAN BANGGA MEMBERITAHUKAN BAHWA PERLINDUNGAN ANDA KINI TELAH AKTIF</u>
 						</p>
@@ -214,6 +221,12 @@
 							<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropertyAddress2"/></td></tr>
 							<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropertyAddress3"/></td></tr>
 							<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropertyAddress4"/></td></tr>
+							<xsl:if test="root/P_PropDistrict != ''">
+								<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropDistrict"/></td></tr>
+							</xsl:if>
+							<xsl:if test="root/P_PropVillage != ''">
+								<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropVillage"/></td></tr>
+							</xsl:if>
 						</table>
 					</div>
 				</div>

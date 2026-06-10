@@ -220,7 +220,7 @@
 									<td>10.</td>
 									<td style="text-align: justify;">
 										Liability to the third parties for accidents in your house
-										&#45; Limit of Liability up to RM50,000
+										&#45; Limit of Liability up to <xsl:value-of select="root/P_Currency"/>50,000
 									</td>
 									<td class="covered">Covered</td>
 									<td class="covered">Covered</td>
@@ -239,7 +239,7 @@
 									<td>12.</td>
 									<td style="text-align: justify;">
 										Damage to mirrors, other than hand mirrors &#45; Limit
-										RM500
+										<xsl:value-of select="root/P_Currency"/>500
 										per piece any one accident
 									</td>
 									<td class="not-covered">Not Covered</td>
@@ -250,7 +250,7 @@
 									<td style="text-align: justify;">
 										Compensation on Death of the Insured Person; due to fire
 										or robbery where there is violent and forcible entry to the house &#45; Limit
-										RM10,000
+										<xsl:value-of select="root/P_Currency"/>10,000
 										or one-half of the Sum Insured on contents whichever is lower
 									</td>
 									<td class="not-covered">Not Covered</td>
@@ -316,11 +316,13 @@
 									<li>
 										Duration of cover is for one (1) year. You need to renew the insurance cover annually.
 									</li>
+									<xsl:if test="root/P_CountryRegion = 'MY'">
 									<li>
 										The benefits payable under eligible product are protected by Perbadanan Insurans Deposit
 										Malaysia (PIDM) up to limits. Please refer to PIDM's Takaful and Insurance Benefits
 										Protection System (TIPS) Brochure or contact us or PIDM (visit www.pidm.gov.my).
 									</li>
+									</xsl:if>
 								</ol>
 							</div>
 							<br />
@@ -368,7 +370,7 @@
 								</xsl:attribute>
 							</img>
 							<br />
-							Contact us at 1-300-13-8888
+							Contact us at <xsl:value-of select="root/P_ContactPhone"/>
 							<br />
 							(Etiqa Oneline)
 						</td>
@@ -396,7 +398,7 @@
 							<br />
 							Email us at
 							<br />
-							info@etiqa.com.my
+							<xsl:value-of select="root/P_ContactEmail"/>
 						</td>
 
 						<!-- QR Code -->
@@ -428,7 +430,7 @@
 							<strong>
 								For this Houseowner/Householder Insurance, the premium that you have to pay annually is
 								calculated based on your sum insured and selected additional perils, if any. As an
-								illustration of RM <xsl:value-of select="root/P_CoverageAmount" />
+								illustration of <xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_CoverageAmount" />
 								, you must pay:
 							</strong>
 						</td>
@@ -436,7 +438,7 @@
 					<tr>
 						<td>Basic Premium For Standard Cover</td>
 						<td>
-							RM <xsl:value-of select="root/P_PlanPremium" />
+							<xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_PlanPremium" />
 						</td>
 					</tr>
 					<xsl:if test="root/P_HasAddOn = 'true'">
@@ -453,7 +455,8 @@
 							<td>
 								<br />
 								<xsl:for-each select="/root/P_AddOn[position() &lt;= 4]">
-									<xsl:text>RM </xsl:text>
+									<xsl:value-of select="/root/P_Currency"/>
+									<xsl:text> </xsl:text>
 									<xsl:value-of select="Premium" />
 									<br />
 								</xsl:for-each>
@@ -468,7 +471,7 @@
 							</td>
 							<td>
 								<br />
-								RM 0.00
+								<xsl:value-of select="root/P_Currency"/> 0.00
 							</td>
 						</tr>
 					</xsl:if>
@@ -477,7 +480,7 @@
 							<td>(-) Discount to customer</td>
 							<td>
 								<xsl:value-of select="root/P_DiscountRate" />
-								% or RM <xsl:value-of select="root/P_DiscountAmount" />
+								% or <xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_DiscountAmount" />
 							</td>
 						</tr>
 					</xsl:if>
@@ -486,7 +489,7 @@
 							Total Premium
 						</td>
 						<td>
-							RM <xsl:value-of select="root/P_NetPremium" />
+							<xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_NetPremium" />
 						</td>
 					</tr>
 					<tr>
@@ -501,7 +504,7 @@
 							</td>
 							<td>
 								<xsl:value-of select="root/P_CommissionRate" />
-								% or RM
+								% or <xsl:value-of select="root/P_Currency"/>
 								<xsl:value-of select="root/P_CommissionAmount" />
 							</td>
 						</tr>
@@ -512,26 +515,26 @@
 						</td>
 						<td>
 							<xsl:value-of select="root/P_ServiceTaxRate" />
-							% of total premium or RM
+							% of total premium or <xsl:value-of select="root/P_Currency"/>
 							<xsl:value-of select="root/P_ServiceTaxAmount" />
 						</td>
 					</tr>
 					<tr>
 						<td>Stamp Duty</td>
 						<td>
-							RM <xsl:value-of select="root/P_StampDuty" />
+							<xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_StampDuty" />
 						</td>
 					</tr>
 					<tr>
 						<td>Total Premium Payable</td>
 						<td>
-							RM <xsl:value-of select="root/P_TotalPremium" />
+							<xsl:value-of select="root/P_Currency"/> <xsl:value-of select="root/P_TotalPremium" />
 						</td>
 					</tr>
 					<tr>
 						<td colspan="2">
 							All premiums (if applicable) will be subjected to relevant charges or taxes as deemed necessary
-							by the Malaysia tax authorities. It is important to keep any receipt that you receive as proof
+							by the applicable tax authorities. It is important to keep any receipt that you receive as proof
 							of payment of premiums.
 						</td>
 					</tr>
@@ -573,6 +576,7 @@
 												insured should cover the cost of rebuilding and replacement of your property in
 												the event of loss or damage.
 											</li>
+											<xsl:if test="root/P_CountryRegion = 'MY'">
 											<li >
 												To assist you in determining the sum insured, you may use the estimated building
 												cost calculator provided by Persatuan Insurans Am Malaysia (PIAM) via the
@@ -581,6 +585,7 @@
 												note that you are advised to seek independent professional advise if the
 												property had been extensively renovated and/or have unique/non-standard design.
 											</li>
+											</xsl:if>
 										</ol>
 									</li>
 									<li >

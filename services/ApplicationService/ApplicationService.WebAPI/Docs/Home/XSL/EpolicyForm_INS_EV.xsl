@@ -68,13 +68,20 @@
 						</p>
 						<p
 						  style="
-                  margin-block-end: 60px;
+                  margin-block-end: 0px;
                   margin-block-start: 0px;
                   font-size: 16px;
                 "
               >
 							<xsl:value-of select="root/P_Address4" />
 						</p>
+						<xsl:if test="root/P_MailDistrict != ''">
+							<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_MailDistrict"/></p>
+						</xsl:if>
+						<xsl:if test="root/P_MailVillage != ''">
+							<p style="margin-block-end:0px;margin-block-start:0px;font-size:16px;"><xsl:value-of select="root/P_MailVillage"/></p>
+						</xsl:if>
+						<p style="margin-block-end:60px;margin-block-start:0px;"></p>
 						<p style="font-size: 18px; margin-block-end: 25px">
 							<u>
 								THANK YOU FOR STAYING SECURE WITH ETIQA. WE ARE DELIGHTED TO INFORM YOU THAT YOUR COVERAGE IS NOW EFFECTIVE
@@ -120,22 +127,24 @@
 							discrepancy, please inform us immediately. Our consultant will be glad to serve you.
 						</p>
 						<p style="font-size: 16px; margin-block-end: 20px">
-							For any enquiries on the above or any of our products, feel free to call Etiqa Oneline at 1 300 13 8888 or e-mail us at
-							info@etiqa.com.my. In case of any claim, you may call our Claim Assist at 1 300 88 1007 for fast and efficient claim
-							service. Again, we welcome you to the Etiqa family.
+							For any enquiries on the above or any of our products, feel free to call us at <xsl:value-of select="root/P_ContactPhone"/> or e-mail us at
+							<xsl:value-of select="root/P_ContactEmail"/>. In case of any claim, please contact our Claim Assist line for fast and efficient claim
+							service. Again, we welcome you to the <xsl:value-of select="root/P_CompanyName"/> family.
 						</p>
 						<p style="font-size: 16px; margin-block-start:30px">
 							Thank you.
 						</p>
 						<p style="font-size: 16px; margin-block-start:30px">
-							Your sincerely, <br />Etiqa General Insurance Berhad
+							Your sincerely, <br /><xsl:value-of select="root/P_CompanyName"/>
 						</p>
 
-						<p style="font-size:16px; margin-block-start:30px">
-							The benefit(s) payable under eligible policy is protected by PIDM up to limits. Please refer to <a style="cursor: pointer; text-decoration:none;" href="https://www.pidm.gov.my/en/how-we-protect-you/tips/information-materials/brochures">
-								<i>PIDM's TIPS Brochure</i>
-							</a> or contact Etiqa General Insurance Berhad or PIDM (visit <a style="cursor: pointer; text-decoration:none;" href="https://www.pidm.gov.my">www.pidm.gov.my</a>).
-						</p>
+						<xsl:if test="root/P_CountryRegion = 'MY'">
+							<p style="font-size:16px; margin-block-start:30px">
+								The benefit(s) payable under eligible policy is protected by PIDM up to limits. Please refer to <a style="cursor: pointer; text-decoration:none;" href="https://www.pidm.gov.my/en/how-we-protect-you/tips/information-materials/brochures">
+									<i>PIDM's TIPS Brochure</i>
+								</a> or contact <xsl:value-of select="root/P_CompanyName"/> or PIDM (visit <a style="cursor: pointer; text-decoration:none;" href="https://www.pidm.gov.my">www.pidm.gov.my</a>).
+							</p>
+						</xsl:if>
 						<br/>
 						<br/>
 						<p>
@@ -201,9 +210,13 @@
 							<p style="font-size: 16px; margin:5px;">
 								<xsl:value-of select="root/P_Address4" />
 							</p>
-							<p style="font-size: 16px; margin:5px;">
-
-							</p>
+							<xsl:if test="root/P_MailDistrict != ''">
+								<p style="font-size: 16px; margin:5px;"><xsl:value-of select="root/P_MailDistrict"/></p>
+							</xsl:if>
+							<xsl:if test="root/P_MailVillage != ''">
+								<p style="font-size: 16px; margin:5px;"><xsl:value-of select="root/P_MailVillage"/></p>
+							</xsl:if>
+							<p style="font-size: 16px; margin:5px;"></p>
 						</div>
 						<div style="flex:1;flex-basis: 60%;border: 2px solid black; border-left: 0px solid black;padding-left:5px;">
 							<table style="width:100%; font-size:16px;">
@@ -246,7 +259,7 @@
 							<tr style="height: 30px;">
 								<td style="width:45%;">Total Sum Insured</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_TotalSumInsured" />
 								</td>
@@ -254,7 +267,7 @@
 							<tr style="height: 30px;">
 								<td style="width:45%;">Basic Premium</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_AnnualPremium" />
 								</td>
@@ -271,7 +284,7 @@
 										<xsl:value-of select="Name" />
 									</td>
 									<td style="width:5%">:</td>
-									<td style="width:20%; text-align: right;">RM</td>
+									<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 									<td style="width:30%; text-align: right;">
 										<xsl:value-of select="Price" />
 									</td>
@@ -280,13 +293,13 @@
 							<!-- <tr style="height: 30px;">
                 <td style="width:45%;">Riot, Strike and Malicious Damage</td>
                 <td style="width:5%">:</td>
-                <td style="width:20%; text-align: right;">RM</td>
+                <td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
                 <td style="width:30%; text-align: right;">xxxx.xx</td>
             </tr> -->
 							<tr style="height: 30px;">
 								<td style="width:45%;">Total Gross Premium</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_GrossPremium" />
 								</td>
@@ -296,7 +309,8 @@
 									Discount (<xsl:value-of select="root/P_DiscountRate" />%)
 								</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">(-) RM</td>
+								<td style="width:20%; text-align: right;">(-) <xsl:value-of select="root/P_Currency"/></td>
+
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_Discount" />
 								</td>
@@ -304,7 +318,7 @@
 							<tr style="height: 30px;">
 								<td style="width:45%;">Gross Premium After Discount</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_GrossPremiumAfterDiscount" />
 								</td>
@@ -314,7 +328,7 @@
 									Service Tax (<xsl:value-of select="root/P_TaxRate" />%)
 								</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_Tax" />
 								</td>
@@ -322,7 +336,7 @@
 							<tr style="height: 30px;">
 								<td style="width:45%;">Stamp Duty</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;">RM</td>
+								<td style="width:20%; text-align: right;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;">
 									<xsl:value-of select="root/P_StampDuty" />
 								</td>
@@ -330,7 +344,7 @@
 							<tr style="height: 30px;">
 								<td style="width:45%;">Total Premium</td>
 								<td style="width:5%">:</td>
-								<td style="width:20%; text-align: right;border-top: 2px solid black;">RM</td>
+								<td style="width:20%; text-align: right;border-top: 2px solid black;"><xsl:value-of select="root/P_Currency"/></td>
 								<td style="width:30%; text-align: right;border-top: 2px solid black;">
 									<xsl:value-of select="root/P_Total" />
 								</td>
@@ -380,13 +394,12 @@
 									<xsl:value-of select="root/P_PropertyAddress4" />
 								</td>
 							</tr>
-							<tr>
-								<td style="width:45%;"></td>
-								<td style="width:5%"></td>
-								<td style="width:50%; text-align: left;">
-
-								</td>
-							</tr>
+							<xsl:if test="root/P_PropDistrict != ''">
+								<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropDistrict"/></td></tr>
+							</xsl:if>
+							<xsl:if test="root/P_PropVillage != ''">
+								<tr><td></td><td></td><td style="width:50%;text-align:left;"><xsl:value-of select="root/P_PropVillage"/></td></tr>
+							</xsl:if>
 
 						</table>
 					</div>
@@ -466,7 +479,7 @@
 									<tr style="height: 40px;">
 										<td style="width:45%;">1 </td>
 										<td style="width:5%">On one unit building</td>
-										<td style="width:5%">RM</td>
+										<td style="width:5%"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="text-align:right;">
 											<xsl:value-of select="root/P_BuildingSumInsured" />
 										</td>
@@ -475,7 +488,7 @@
 									<tr style="height: 40px;">
 										<td style="width:45%;"> </td>
 										<td style="width:5%; text-align:right; padding-right:30px;">Total:</td>
-										<td style="width:5%;border-top: 2px dashed black;border-bottom: 2px dashed black; padding-right:40px;">RM</td>
+										<td style="width:5%;border-top: 2px dashed black;border-bottom: 2px dashed black; padding-right:40px;"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="border-top: 2px dashed black;border-bottom: 2px dashed black; text-align:right;" colspan="3">
 											<xsl:value-of select="root/P_BuildingSumInsured" />
 										</td>
@@ -545,7 +558,7 @@
 									<tr style="height: 40px;">
 										<td style="width:45%;">1 </td>
 										<td style="width:5%">On Content</td>
-										<td style="width:5%">RM</td>
+										<td style="width:5%"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="text-align:right;">
 											<xsl:value-of select="root/P_ContentSumInsured" />
 										</td>
@@ -554,7 +567,7 @@
 									<tr style="height: 40px;">
 										<td style="width:45%;"> </td>
 										<td style="width:5%; text-align:right; padding-right:30px;">Total:</td>
-										<td style="width:5%;border-top: 2px dashed black;border-bottom: 2px dashed black; padding-right:40px;">RM</td>
+										<td style="width:5%;border-top: 2px dashed black;border-bottom: 2px dashed black; padding-right:40px;"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="border-top: 2px dashed black;border-bottom: 2px dashed black; text-align:right;" colspan="3">
 											<xsl:value-of select="root/P_ContentSumInsured" />
 										</td>
@@ -605,7 +618,7 @@
 										<td style="width:40%;">
 											<xsl:value-of select="Description" />
 										</td>
-										<td style="width:25%;">RM</td>
+										<td style="width:25%;"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="width:10%;">
 											<xsl:value-of select="Value" />
 										</td>
@@ -618,7 +631,7 @@
 											<td style="width:10%;"></td>
 											<td style="width:20%;"></td>
 											<td style="width:40%; text-align:right; padding-right:20px;">Total:</td>
-											<td style="width:25%; border-top:2px dashed black;border-bottom:2px dashed black">RM</td>
+											<td style="width:25%; border-top:2px dashed black;border-bottom:2px dashed black"><xsl:value-of select="root/P_Currency"/></td>
 											<td style="width:10%;border-top:2px dashed black;border-bottom:2px dashed black">
 												<xsl:value-of select="root/P_TotalContentDeclaration" />
 											</td>
@@ -672,7 +685,7 @@
 										<td style="width:40%;">
 											<xsl:value-of select="Description" />
 										</td>
-										<td style="width:25%;">RM</td>
+										<td style="width:25%;"><xsl:value-of select="root/P_Currency"/></td>
 										<td style="width:10%;">
 											<xsl:value-of select="Value" />
 										</td>
@@ -683,7 +696,7 @@
 									<td style="width:10%;"></td>
 									<td style="width:20%;"></td>
 									<td style="width:40%; text-align:right; padding-right:20px;">Total:</td>
-									<td style="width:25%; border-top:2px dashed black;border-bottom:2px dashed black">RM</td>
+									<td style="width:25%; border-top:2px dashed black;border-bottom:2px dashed black"><xsl:value-of select="root/P_Currency"/></td>
 									<td style="width:10%;border-top:2px dashed black;border-bottom:2px dashed black">
 										<xsl:value-of select="root/P_TotalContentDeclaration" />
 									</td>
@@ -987,14 +1000,14 @@
 							<tr>
 								<td>a)</td>
 								<td style="text-align: justify;padding-left:5px;">
-									Under Insured event 5 for the first RM50.00.
+									Under Insured event 5 for the first <xsl:value-of select="root/P_Currency"/>50.00.
 								</td>
 							</tr>
 							<tr>
 								<td style="vertical-align: top; text-align: left;">b)</td>
 								<td style="text-align: justify;padding-left:5px;">
 									Under Insured events 7, 8 and 9 for the first one (1) per cent of the Total Sum Insured on Buildings or
-									RM200.00 whichever is less
+									<xsl:value-of select="root/P_Currency"/>200.00 whichever is less
 								</td>
 							</tr>
 						</table>
@@ -1002,7 +1015,7 @@
 
 							<td style="vertical-align: top; text-align: left;" >2. </td>
 							<td style="text-align: justify;padding-left:15px;">
-								Limit of the amount of Our liability under Additional Benefit C) Compensation for Death: RM10,000.00 or one half of Total Sum Insured on Contents whichever is less.
+								Limit of the amount of Our liability under Additional Benefit C) Compensation for Death: <xsl:value-of select="root/P_Currency"/>10,000.00 or one half of Total Sum Insured on Contents whichever is less.
 							</td>
 
 						</table>
@@ -1010,7 +1023,7 @@
 
 							<td style="vertical-align: top; text-align: left;" >3. </td>
 							<td style="text-align: justify;padding-left:15px;">
-								Limit of the amount of Our liability under Additional Benefit F) Liability to the Public: RM50,000.00 any one accident or series of accidents constituting one occurrence in respect of Buildings and Contents respectively.
+								Limit of the amount of Our liability under Additional Benefit F) Liability to the Public: <xsl:value-of select="root/P_Currency"/>50,000.00 any one accident or series of accidents constituting one occurrence in respect of Buildings and Contents respectively.
 							</td>
 
 						</table>
@@ -1088,6 +1101,7 @@
       "
     >
 
+					<xsl:if test="root/P_CountryRegion = 'MY'">
 					<div style="border: 1px solid black; padding: 10px;">
 						<p style="text-align: left; margin-bottom: 20px;">YOUR DUTY TO INFORM US</p>
 						<p>
@@ -1131,6 +1145,7 @@
 						</xsl:choose>
 
 					</div>
+					</xsl:if>
 
 					<div>
 						<table style="width:100%; padding-top:20px;">
@@ -1148,7 +1163,7 @@
 								<td style="width:40%; text-align:justify;">
 									<xsl:value-of select="root/P_AgentCode" />
 								</td>
-								<td style="width:35%; text-align:right;">Etiqa General Insurance Berhad</td>
+								<td style="width:35%; text-align:right;"><xsl:value-of select="root/P_CompanyName"/></td>
 							</tr>
 							<tr>
 								<td colspan="4" style="height:70px;">This Policy Schedule is a computer generated document and no signatory is required</td>
@@ -1158,6 +1173,7 @@
 
 				</div>
 
+				<xsl:if test="root/P_CountryRegion = 'MY'">
 				<div style="page-break-after: always"></div>
 
 				<div style="height:120px">
@@ -1236,7 +1252,7 @@
 						</table>
 						<div style="font-size:16px;  font-family: Arial, Helvetica, sans-serif;text-align: justify; margin:10px;">
 							<p>
-								I, agree, consent and allow Etiqa General Insurance Berhad (hereinafter called "Etiqa General Insurance") to process
+								I, agree, consent and allow <xsl:value-of select="root/P_CompanyName"/> (hereinafter called "Etiqa General Insurance") to process
 								my/our personal data (including sensitive personal data) ("Personal Data") with the intention of entering into a contract
 								of Insurance, in compliance with the provisions of the Personal Data Protection Act 2010.
 							</p>
@@ -1345,6 +1361,7 @@
 						</xsl:attribute>
 					</img>
 				</div>
+				</xsl:if>
 			</body>
 		</html>
 	</xsl:template>
