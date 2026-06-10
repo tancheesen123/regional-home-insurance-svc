@@ -109,6 +109,8 @@
       "firstNameRequired": "Nama depan diperlukan",
       "lastNameRequired": "Nama belakang diperlukan",
       "dateOfBirthRequired": "Tanggal lahir diperlukan",
+      "dateOfBirthFuture": "Tanggal lahir tidak boleh di masa depan",
+      "dateOfBirthMinAge": "Anda harus berusia minimal 18 tahun untuk mendaftar",
       "genderRequired": "Silakan pilih jenis kelamin Anda",
       "nationalityRequired": "Kewarganegaraan diperlukan",
       "idTypeRequired": "Silakan pilih jenis ID",

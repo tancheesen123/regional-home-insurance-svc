@@ -109,6 +109,8 @@
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
       "dateOfBirthRequired": "Date of birth is required",
+      "dateOfBirthFuture": "Date of birth cannot be in the future",
+      "dateOfBirthMinAge": "You must be at least 18 years old to register",
       "genderRequired": "Please select your gender",
       "nationalityRequired": "Nationality is required",
       "idTypeRequired": "Please select an ID type",
