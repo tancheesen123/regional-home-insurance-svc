@@ -11,7 +11,10 @@ export default function DashboardLayout({
 }) {
   return (
     <SessionGuard>
-      <SidebarProvider className="h-screen overflow-hidden">
+      <SidebarProvider
+        className="h-screen overflow-hidden"
+        style={{ "--sidebar-width": "13rem" } as React.CSSProperties}
+      >
         <DashboardSidebar />
 
         {/*

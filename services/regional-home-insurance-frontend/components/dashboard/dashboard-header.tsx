@@ -47,9 +47,9 @@ export default function DashboardHeader() {
             <Image
               src="/images/Etiqa-EGIB.png"
               alt="Etiqa"
-              width={100}
-              height={30}
-              className="h-7 w-auto object-contain"
+              width={80}
+              height={24}
+              className="h-5 w-auto object-contain"
               priority
             />
             {countryCode && (

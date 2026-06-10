@@ -95,18 +95,20 @@ export default function DashboardSidebar() {
               size="lg"
               className="hover:bg-[#FAFAFA] data-[state=open]:bg-[#FAFAFA] h-16"
             >
-              <Link href="/dashboard" className="flex items-center gap-2.5">
+              <Link href="/dashboard" className="flex items-center gap-3.5">
 
                 {/* Expanded: logo + text block + country badge */}
-                <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:hidden min-w-0">
-                  <Image
-                    src="/images/Etiqa-logo-1.png"
-                    alt="Etiqa"
-                    width={52}
-                    height={52}
-                    className="h-[52px] w-auto object-contain shrink-0"
-                    priority
-                  />
+                <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:hidden min-w-0">
+                  <div className="flex items-center justify-center w-20 h-10 shrink-0">
+                    <Image
+                      src="/images/Etiqa-logo-1.png"
+                      alt="Etiqa"
+                      width={100}
+                      height={30}
+                      className="h-full w-full object-contain"
+                      priority
+                    />
+                  </div>
                   <div className="flex flex-col min-w-0">
                     {/* <span className="text-sm font-bold text-[#1A1A1A] leading-tight truncate">
                       Etiqa General Insurance
