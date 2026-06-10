@@ -377,6 +377,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("MailDistrict")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("MailPostcode")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
@@ -384,6 +387,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.Property<string>("MailState")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MailVillage")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("MailingSameAsProperty")
                         .HasColumnType("bit");
@@ -417,6 +423,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PropDistrict")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PropPostcode")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
@@ -424,6 +433,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                     b.Property<string>("PropState")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PropVillage")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("QuotationId")
                         .IsRequired()
