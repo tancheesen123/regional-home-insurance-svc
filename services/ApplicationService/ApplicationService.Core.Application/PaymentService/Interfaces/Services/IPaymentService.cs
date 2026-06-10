@@ -20,5 +20,12 @@ namespace ApplicationService.Core.Application.PaymentService.Interfaces.Services
         /// inforces the Proposal, creates the Policy, and returns the frontend redirect URL.
         /// </summary>
         Task<ConfirmPaymentResponse> ConfirmPaymentAsync(string sessionId);
+
+        /// <summary>
+        /// Called by the frontend payment-failed page when Stripe redirects the customer
+        /// to CancelUrl. Marks the matching Payment as CANCELLED if it is still PENDING,
+        /// freeing up the proposal so the customer can retry payment.
+        /// </summary>
+        Task<CancelPaymentResponse> CancelPaymentAsync(string referenceNumber);
     }
 }

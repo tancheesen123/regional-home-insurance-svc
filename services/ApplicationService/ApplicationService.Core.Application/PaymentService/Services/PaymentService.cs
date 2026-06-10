@@ -363,6 +363,41 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
+        // ── CancelPayment ─────────────────────────────────────────────────────
+
+        public async Task<CancelPaymentResponse> CancelPaymentAsync(string referenceNumber)
+        {
+            var payment = await _paymentRepository.GetByReferenceNumberAsync(referenceNumber);
+            if (payment == null)
+                throw new KeyNotFoundException($"Payment with reference '{referenceNumber}' not found.");
+
+            // Only PENDING payments can be cancelled — never overwrite a SUCCESS/FAILED/EXPIRED record.
+            if (payment.Status != "PENDING")
+            {
+                return new CancelPaymentResponse
+                {
+                    ReferenceNumber = payment.ReferenceNumber,
+                    PaymentStatus   = payment.Status,
+                    Message         = $"Payment is already in '{payment.Status}' status — no change made."
+                };
+            }
+
+            payment.Status = "CANCELLED";
+            _paymentRepository.UpdatePayment(payment);
+            await _paymentRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Payment cancelled by customer | ReferenceNumber={ReferenceNumber} ProposalId={ProposalId}",
+                payment.ReferenceNumber, payment.ProposalId);
+
+            return new CancelPaymentResponse
+            {
+                ReferenceNumber = payment.ReferenceNumber,
+                PaymentStatus   = "CANCELLED",
+                Message         = "Payment cancelled. You can now retry payment for this proposal."
+            };
+        }
+
         private string BuildFrontendSuccessUrl(string referenceNumber, string policyNumber = "")
         {
             var baseUrl = _stripeSettings.FrontendSuccessUrl;

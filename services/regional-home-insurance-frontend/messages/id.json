@@ -532,6 +532,22 @@
       "emergencyClaims": "Untuk klaim darurat",
       "returnToDashboard": "Kembali ke Dasbor"
     },
+    "failed": {
+      "title": "Pembayaran Gagal",
+      "cancelledTitle": "Pembayaran Dibatalkan",
+      "subtitle": "Kami tidak dapat menyelesaikan pembayaran Anda. Jangan khawatir — penawaran Anda telah disimpan.",
+      "reference": "Referensi:",
+      "errorCode": "Kode error:",
+      "whatNext": "Langkah selanjutnya",
+      "step1Title": "Periksa detail pembayaran Anda",
+      "step1Desc": "Pastikan saldo kartu atau akun Anda mencukupi dan detailnya benar.",
+      "step2Title": "Coba lagi",
+      "step2Desc": "Kembali ke ringkasan pembayaran dan coba lagi dengan metode yang sama atau berbeda.",
+      "step3Title": "Hubungi dukungan",
+      "step3Desc": "Jika masalah berlanjut, tim dukungan kami siap membantu 24/7.",
+      "tryAgain": "Coba Lagi",
+      "returnToDashboard": "Kembali ke Dasbor"
+    },
     "validation": {
       "required": "Kolom ini wajib diisi",
       "selectDate": "Silakan pilih tanggal",
