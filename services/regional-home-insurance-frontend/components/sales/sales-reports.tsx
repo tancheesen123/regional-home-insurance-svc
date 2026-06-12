@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import {
   Search,
   Eye,
-  Calendar,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -25,6 +24,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { addDays, format } from "date-fns"
@@ -88,6 +104,12 @@ export default function SalesReports() {
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState<string | null>(null)
 
+  const [recentSalesPage, setRecentSalesPage] = useState(1)
+  const RECENT_SALES_PAGE_SIZE = 10
+
+  const [detailedPage, setDetailedPage] = useState(1)
+  const DETAILED_PAGE_SIZE = 10
+
   const [activeTab,   setActiveTab]   = useState("overview")
   const [exporting,   setExporting]   = useState(false)
   const [exportNote,  setExportNote]  = useState<string | null>(null) // feedback after export
@@ -139,6 +161,41 @@ export default function SalesReports() {
       return matchesSearch && matchesRegion && matchesStatus && matchesProduct
     })
   }, [records, searchTerm, selectedRegion, selectedStatus, selectedProduct])
+
+  // ── Recent Sales pagination — reset to page 1 whenever the filtered set changes
+  const recentSalesTotalPages = Math.max(1, Math.ceil(filteredData.length / RECENT_SALES_PAGE_SIZE))
+  useEffect(() => {
+    setRecentSalesPage(1)
+  }, [filteredData])
+  const pagedRecentSales = useMemo(() => {
+    const start = (recentSalesPage - 1) * RECENT_SALES_PAGE_SIZE
+    return filteredData.slice(start, start + RECENT_SALES_PAGE_SIZE)
+  }, [filteredData, recentSalesPage])
+
+  // ── Detailed Reports pagination — reset to page 1 whenever the filtered set changes
+  const detailedTotalPages = Math.max(1, Math.ceil(filteredData.length / DETAILED_PAGE_SIZE))
+  useEffect(() => {
+    setDetailedPage(1)
+  }, [filteredData])
+  const pagedDetailedData = useMemo(() => {
+    const start = (detailedPage - 1) * DETAILED_PAGE_SIZE
+    return filteredData.slice(start, start + DETAILED_PAGE_SIZE)
+  }, [filteredData, detailedPage])
+
+  // ── Premium trend — daily totals from the filtered records, sorted chronologically
+  const premiumTrend = useMemo(() => {
+    const byDay = new Map<string, number>()
+    for (const record of filteredData) {
+      const day = record.saleDate.slice(0, 10) // YYYY-MM-DD
+      byDay.set(day, (byDay.get(day) ?? 0) + record.premium)
+    }
+    return Array.from(byDay.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, total]) => ({
+        date: format(new Date(day), "MMM d"),
+        premium: total,
+      }))
+  }, [filteredData])
 
   // ── Summary always comes from API (not recomputed from filtered records)
 
@@ -356,7 +413,7 @@ export default function SalesReports() {
 
         {/* ── Overview ── */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Average Premium</CardTitle>
@@ -368,18 +425,6 @@ export default function SalesReports() {
                     ? <TrendingUp className="h-4 w-4 mr-1" />
                     : <TrendingDown className="h-4 w-4 mr-1" />}
                   {formatGrowth(summary.premiumGrowthPct)} from last month
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pending Policies</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.pendingPolicies}</div>
-                <div className="flex items-center text-sm text-yellow-600">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Requires attention
                 </div>
               </CardContent>
             </Card>
@@ -397,6 +442,34 @@ export default function SalesReports() {
             </Card>
           </div>
 
+          {/* Premium Trend */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Premium Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {premiumTrend.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No records match the current filters.</p>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={premiumTrend} margin={{ top: 5, right: 16, left: 8, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(v) => formatAmount(v, sessionCountryCode, true)}
+                        width={80}
+                      />
+                      <Tooltip formatter={(v: number) => formatAmount(v, sessionCountryCode, true)} />
+                      <Line type="monotone" dataKey="premium" stroke="#2563eb" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Recent Sales */}
           <Card>
             <CardHeader>
@@ -406,29 +479,73 @@ export default function SalesReports() {
               {filteredData.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">No records match the current filters.</p>
               ) : (
-                <div className="space-y-3">
-                  {filteredData.slice(0, 5).map((record) => (
-                    <div
-                      key={record.id}
-                      className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleViewReport(record.id)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-blue-600" />
+                <>
+                  <div className="space-y-3">
+                    {pagedRecentSales.map((record) => (
+                      <div
+                        key={record.id}
+                        className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleViewReport(record.id)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{record.customerName}</p>
+                            <p className="text-sm text-gray-600">{record.policyNumber}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{record.customerName}</p>
-                          <p className="text-sm text-gray-600">{record.policyNumber}</p>
+                        <div className="text-right">
+                          <p className="font-medium">{formatAmount(record.premium, record.region)}</p>
+                          <p className="text-sm text-gray-500">{format(new Date(record.saleDate), "MMM dd, yyyy")}</p>
+                          <Badge className={getStatusColor(record.status)}>{record.status}</Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">{formatAmount(record.premium, record.region)}</p>
-                        <Badge className={getStatusColor(record.status)}>{record.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+
+                  {recentSalesTotalPages > 1 && (
+                    <Pagination className="mt-4">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              setRecentSalesPage((p) => Math.max(1, p - 1))
+                            }}
+                            className={recentSalesPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: recentSalesTotalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              isActive={page === recentSalesPage}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                setRecentSalesPage(page)
+                              }}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              setRecentSalesPage((p) => Math.min(recentSalesTotalPages, p + 1))
+                            }}
+                            className={recentSalesPage === recentSalesTotalPages ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -457,7 +574,7 @@ export default function SalesReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((record) => (
+                    {pagedDetailedData.map((record) => (
                       <TableRow key={record.id}>
                         <TableCell>
                           <div>
@@ -520,6 +637,47 @@ export default function SalesReports() {
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No sales records found</h3>
                   <p className="text-gray-600">Try adjusting your filters or date range.</p>
                 </div>
+              )}
+
+              {detailedTotalPages > 1 && (
+                <Pagination className="mt-4">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setDetailedPage((p) => Math.max(1, p - 1))
+                        }}
+                        className={detailedPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: detailedTotalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          isActive={page === detailedPage}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setDetailedPage(page)
+                          }}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setDetailedPage((p) => Math.min(detailedTotalPages, p + 1))
+                        }}
+                        className={detailedPage === detailedTotalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               )}
             </CardContent>
           </Card>

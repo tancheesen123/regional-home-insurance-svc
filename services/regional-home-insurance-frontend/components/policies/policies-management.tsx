@@ -5,14 +5,12 @@ import {
   Search,
   Filter,
   Download,
-  Eye,
   FileText,
   Calendar,
   Shield,
   AlertCircle,
   CheckCircle,
   Clock,
-  X,
   Loader2,
   RefreshCw,
 } from "lucide-react"
@@ -26,17 +24,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import {
   fetchCustomerProposals,
   type CustomerProposal,
@@ -96,6 +83,7 @@ interface Policy {
   endDate:         string
   endDateRaw:      Date
   issuedAt:        string
+  issuedAtRaw:     Date
   isDocumentReady: boolean
 }
 
@@ -114,6 +102,7 @@ function mapProposal(p: CustomerProposal): Policy {
     endDate:         fmtDate(pol.endDate),
     endDateRaw:      new Date(pol.endDate),
     issuedAt:        fmtDate(pol.issuedAt),
+    issuedAtRaw:     new Date(pol.issuedAt),
     isDocumentReady: pol.isDocumentReady,
   }
 }
@@ -125,6 +114,8 @@ interface FilterState {
   status:       string[]
   coverageType: string[]
   country:      string[]
+  issuedFrom:   string
+  issuedTo:     string
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -172,7 +163,7 @@ export default function PoliciesManagement() {
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [activeTab,     setActiveTab]     = useState("all")
   const [filters,       setFilters]       = useState<FilterState>({
-    search: "", status: [], coverageType: [], country: [],
+    search: "", status: [], coverageType: [], country: [], issuedFrom: "", issuedTo: "",
   })
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -249,6 +240,15 @@ export default function PoliciesManagement() {
     if (filters.status.length)       list = list.filter((p) => filters.status.includes(p.status))
     if (filters.coverageType.length) list = list.filter((p) => filters.coverageType.includes(p.coverageType))
     if (filters.country.length)      list = list.filter((p) => filters.country.includes(p.country))
+    if (filters.issuedFrom) {
+      const from = new Date(filters.issuedFrom)
+      list = list.filter((p) => p.issuedAtRaw >= from)
+    }
+    if (filters.issuedTo) {
+      const to = new Date(filters.issuedTo)
+      to.setHours(23, 59, 59, 999)
+      list = list.filter((p) => p.issuedAtRaw <= to)
+    }
 
     return list
   }, [policies, activeTab, filters])
@@ -274,11 +274,12 @@ export default function PoliciesManagement() {
   }
 
   const clearFilters = () =>
-    setFilters({ search: "", status: [], coverageType: [], country: [] })
+    setFilters({ search: "", status: [], coverageType: [], country: [], issuedFrom: "", issuedTo: "" })
 
   const activeFiltersCount =
     filters.status.length + filters.coverageType.length + filters.country.length +
-    (filters.search ? 1 : 0)
+    (filters.search ? 1 : 0) +
+    (filters.issuedFrom ? 1 : 0) + (filters.issuedTo ? 1 : 0)
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -462,6 +463,44 @@ export default function PoliciesManagement() {
                 </Popover>
               )}
 
+              {/* Issued date filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="bg-transparent">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Issued Date
+                    {(filters.issuedFrom || filters.issuedTo) && (
+                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                        {(filters.issuedFrom ? 1 : 0) + (filters.issuedTo ? 1 : 0)}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-60">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Filter by Issued Date</h4>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="issued-from" className="text-xs text-gray-500">From</Label>
+                      <Input
+                        id="issued-from"
+                        type="date"
+                        value={filters.issuedFrom}
+                        onChange={(e) => setFilters((p) => ({ ...p, issuedFrom: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="issued-to" className="text-xs text-gray-500">To</Label>
+                      <Input
+                        id="issued-to"
+                        type="date"
+                        value={filters.issuedTo}
+                        onChange={(e) => setFilters((p) => ({ ...p, issuedTo: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               {activeFiltersCount > 0 && (
                 <Button variant="ghost" onClick={clearFilters} className="text-red-600">
                   Clear All ({activeFiltersCount})
@@ -536,11 +575,6 @@ export default function PoliciesManagement() {
 
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {/* View detail — wire to detail page when available */}
-                        <Button variant="ghost" size="sm" title="View details">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-
                         {/* Download — enabled only when isDocumentReady */}
                         <Button
                           variant="ghost"
@@ -554,42 +588,6 @@ export default function PoliciesManagement() {
                             : <Download className="h-4 w-4" />
                           }
                         </Button>
-
-                        {/* Terminate — Active policies only */}
-                        {policy.status === "Active" && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Terminate policy"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Terminate Policy</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to terminate policy{" "}
-                                  <strong>{policy.policyNumber}</strong>? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-600 hover:bg-red-700"
-                                  onClick={() =>
-                                    console.warn("Terminate endpoint not yet available:", policy.proposalId)
-                                  }
-                                >
-                                  Terminate Policy
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>

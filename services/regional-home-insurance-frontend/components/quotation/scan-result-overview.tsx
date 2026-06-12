@@ -86,19 +86,6 @@ const STEP_CONFIGS: StepConfig[] = [
     ],
   },
   {
-    id:    "customize",
-    label: "CUSTOMIZE PLAN",
-    fields: [
-      { label: "Cover Type",  aiKey: "coverType",  altKeys: ["planName"],   fieldId: null },
-      { label: "Sum Insured", aiKey: "sumInsured",                           fieldId: null },
-    ],
-  },
-  {
-    id:    "valuables",
-    label: "DECLARE VALUABLES",
-    fields: [],   // no direct scan fields for valuables
-  },
-  {
     id:    "fillDetails",
     label: "FILL DETAILS",
     fields: [
@@ -213,7 +200,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
             <div>
               <p className="text-sm font-semibold text-[#1A1A1A]">Document Scanned Successfully!</p>
               <p className="text-xs text-[#555555] mt-0.5">
-                {totalFilled} of {totalFields} fields matched —
+                {totalFilled} of {totalFields} fields matched 
                 <span className="text-[#F5A623] font-medium"> click any row to jump to the field</span>
               </p>
             </div>
@@ -374,7 +361,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
       {/* ── Footer CTA ─────────────────────────────────────────────────────── */}
       <div className="px-5 py-3.5 border-t border-[#F5F5F5] flex items-center justify-between gap-4">
         <p className="text-xs text-[#9E9E9E] leading-snug">
-          Please review all auto-filled values — they are pre-filled but not confirmed.
+          Please review all auto-filled values.
         </p>
         <button
           type="button"

@@ -471,16 +471,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">Item </td>
-										<td style="width:40%" colsapn="2">Description of Property / Interest Insured</td>
+										<td style="width:45%;vertical-align:top;">Item </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">Description of Property / Interest Insured</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">Sum Insured</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">Sum Insured</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">On one unit building</td>
-										<td style="width:5%"><xsl:value-of select="root/P_Currency"/></td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">On one unit building</td>
+										<td style="width:5%;vertical-align:top;"><xsl:value-of select="root/P_Currency"/></td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_BuildingSumInsured" />
 										</td>
 
@@ -550,16 +550,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">Item </td>
-										<td style="width:40%" colsapn="2">Description of Property / Interest Insured</td>
+										<td style="width:45%;vertical-align:top;">Item </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">Description of Property / Interest Insured</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">Sum Insured</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">Sum Insured</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">On Content</td>
-										<td style="width:5%"><xsl:value-of select="root/P_Currency"/></td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">On Content</td>
+										<td style="width:5%;vertical-align:top;"><xsl:value-of select="root/P_Currency"/></td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_ContentSumInsured" />
 										</td>
 

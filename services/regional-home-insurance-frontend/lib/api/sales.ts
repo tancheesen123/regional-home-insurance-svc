@@ -218,7 +218,7 @@ export async function exportSalesExcel(filter: {
   // Extract filename from Content-Disposition: attachment; filename="SalesReport_PH_....xlsx"
   const disposition = res.headers.get("Content-Disposition") ?? ""
   const filenameMatch = disposition.match(/filename="?([^";\r\n]+)"?/i)
-  const filename = filenameMatch?.[1]?.trim() ?? "SalesReport.xlsx"
+  const filename = filenameMatch?.[1]?.trim() ?? "Sales_Report.xlsx"
 
   // Trigger browser download
   const blob = await res.blob()

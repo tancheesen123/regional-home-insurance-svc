@@ -5,13 +5,18 @@ import {
   SlidersHorizontal, RefreshCw, Save, Loader2, AlertCircle,
   CheckCircle2, ChevronDown, ChevronUp, Database, History,
   RotateCcw, ChevronLeft, ChevronRight, Clock, User,
-  Search, Filter, X, MoreHorizontal,
+  Search, Filter, X, MoreHorizontal, MapPin,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { getSession } from "@/lib/session"
+import {
+  fetchIdProvinces, fetchIdCities, fetchPhProvinces, fetchPhCities,
+  fetchKhProvinces, fetchKhDistricts,
+} from "@/lib/address-api"
 import {
   fetchRateConfigs, updateBuildingRates, updateRegionConfig,
   updateLocationTiersBatch, updateRiskMultipliersBatch,
@@ -285,10 +290,6 @@ function BuildingRatesTab({ rows, countryCode, onSaved }: {
   const stageEdit = (id: string, value: number): Promise<void> => {
     setPending((p) => ({ ...p, [id]: value })); return Promise.resolve()
   }
-  const revertRow = (pt: string) => {
-    const ids = safeRows.filter((r) => r.propertySubType === pt).map((r) => r.id)
-    setPending((p) => { const n = { ...p }; ids.forEach((id) => delete n[id]); return n })
-  }
 
   const handleSave = async () => {
     if (pendingCount === 0) return
@@ -307,13 +308,20 @@ function BuildingRatesTab({ rows, countryCode, onSaved }: {
 
   return (
     <div className="rounded-xl overflow-hidden border border-[#E0E0E0] bg-white shadow-sm">
+      <div className="px-4 py-3 bg-[#E0F0FF] border-b border-[#BFDBFE] text-xs text-[#0066CC] flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          These rates determine the per-unit construction cost used to calculate the building sum insured
+          and premium for new and renewed quotations. Changes apply to quotations created after saving and
+          do not retroactively affect existing policies.
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead>
             <tr className="bg-[#FAFAFA]">
               <th className={TH}>Property Type</th>
               {constrTypes.map((ct) => <th key={ct} className={TH_R}>{constructionLabel(ct)}</th>)}
-              <th className={cn(TH, "w-12 text-center")}>·</th>
             </tr>
           </thead>
           <tbody>
@@ -332,9 +340,6 @@ function BuildingRatesTab({ rows, countryCode, onSaved }: {
                     </td>
                   )
                 })}
-                <td className={cn(TD, "w-12")}>
-                  <RowMenu items={[{ label: "Revert row", icon: <RotateCcw className="h-3.5 w-3.5" />, onClick: () => revertRow(pt) }]} />
-                </td>
               </tr>
             ))}
           </tbody>
@@ -385,6 +390,14 @@ function RegionConfigTab({ config, countryCode, onSaved }: {
 
   return (
     <div className="rounded-xl overflow-hidden border border-[#E0E0E0] bg-white shadow-sm">
+      <div className="px-4 py-3 bg-[#E0F0FF] border-b border-[#BFDBFE] text-xs text-[#0066CC] flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          These settings define the valid building area range, the storey/professional-fee adjustments,
+          and the benchmark year used when calculating the sum insured for new and renewed quotations.
+          Changes apply to quotations created after saving and do not retroactively affect existing policies.
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead>
@@ -426,6 +439,106 @@ const TIER_BADGE: Record<string, string> = {
   rural: "bg-[#E6F7EE] text-[#00A651] border-[#86EFAC]",
 }
 
+// Lets an admin search the same province/city lists used in the building
+// calculator and add a real location name as a tier-matching keyword.
+function LocationKeywordPicker({ countryCode, existing, onAdd }: {
+  countryCode: string; existing: string[]; onAdd: (label: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [provinces, setProvinces] = useState<{ value: string; label: string }[]>([])
+  const [cities, setCities] = useState<{ value: string; label: string }[]>([])
+  const [loadingProv, setLoadingProv] = useState(false)
+  const [loadingCity, setLoadingCity] = useState(false)
+  const [selProv, setSelProv] = useState("")
+  const [selCity, setSelCity] = useState("")
+
+  useEffect(() => {
+    if (!open || provinces.length > 0) return
+    let active = true
+    setLoadingProv(true)
+    const load = async () => {
+      try {
+        if (countryCode === "ID") {
+          const r = await fetchIdProvinces()
+          if (active) setProvinces(r.map((p) => ({ value: p.id, label: p.text })))
+        } else if (countryCode === "PH") {
+          const r = await fetchPhProvinces()
+          if (active) setProvinces(r.map((p) => ({ value: p.code, label: p.name })))
+        } else if (countryCode === "KH") {
+          const r = await fetchKhProvinces()
+          if (active) setProvinces(r.map((p) => ({ value: p.id, label: p.name.latin })))
+        }
+      } finally { if (active) setLoadingProv(false) }
+    }
+    load()
+    return () => { active = false }
+  }, [open, countryCode, provinces.length])
+
+  const handleProvince = async (value: string) => {
+    setSelProv(value); setSelCity(""); setCities([])
+    setLoadingCity(true)
+    try {
+      if (countryCode === "ID") {
+        const r = await fetchIdCities(value)
+        setCities(r.map((c) => ({ value: c.id, label: c.text })))
+      } else if (countryCode === "PH") {
+        const r = await fetchPhCities(value)
+        setCities(r.map((c) => ({ value: c.code, label: c.name })))
+      } else if (countryCode === "KH") {
+        const r = await fetchKhDistricts(value)
+        setCities(r.map((c) => ({ value: c.id, label: c.name.latin })))
+      }
+    } finally { setLoadingCity(false) }
+  }
+
+  const provLabel = provinces.find((p) => p.value === selProv)?.label
+  const cityLabel = cities.find((c) => c.value === selCity)?.label
+
+  const add = (label?: string) => {
+    if (!label) return
+    if (!existing.some((k) => k.toLowerCase() === label.toLowerCase())) onAdd(label)
+    setOpen(false); setSelProv(""); setSelCity(""); setCities([])
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" title="Add location from list"
+          className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md border border-[#E0E0E0] text-[#9E9E9E] hover:text-[#0066CC] hover:border-[#0066CC] transition-colors">
+          <MapPin className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3 space-y-2" align="start">
+        <p className="text-xs text-[#9E9E9E]">Add a province/city as a keyword</p>
+        <Select value={selProv} onValueChange={handleProvince}>
+          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={loadingProv ? "Loading…" : "Province"} /></SelectTrigger>
+          <SelectContent>
+            {provinces.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {selProv && (
+          <Select value={selCity} onValueChange={setSelCity}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={loadingCity ? "Loading…" : "City / Regency (optional)"} /></SelectTrigger>
+            <SelectContent>
+              {cities.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+        <div className="flex gap-2 pt-1">
+          <Button size="sm" variant="outline" className="h-7 text-xs flex-1" disabled={!provLabel} onClick={() => add(provLabel)}>
+            Add province
+          </Button>
+          {cityLabel && (
+            <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => add(cityLabel)}>
+              Add city
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 type TierPending = Record<string, { multiplier?: number; label?: string; keywords?: string[] }>
 
 function LocationTiersTab({ rows, countryCode, onSaved }: {
@@ -455,6 +568,14 @@ function LocationTiersTab({ rows, countryCode, onSaved }: {
 
   return (
     <div className="rounded-xl overflow-hidden border border-[#E0E0E0] bg-white shadow-sm">
+      <div className="px-4 py-3 bg-[#E0F0FF] border-b border-[#BFDBFE] text-xs text-[#0066CC] flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          The multiplier for each tier is applied to the base premium when a quotation&apos;s address matches
+          one of that tier&apos;s keywords. Changes apply to quotations created after saving and do not
+          retroactively affect existing policies.
+        </span>
+      </div>
       <table className="w-full text-sm border-separate border-spacing-0 table-fixed">
         <colgroup>
           {/* Tier */}
@@ -493,7 +614,18 @@ function LocationTiersTab({ rows, countryCode, onSaved }: {
                     <EditCell value={p.multiplier ?? row.multiplier} onSave={(v) => stage(row.id, { multiplier: v })} decimals={4} pending={"multiplier" in p} />
                   </div>
                 </td>
-                <td className={TD}><KeywordsEdit value={p.keywords ?? row.keywords ?? []} onSave={(v) => stage(row.id, { keywords: v })} pending={"keywords" in p} /></td>
+                <td className={TD}>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <KeywordsEdit value={p.keywords ?? row.keywords ?? []} onSave={(v) => stage(row.id, { keywords: v })} pending={"keywords" in p} />
+                    </div>
+                    <LocationKeywordPicker
+                      countryCode={countryCode}
+                      existing={p.keywords ?? row.keywords ?? []}
+                      onAdd={(label) => stage(row.id, { keywords: [...(p.keywords ?? row.keywords ?? []), label] })}
+                    />
+                  </div>
+                </td>
                 <td className={TD}>
                   <RowMenu items={[{ label: "Revert row", icon: <RotateCcw className="h-3.5 w-3.5" />, onClick: () => setPending((pp) => { const n = { ...pp }; delete n[row.id]; return n }) }]} />
                 </td>
@@ -533,6 +665,14 @@ function RiskMultipliersTab({ rows, countryCode, onSaved }: {
 
   return (
     <div className="rounded-xl overflow-hidden border border-[#E0E0E0] bg-white shadow-sm">
+      <div className="px-4 py-3 bg-[#E0F0FF] border-b border-[#BFDBFE] text-xs text-[#0066CC] flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          Each multiplier is applied to the base premium when a quotation matches the corresponding risk
+          factor (e.g. flood zone, building age). Changes apply to quotations created after saving and do
+          not retroactively affect existing policies.
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead>

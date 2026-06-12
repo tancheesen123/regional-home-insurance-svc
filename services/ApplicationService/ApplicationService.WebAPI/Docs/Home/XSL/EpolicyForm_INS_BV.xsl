@@ -255,15 +255,15 @@
 								</table>
 								<table style="width:100%;font-size:16px;">
 									<tr style="height:30px;">
-										<td style="width:45%;">Item</td>
-										<td style="width:40%" colspan="2">Deskripsi Properti / Kepentingan yang Diasuransikan</td>
-										<td style="width:15%;text-align:right;" colspan="2">Uang Pertanggungan</td>
+										<td style="width:45%;vertical-align:top;">Item</td>
+										<td style="width:40%;vertical-align:top;">Deskripsi Properti / Kepentingan yang Diasuransikan</td>
+										<td style="width:15%;text-align:right;vertical-align:top;" colspan="2">Uang Pertanggungan</td>
 									</tr>
 									<tr style="height:40px;">
-										<td style="width:45%;">1</td>
-										<td style="width:5%">Atas satu unit bangunan</td>
-										<td style="width:5%">IDR</td>
-										<td style="text-align:right;"><xsl:value-of select="root/P_BuildingSumInsured"/></td>
+										<td style="width:45%;vertical-align:top;">1</td>
+										<td style="width:5%;vertical-align:top;">Atas satu unit bangunan</td>
+										<td style="width:5%;vertical-align:top;">IDR</td>
+										<td style="text-align:right;vertical-align:top;"><xsl:value-of select="root/P_BuildingSumInsured"/></td>
 									</tr>
 									<tr style="height:40px;">
 										<td style="width:45%;"></td>
@@ -314,15 +314,15 @@
 								</table>
 								<table style="width:100%;font-size:16px;">
 									<tr style="height:30px;">
-										<td style="width:45%;">Item</td>
-										<td style="width:40%" colspan="2">Deskripsi Properti / Kepentingan yang Diasuransikan</td>
-										<td style="width:15%;text-align:right;" colspan="2">Uang Pertanggungan</td>
+										<td style="width:45%;vertical-align:top;">Item</td>
+										<td style="width:40%;vertical-align:top;">Deskripsi Properti / Kepentingan yang Diasuransikan</td>
+										<td style="width:15%;text-align:right;vertical-align:top;" colspan="2">Uang Pertanggungan</td>
 									</tr>
 									<tr style="height:40px;">
-										<td style="width:45%;">1</td>
-										<td style="width:5%">Atas isi rumah</td>
-										<td style="width:5%">IDR</td>
-										<td style="text-align:right;"><xsl:value-of select="root/P_ContentSumInsured"/></td>
+										<td style="width:45%;vertical-align:top;">1</td>
+										<td style="width:5%;vertical-align:top;">Atas isi rumah</td>
+										<td style="width:5%;vertical-align:top;">IDR</td>
+										<td style="text-align:right;vertical-align:top;"><xsl:value-of select="root/P_ContentSumInsured"/></td>
 									</tr>
 									<tr style="height:40px;">
 										<td style="width:45%;"></td>

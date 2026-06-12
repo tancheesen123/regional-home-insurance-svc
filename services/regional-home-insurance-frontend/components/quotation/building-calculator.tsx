@@ -85,11 +85,11 @@ interface Props {
 // instead of 2–5 re-renders from cascading individual setState calls.
 
 interface FormState {
-  propertyType:    PropertyTypeId
-  construction:    ConstructionId
+  propertyType:    PropertyTypeId | ""
+  construction:    ConstructionId | ""
   areaRaw:         string
   storeys:         number
-  ageOfBuilding:   AgeOfBuilding
+  ageOfBuilding:   AgeOfBuilding | ""
   quality:         BuildQuality
   topography:      Topography
   siteSurrounding: SiteSurrounding
@@ -135,9 +135,9 @@ type FormAction =
   | { type: "SET_FINISHES_RAW";     payload: string }
 
 const INITIAL: FormState = {
-  propertyType: "bungalow", construction: "fullBrick",
-  areaRaw: "", storeys: 1,
-  ageOfBuilding: "1to10", quality: "standard",
+  propertyType: "", construction: "",
+  areaRaw: "", storeys: 0,
+  ageOfBuilding: "", quality: "standard",
   topography: "flat", siteSurrounding: "normal",
   location: "urban", tierAutoSet: false,
   provinces: [], cities: [],
@@ -479,14 +479,14 @@ const StickyBar = memo(function StickyBar({
 }) {
   const t = useTranslations("quotation")
   const { state: sidebarState, isMobile } = useSidebar()
-  const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "16rem" : "3rem"
+  const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)"
 
   return (
     <div
       className="fixed bottom-0 right-0 bg-white border-t border-[#E0E0E0] shadow-2xl z-50 transition-[left] duration-200 ease-linear"
       style={{ left: stickyLeft, willChange: "left" }}
     >
-      <div className="max-w-4xl mx-auto px-4 pt-3 pb-4">
+      <div className="max-w-3xl mx-auto px-6 pt-3 pb-4">
         {bccResult && !bccLoading ? (
           <>
             <div className="grid grid-cols-3 gap-2 mb-3 text-center">
@@ -594,6 +594,7 @@ export default function BuildingCalculator({ onBack, onConfirm, symbol, countryC
   )
 
   const canCalculate = config !== null && parsedArea > 0 && !!provinceForApi
+    && !!form.propertyType && !!form.construction && !!form.ageOfBuilding && form.storeys > 0
 
   // ── Debounced BCC call (600 ms) ───────────────────────────────────────────
   useEffect(() => {
@@ -603,12 +604,12 @@ export default function BuildingCalculator({ onBack, onConfirm, symbol, countryC
     const timer = setTimeout(async () => {
       try {
         const result = await calculateBuildingCost(cc, {
-          propertySubType:    toApiPropertyType(form.propertyType),
-          constructionType:   toApiConstructionType(form.construction),
+          propertySubType:    toApiPropertyType(form.propertyType as PropertyTypeId),
+          constructionType:   toApiConstructionType(form.construction as ConstructionId),
           floorArea:          parsedArea,
           numberOfStoreys:    form.storeys,
           province:           provinceForApi,
-          ageOfBuilding:      form.ageOfBuilding,
+          ageOfBuilding:      form.ageOfBuilding as AgeOfBuilding,
           quality:            form.quality,
           topography:         form.topography,
           siteSurrounding:    form.siteSurrounding,
@@ -804,7 +805,9 @@ export default function BuildingCalculator({ onBack, onConfirm, symbol, countryC
             ))}
           </div>
           <p className="text-xs text-[#555555] mt-2">
-            {form.construction === "fullBrick" ? "Brick / Reinforced concrete — higher durability" : "Timber / Mixed materials — lighter construction"}
+            {form.construction === "fullBrick" ? "Brick / Reinforced concrete — higher durability"
+              : form.construction === "partialBrick" ? "Timber / Mixed materials — lighter construction"
+              : "Select a construction type"}
           </p>
         </section>
 
@@ -835,7 +838,7 @@ export default function BuildingCalculator({ onBack, onConfirm, symbol, countryC
               <Minus className="h-4 w-4" />
             </button>
             <div className="text-center min-w-[4rem]">
-              <span className="text-3xl font-bold text-[#1A1A1A]">{form.storeys}</span>
+              <span className="text-3xl font-bold text-[#1A1A1A]">{form.storeys > 0 ? form.storeys : "–"}</span>
               <span className="text-sm text-[#555555] ml-1.5">{t("calculator.storeysSuffix")}</span>
             </div>
             <button type="button" onClick={() => handleStoreys(1)} disabled={form.storeys >= maxStoreys}
@@ -1047,8 +1050,8 @@ export default function BuildingCalculator({ onBack, onConfirm, symbol, countryC
           bccResult={bccResult}
           config={config}
           symbol={symbol}
-          propertyType={form.propertyType}
-          construction={form.construction}
+          propertyType={form.propertyType as PropertyTypeId}
+          construction={form.construction as ConstructionId}
         />
       )}
 

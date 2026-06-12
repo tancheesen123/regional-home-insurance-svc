@@ -8,7 +8,7 @@ export default function LoadingScreen({ fullScreen = true }: LoadingScreenProps)
   return (
     <div
       className={`flex flex-col items-center justify-center bg-white ${
-        fullScreen ? "min-h-screen" : "min-h-[400px]"
+        fullScreen ? "min-h-screen" : "h-full min-h-[400px]"
       }`}
     >
       {/* Logo + spinner */}

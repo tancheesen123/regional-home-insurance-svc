@@ -254,7 +254,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
           </div>
 
           {/* Heading */}
-          <h2 className="text-xl font-bold text-[#1A1A1A]">Save time — let AI fill your form</h2>
+          <h2 className="text-xl font-bold text-[#1A1A1A]">Save time, let AI fill your form</h2>
           <p className="text-sm text-[#6B6B6B] mt-2 mb-5 leading-relaxed">
             Upload your IC or property document and our AI will pre-fill as many fields as possible to streamline your journey.
           </p>
@@ -337,7 +337,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
               onClick={onSkip}
               className="text-sm text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors font-medium"
             >
-              Skip — fill the form manually
+              Skip it and fill the form manually
             </button>
           </div>
         </div>

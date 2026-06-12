@@ -17,7 +17,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import { getQuote, saveQuotationId, saveQuotationStartDate, saveQuotationIdentity, saveQuotationPropertySummary } from "@/lib/api"
-import { checkFloodRisk, type FloodCheckResult } from "@/lib/api/flood-check"
 import { getSession } from "@/lib/session"
 import { getIdTypeOptions, getDefaultNationality } from "@/lib/id-type-helpers"
 import { markFieldManual, saveScanSession, type ScanSessionField } from "@/lib/scan-session"
@@ -126,9 +125,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const [dobOpen, setDobOpen] = useState(false)
   // Per-field validation errors. Key matches the `field-<key>` wrapper id.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  // Live flood-risk check (PetaBencana) driven by the postcode
-  const [floodCheck, setFloodCheck] = useState<FloodCheckResult | null>(null)
-  const [floodChecking, setFloodChecking] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     ownershipType:    "",         // no pre-selection — customer must choose
     coverageStartDate: undefined,
@@ -308,35 +304,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
   // Helper to get badge data for a given AI key
   const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
-
-  // ── Live flood-risk check (auto-runs on a valid 5-digit postcode) ──────────
-  useEffect(() => {
-    const pc = formData.postcode.trim()
-    if (countryCode.toUpperCase() !== "ID" || !/^\d{5}$/.test(pc)) {
-      setFloodCheck(null)
-      setFloodChecking(false)
-      return
-    }
-
-    let cancelled = false
-    setFloodChecking(true)
-    const timer = setTimeout(async () => {
-      const result = await checkFloodRisk(pc, countryCode)
-      if (cancelled) return
-      setFloodChecking(false)
-      setFloodCheck(result)
-      // Confirmed active flood → auto-set the manual question to "yes".
-      // This hard-blocks proceed (existing validation). Customer can still override.
-      if (result.status === "at-risk") {
-        setFormData((prev) =>
-          prev.currentFlooding === "yes" ? prev : { ...prev, currentFlooding: "yes" },
-        )
-      }
-    }, 700)
-
-    return () => { cancelled = true; clearTimeout(timer) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.postcode, countryCode])
 
   // Mark a field as manually edited when customer changes it
   const handleInputChange = useCallback((field: keyof FormData, value: string | Date | undefined | number) => {
@@ -689,30 +656,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
             placeholder={t("form.postcodePlaceholder")}
           />
           <FieldError msg={fieldErrors.postcode} />
-
-          {/* Live flood-risk status (PetaBencana.id) */}
-          {floodChecking && (
-            <p className="mt-1.5 text-xs text-[#9E9E9E] flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full border-2 border-[#E0E0E0] border-t-[#9E9E9E] animate-spin" />
-              {t("form.floodChecking")}
-            </p>
-          )}
-          {!floodChecking && floodCheck?.status === "at-risk" && (
-            <div className="mt-2 flex items-start gap-2 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-3 py-2">
-              <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
-              <p className="text-xs text-[#D32F2F] leading-snug">
-                {t("form.floodAtRisk")}
-                {floodCheck.areaName ? ` (${floodCheck.areaName})` : ""}
-                <span className="block text-[#9E9E9E] mt-0.5">{t("form.floodSource")}</span>
-              </p>
-            </div>
-          )}
-          {!floodChecking && floodCheck?.status === "clear" && (
-            <p className="mt-1.5 text-xs text-[#00A651] flex items-center gap-1.5">
-              <Check className="h-3 w-3 shrink-0" />
-              {t("form.floodClear")}
-            </p>
-          )}
         </div>
 
         {/* Risk Assessment Questions */}

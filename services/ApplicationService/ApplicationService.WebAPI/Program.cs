@@ -104,7 +104,8 @@ builder.Services.AddCors(options =>
             .SetIsOriginAllowedToAllowWildcardSubdomains()
             .WithOrigins("https://*.vercel.app")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition");
     });
 });
 

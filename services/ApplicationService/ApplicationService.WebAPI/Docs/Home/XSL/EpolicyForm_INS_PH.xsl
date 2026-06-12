@@ -446,16 +446,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">Aytem </td>
-										<td style="width:40%" colsapn="2">Paglalarawan ng Ari-arian / Interes na Siniseguro</td>
+										<td style="width:45%;vertical-align:top;">Aytem </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">Paglalarawan ng Ari-arian / Interes na Siniseguro</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">Halaga ng Seguro</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">Halaga ng Seguro</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">Sa isang yunit na gusali</td>
-										<td style="width:5%">PHP</td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">Sa isang yunit na gusali</td>
+										<td style="width:5%;vertical-align:top;">PHP</td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_BuildingSumInsured" />
 										</td>
 
@@ -525,16 +525,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">Aytem </td>
-										<td style="width:40%" colsapn="2">Paglalarawan ng Ari-arian / Interes na Siniseguro</td>
+										<td style="width:45%;vertical-align:top;">Aytem </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">Paglalarawan ng Ari-arian / Interes na Siniseguro</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">Halaga ng Seguro</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">Halaga ng Seguro</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">Sa Nilalaman</td>
-										<td style="width:5%">PHP</td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">Sa Nilalaman</td>
+										<td style="width:5%;vertical-align:top;">PHP</td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_ContentSumInsured" />
 										</td>
 

@@ -40,8 +40,20 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 // Load all proposals for the period (date filter only)
                 var all = await _proposalRepository.GetSalesProposalsAsync(req.DateFrom, req.DateTo);
 
+                // Load the immediately preceding period of the same length for growth comparison
+                decimal? priorPeriodPremium = null;
+                if (req.DateFrom.HasValue && req.DateTo.HasValue)
+                {
+                    var periodLength = req.DateTo.Value - req.DateFrom.Value;
+                    var priorTo   = req.DateFrom.Value.AddTicks(-1);
+                    var priorFrom = priorTo - periodLength;
+
+                    var priorProposals = await _proposalRepository.GetSalesProposalsAsync(priorFrom, priorTo);
+                    priorPeriodPremium = priorProposals.Select(GetPremium).Sum();
+                }
+
                 // Summary is computed from the unfiltered period dataset
-                var summary = ComputeSummary(all);
+                var summary = ComputeSummary(all, priorPeriodPremium);
 
                 // Apply additional filters for the records list
                 var filtered = all.AsEnumerable();
@@ -107,12 +119,28 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 };
             }
 
-            private static SalesSummary ComputeSummary(List<Proposal> proposals)
+            private static SalesSummary ComputeSummary(List<Proposal> proposals, decimal? priorPeriodPremium)
             {
                 var now      = DateTime.UtcNow;
                 var premiums = proposals.Select(GetPremium).ToList();
                 var total    = premiums.Sum();
                 var count    = proposals.Count;
+
+                var inforced  = proposals.Count(p => p.Status == "INFORCED");
+                var cancelled = proposals.Count(p => p.Status == "CANCELLED");
+                var decided   = inforced + cancelled;
+
+                decimal premiumGrowthPct;
+                if (priorPeriodPremium.HasValue)
+                {
+                    premiumGrowthPct = priorPeriodPremium.Value > 0
+                        ? Math.Round((total - priorPeriodPremium.Value) / priorPeriodPremium.Value * 100m, 1)
+                        : (total > 0 ? 100m : 0m);
+                }
+                else
+                {
+                    premiumGrowthPct = 0m;
+                }
 
                 return new SalesSummary
                 {
@@ -122,8 +150,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     ActivePolicies   = proposals.Count(p => p.Status == "INFORCED" && p.Policy?.EndDate >= now),
                     PendingPolicies  = proposals.Count(p => p.Status == "PENDING"),
                     AveragePremium   = count > 0 ? Math.Round(total / count, 2) : 0m,
-                    ConversionRate   = 87.5m,   // requires funnel data — hardcoded per spec
-                    PremiumGrowthPct = 12.0m,   // requires historical comparison — hardcoded per spec
+                    ConversionRate   = decided > 0 ? Math.Round((decimal)inforced / decided * 100m, 1) : 0m,
+                    PremiumGrowthPct = premiumGrowthPct,
                 };
             }
 
@@ -218,10 +246,10 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
         public int PendingPolicies { get; set; }
         public decimal AveragePremium { get; set; }
 
-        /// <summary>Percentage. Hardcoded until funnel tracking is available.</summary>
+        /// <summary>Percentage of decided proposals (INFORCED + CANCELLED) that were INFORCED.</summary>
         public decimal ConversionRate { get; set; }
 
-        /// <summary>Month-over-month growth %. Hardcoded until historical data pipeline is available.</summary>
+        /// <summary>Percentage change in total premium vs. the immediately preceding period of the same length.</summary>
         public decimal PremiumGrowthPct { get; set; }
     }
 }

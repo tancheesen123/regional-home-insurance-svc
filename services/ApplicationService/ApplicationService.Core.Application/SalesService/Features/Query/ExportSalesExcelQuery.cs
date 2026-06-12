@@ -45,15 +45,27 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 // ── Load & filter (same logic as GetSalesRecordsQuery) ──────────
                 var all = await _proposalRepository.GetSalesProposalsAsync(req.DateFrom, req.DateTo);
 
+                // Load the immediately preceding period of the same length for growth comparison
+                decimal? priorPeriodPremium = null;
+                if (req.DateFrom.HasValue && req.DateTo.HasValue)
+                {
+                    var periodLength = req.DateTo.Value - req.DateFrom.Value;
+                    var priorTo   = req.DateFrom.Value.AddTicks(-1);
+                    var priorFrom = priorTo - periodLength;
+
+                    var priorProposals = await _proposalRepository.GetSalesProposalsAsync(priorFrom, priorTo);
+                    priorPeriodPremium = priorProposals.Select(GetPremium).Sum();
+                }
+
                 // Summary computed before additional filters
-                var summary = ComputeSummary(all, req);
+                var summary = ComputeSummary(all, req, priorPeriodPremium);
 
                 var filtered = ApplyFilters(all, req);
 
                 // ── Build Excel ─────────────────────────────────────────────────
                 var bytes = BuildExcel(filtered, summary, req, query.Region);
 
-                // ── Filename: SalesReport_PH_2025-01-01_2025-01-31.xlsx ─────────
+                // ── Filename: Sales_Report_PH_2025-01-01_2025-01-31.xlsx ─────────
                 var fromPart = req.DateFrom.HasValue
                     ? req.DateFrom.Value.ToString("yyyy-MM-dd")
                     : "All";
@@ -61,7 +73,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     ? req.DateTo.Value.ToString("yyyy-MM-dd")
                     : "All";
                 var regionPart = string.IsNullOrWhiteSpace(query.Region) ? "ALL" : query.Region.ToUpper();
-                var fileName = $"SalesReport_{regionPart}_{fromPart}_{toPart}.xlsx";
+                var fileName = $"Sales_Report_{regionPart}_{fromPart}_{toPart}.xlsx";
 
                 _logger.LogInformation(
                     "ExportSalesExcel | Generated {FileName} with {Count} record(s).",
@@ -186,7 +198,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     ("Total Commission",$"{currency} {summary.TotalCommission:N2}"),
                     ("Average Premium", $"{currency} {summary.AveragePremium:N2}"),
                     ("Conversion Rate", $"{summary.ConversionRate:N1}%"),
-                    ("Premium Growth",  $"+{summary.PremiumGrowthPct:N1}%"),
+                    ("Premium Growth",  $"{(summary.PremiumGrowthPct >= 0 ? "+" : "")}{summary.PremiumGrowthPct:N1}%"),
                     ("Generated On",    now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC"),
                 };
 
@@ -237,12 +249,28 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 return filtered.ToList();
             }
 
-            private static SalesSummary ComputeSummary(List<Proposal> all, GetSalesRecordsRequest req)
+            private static SalesSummary ComputeSummary(List<Proposal> all, GetSalesRecordsRequest req, decimal? priorPeriodPremium)
             {
                 var now      = DateTime.UtcNow;
                 var premiums = all.Select(GetPremium).ToList();
                 var total    = premiums.Sum();
                 var count    = all.Count;
+
+                var inforced  = all.Count(p => p.Status == "INFORCED");
+                var cancelled = all.Count(p => p.Status == "CANCELLED");
+                var decided   = inforced + cancelled;
+
+                decimal premiumGrowthPct;
+                if (priorPeriodPremium.HasValue)
+                {
+                    premiumGrowthPct = priorPeriodPremium.Value > 0
+                        ? Math.Round((total - priorPeriodPremium.Value) / priorPeriodPremium.Value * 100m, 1)
+                        : (total > 0 ? 100m : 0m);
+                }
+                else
+                {
+                    premiumGrowthPct = 0m;
+                }
 
                 return new SalesSummary
                 {
@@ -252,8 +280,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     ActivePolicies   = all.Count(p => p.Status == "INFORCED" && p.Policy?.EndDate >= now),
                     PendingPolicies  = all.Count(p => p.Status == "PENDING"),
                     AveragePremium   = count > 0 ? Math.Round(total / count, 2) : 0m,
-                    ConversionRate   = 87.5m,
-                    PremiumGrowthPct = 12.0m,
+                    ConversionRate   = decided > 0 ? Math.Round((decimal)inforced / decided * 100m, 1) : 0m,
+                    PremiumGrowthPct = premiumGrowthPct,
                 };
             }
 

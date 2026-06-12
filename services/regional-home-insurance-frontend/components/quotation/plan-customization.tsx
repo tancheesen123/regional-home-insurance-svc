@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Check, Home, Package, Shield, Calculator, ChevronRight, AlertCircle } from "lucide-react"
+import { Check, Home, Package, Shield, Calculator, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -111,7 +111,13 @@ function parseSumInsuredStr(raw: string): number {
 export default function PlanCustomization() {
   const router = useRouter()
   const t = useTranslations("quotation")
-  const region = getRegionConfig(getSession()?.countryCode ?? "")
+  // Initialise with the SSR-safe default ("" → falls back inside getRegionConfig)
+  // and switch to the real session-based config after mount, to avoid a
+  // hydration mismatch between server render and the client's localStorage session.
+  const [region, setRegion] = useState(() => getRegionConfig(""))
+  useEffect(() => {
+    setRegion(getRegionConfig(getSession()?.countryCode ?? ""))
+  }, [])
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,7 +126,7 @@ export default function PlanCustomization() {
 
   // Plan state — initialised with building-contents defaults
   const [planState, setPlanState] = useState<PlanState>({
-    selectedPlan:   "",   // no plan pre-selected — customer must choose
+    selectedPlan:   "building-contents",
     buildingAmount: 0,
     contentAmount:  0,
     addOns: {
@@ -495,8 +501,8 @@ export default function PlanCustomization() {
   // ── Render — Main plan customization ──────────────────────────────────────
 
   return (
-    <>
-    <div className="max-w-4xl mx-auto px-4 pb-6">
+    <div className="min-h-full flex flex-col">
+    <div className="max-w-4xl mx-auto px-4 pb-6 w-full flex-1">
 
       <QuotationStepper currentStep={1} />
 
@@ -506,9 +512,6 @@ export default function PlanCustomization() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">{t("customize.title")}</h2>
-            <Button variant="link" className="text-[#0066CC] hover:text-[#004EA8] flex items-center gap-1">
-              {t("customize.productComparison")}<ChevronRight className="h-[14px] w-[14px]" />
-            </Button>
           </div>
 
           <div className="mb-6" id="field-plan">
@@ -678,9 +681,6 @@ export default function PlanCustomization() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E87722] mb-0.5">{addOnCategory(id)}</p>
                     <h4 className="font-semibold text-sm">{addOnTitle(id)}</h4>
                     <p className="text-xs text-[#9E9E9E] mt-1">{addOnDesc(id)}</p>
-                    <Button variant="link" className="text-[#0066CC] text-sm p-0 h-auto mt-1">
-                      {t("customize.showMore")}
-                    </Button>
                   </div>
                   <Checkbox
                     checked={planState.addOns[id]}
@@ -704,16 +704,16 @@ export default function PlanCustomization() {
       </div>
     </div>
 
-      <SummaryBar
-        loading={isPremiumLoading}
-        total={premiumData?.totalPremium}
-        totalBeforeDiscount={premiumData?.totalBeforeDiscount}
-        monthly={premiumData?.monthlyPremium}
-        breakdown={buildBreakdown()}
-        onProceed={handleProceed}
-        proceedLabel={t("customize.proceed")}
-        proceedLoading={isLoading}
-      />
-    </>
+    <SummaryBar
+      loading={isPremiumLoading}
+      total={premiumData?.totalPremium}
+      totalBeforeDiscount={premiumData?.totalBeforeDiscount}
+      monthly={premiumData?.monthlyPremium}
+      breakdown={buildBreakdown()}
+      onProceed={handleProceed}
+      proceedLabel={t("customize.proceed")}
+      proceedLoading={isLoading}
+    />
+    </div>
   )
 }
