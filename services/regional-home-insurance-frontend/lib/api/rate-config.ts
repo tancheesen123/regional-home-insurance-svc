@@ -32,6 +32,8 @@ export interface RegionConfigRow {
   maxStoreys: number
   professionalFeeRate: number       // e.g. 0.10 = 10 %
   benchmarkYear: number
+  buildingRate: number               // premium rate per RM/unit of building sum insured
+  contentRate: number                // premium rate per RM/unit of content sum insured
   isActive: boolean
 }
 
@@ -203,6 +205,8 @@ export async function updateRegionConfig(
     maxStoreys?: number
     professionalFeeRate?: number
     benchmarkYear?: number
+    buildingRate?: number
+    contentRate?: number
   },
   countryCode: string,
 ): Promise<void> {

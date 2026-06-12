@@ -21,6 +21,8 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public int     MaxStoreys         { get; set; }
         public decimal ProfessionalFeeRate{ get; set; }
         public int     BenchmarkYear      { get; set; }
+        public decimal BuildingRate       { get; set; }
+        public decimal ContentRate        { get; set; }
         public bool    IsActive           { get; set; }
     }
 
@@ -91,6 +93,8 @@ namespace ApplicationService.Core.Application.RateConfigService.DTOs
         public int?     MaxStoreys          { get; set; }
         public decimal? ProfessionalFeeRate { get; set; }
         public int?     BenchmarkYear       { get; set; }
+        public decimal? BuildingRate        { get; set; }
+        public decimal? ContentRate         { get; set; }
     }
 
     public class UpdateLocationTierRequest

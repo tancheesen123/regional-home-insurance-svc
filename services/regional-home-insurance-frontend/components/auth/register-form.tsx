@@ -233,8 +233,6 @@ export default function RegisterForm() {
         formData.region
       )
 
-      console.log("[Register Response]", response)
-
       if (!response.succeeded) {
         setErrors({ general: response.message ?? t("register.errors.registrationFailed") })
         return

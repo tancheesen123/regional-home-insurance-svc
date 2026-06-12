@@ -1,22 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Shield, Home, CheckCircle2, ArrowRight, ChevronRight } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { getSession } from "@/lib/session"
 
 export default function DashboardOverview() {
   const [selectedCategory, setSelectedCategory] = useState("home")
   const router = useRouter()
   const t      = useTranslations("dashboard.overview")
   const tCommon = useTranslations("common")
-
-  useEffect(() => {
-    const session = getSession()
-    console.log("[Session]", session)
-  }, [])
 
   // ── Data ──────────────────────────────────────────────────────────────────────
 

@@ -12,7 +12,6 @@ import {
   Phone,
   Calendar,
   FileText,
-  Share2,
   Loader2,
   AlertTriangle,
   RefreshCw,
@@ -561,25 +560,13 @@ export default function PaymentSuccess() {
       </div>
 
       {/* ── Quick Actions ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 gap-4 mb-8">
         <Button
           variant="outline"
           onClick={() => router.push("/dashboard/policies")}
           className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
         >
           <Eye className="h-4 w-4 mr-2" /> {t("success.viewAllPolicies")}
-        </Button>
-        <Button
-          variant="outline"
-          className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
-        >
-          <Share2 className="h-4 w-4 mr-2" /> {t("success.sharePolicy")}
-        </Button>
-        <Button
-          variant="outline"
-          className="border-[#E0E0E0] text-[#1A1A1A] hover:border-[#F5A623] hover:text-[#F5A623] hover:bg-[#FEF3DC]"
-        >
-          <Phone className="h-4 w-4 mr-2" /> {t("success.contactSupport")}
         </Button>
       </div>
 

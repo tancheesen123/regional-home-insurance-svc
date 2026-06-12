@@ -429,7 +429,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         session.countryCode
       )
 
-      console.log("[GetQuote Response]", response)
 
       if (!response.succeeded) {
         setError(response.message ?? t("form.failedToGetQuote"))

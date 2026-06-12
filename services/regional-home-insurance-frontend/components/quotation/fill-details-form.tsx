@@ -1134,7 +1134,6 @@ export default function FillDetailsForm() {
         session.countryCode
       )
 
-      console.log("[CreateProposal Response]", response)
 
       if (!response.succeeded) {
         setError(response.message ?? t("fillDetails.failedToCreate"))

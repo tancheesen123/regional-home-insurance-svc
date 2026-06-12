@@ -43,10 +43,11 @@ export default function DeclareValuables() {
 
   // Defer session-dependent values to the client only — avoids SSR/client hydration
   // mismatch caused by sessionStorage being unavailable during server rendering.
-  const [symbol, setSymbol] = useState<string>("")
+  const [region, setRegion] = useState(() => getRegionConfig(""))
   useEffect(() => {
-    setSymbol(getRegionConfig(getSession()?.countryCode ?? "").symbol)
+    setRegion(getRegionConfig(getSession()?.countryCode ?? ""))
   }, [])
+  const symbol = region.symbol
   const [showDeclaration, setShowDeclaration] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -63,9 +64,12 @@ export default function DeclareValuables() {
   // Per-category input state — keyed by category id so multiple open cards don't share one input
   const [newItems, setNewItems] = useState<Record<string, { description: string; value: string }>>({})
 
-  const MAX_ITEM_VALUE    = 20000   // per-item ceiling
-  const MIN_ITEM_VALUE    = 3000    // per-item floor
-  const MAX_TOTAL_DECLARED = 60000  // coverage cap across all declared valuables
+  // Tracks which item (if any) is currently being edited, per category
+  const [editingItem, setEditingItem] = useState<Record<string, string | null>>({})
+
+  const MIN_ITEM_VALUE     = region.valuableMinItem   // per-item floor
+  const MAX_ITEM_VALUE     = region.valuableMaxItem   // per-item ceiling
+  const MAX_TOTAL_DECLARED = region.valuableMaxTotal  // coverage cap across all declared valuables
 
   const totalDeclaredAmount = categories.reduce(
     (total, category) => total + category.items.reduce((sum, item) => sum + item.value, 0),
@@ -159,23 +163,59 @@ export default function DeclareValuables() {
 
     const value = Number.parseFloat(item.value)
     if (value < MIN_ITEM_VALUE || value > MAX_ITEM_VALUE) return
-    if (totalDeclaredAmount + value > MAX_TOTAL_DECLARED) return   // hard cap
 
-    const newItemObj: ValuableItem = {
-      id: Date.now().toString(),
-      description: item.description,
-      value,
+    const editingId = editingItem[categoryId]
+    if (editingId) {
+      // Editing an existing item — exclude its current value from the cap check
+      const category = categories.find((c) => c.id === categoryId)
+      const existingValue = category?.items.find((i) => i.id === editingId)?.value ?? 0
+      if (totalDeclaredAmount - existingValue + value > MAX_TOTAL_DECLARED) return
+
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === categoryId
+            ? {
+                ...cat,
+                items: cat.items.map((i) =>
+                  i.id === editingId ? { ...i, description: item.description, value } : i,
+                ),
+              }
+            : cat,
+        ),
+      )
+      setEditingItem((prev) => ({ ...prev, [categoryId]: null }))
+    } else {
+      if (totalDeclaredAmount + value > MAX_TOTAL_DECLARED) return   // hard cap
+
+      const newItemObj: ValuableItem = {
+        id: Date.now().toString(),
+        description: item.description,
+        value,
+      }
+
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === categoryId
+            ? { ...cat, items: [...cat.items, newItemObj] }
+            : cat,
+        ),
+      )
     }
 
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === categoryId
-          ? { ...cat, items: [...cat.items, newItemObj] }
-          : cat,
-      ),
-    )
-
     // Clear only this card's inputs
+    setNewItems((prev) => ({ ...prev, [categoryId]: { description: "", value: "" } }))
+  }
+
+  const startEditItem = (categoryId: string, item: ValuableItem) => {
+    setEditingItem((prev) => ({ ...prev, [categoryId]: item.id }))
+    setNewItems((prev) => ({
+      ...prev,
+      [categoryId]: { description: item.description, value: String(item.value) },
+    }))
+  }
+
+  const cancelEditItem = (categoryId: string) => {
+    setEditingItem((prev) => ({ ...prev, [categoryId]: null }))
     setNewItems((prev) => ({ ...prev, [categoryId]: { description: "", value: "" } }))
   }
 
@@ -187,6 +227,19 @@ export default function DeclareValuables() {
           : cat,
       ),
     )
+    if (editingItem[categoryId] === itemId) cancelEditItem(categoryId)
+  }
+
+  // Maps the UI's declaration categories to the rate-config categories the
+  // backend validates against (jewellery, electronics, artwork, sports-equipment, other).
+  const BACKEND_CATEGORY: Record<string, string> = {
+    gold:         "jewellery",
+    platinum:     "jewellery",
+    silver:       "jewellery",
+    jewellery:    "jewellery",
+    "animal-fur": "other",
+    sports:       "sports-equipment",
+    collectibles: "artwork",
   }
 
   const handleContinue = async () => {
@@ -201,7 +254,7 @@ export default function DeclareValuables() {
     // Flatten all items from all categories
     const items = categories.flatMap((cat) =>
       cat.items.map((item) => ({
-        category: cat.id,
+        category: BACKEND_CATEGORY[cat.id] ?? cat.id,
         description: item.description,
         value: item.value,
       }))
@@ -216,7 +269,6 @@ export default function DeclareValuables() {
     setIsLoading(true)
     try {
       const response = await declareValuables({ quotationId, items }, session.countryCode)
-      console.log("[DeclareValuables Response]", response)
 
       if (!response.succeeded) {
         setError(response.message ?? t("declare.failedToDeclare"))
@@ -433,18 +485,40 @@ export default function DeclareValuables() {
                               disabled={isAtLimit}
                             />
                           </div>
-                          <p className="text-xs text-[#9E9E9E] mt-1.5">{t("declare.minMax", { symbol })}</p>
+                          <p className="text-xs text-[#9E9E9E] mt-1.5">
+                            {t("declare.minMax", { symbol, min: MIN_ITEM_VALUE.toLocaleString(), max: MAX_ITEM_VALUE.toLocaleString() })}
+                          </p>
                         </div>
                       </div>
 
-                      <Button
-                        onClick={() => addItem(category.id)}
-                        className="text-[#0066CC] hover:text-[#004EA8] bg-transparent hover:bg-transparent hover:underline p-0 h-auto font-medium transition-colors duration-150"
-                        disabled={isAtLimit || !cardNewItem.description || !cardNewItem.value}
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        {t("declare.addItem")}
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          onClick={() => addItem(category.id)}
+                          className="text-[#0066CC] hover:text-[#004EA8] bg-transparent hover:bg-transparent hover:underline p-0 h-auto font-medium transition-colors duration-150"
+                          disabled={(isAtLimit && !editingItem[category.id]) || !cardNewItem.description || !cardNewItem.value}
+                        >
+                          {editingItem[category.id] ? (
+                            <>
+                              <Edit className="h-3.5 w-3.5 mr-1" />
+                              {t("declare.saveItem")}
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              {t("declare.addItem")}
+                            </>
+                          )}
+                        </Button>
+                        {editingItem[category.id] && (
+                          <Button
+                            onClick={() => cancelEditItem(category.id)}
+                            variant="ghost"
+                            className="text-[#9E9E9E] hover:text-[#1A1A1A] p-0 h-auto font-medium transition-colors duration-150"
+                          >
+                            {t("declare.cancel")}
+                          </Button>
+                        )}
+                      </div>
 
                       {category.items.length > 0 && (
                         <div className="space-y-2">
@@ -456,7 +530,12 @@ export default function DeclareValuables() {
                                 <span className="font-medium">{symbol} {item.value.toLocaleString()}</span>
                               </span>
                               <div className="flex items-center space-x-1">
-                                <Button variant="ghost" size="sm" className="text-[#0066CC] hover:text-[#004EA8] hover:bg-[#E0F0FF] h-8 px-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-[#0066CC] hover:text-[#004EA8] hover:bg-[#E0F0FF] h-8 px-2"
+                                  onClick={() => startEditItem(category.id, item)}
+                                >
                                   <Edit className="h-3.5 w-3.5" />
                                   <span className="ml-1 text-xs">{t("declare.edit")}</span>
                                 </Button>
