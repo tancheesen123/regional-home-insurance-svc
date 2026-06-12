@@ -148,7 +148,7 @@ function EditCell({ value, onSave, decimals = 2, isPct = false, pending = false 
         )}
         title="Click to edit"
       >
-        {isPct ? pct(value) : Number(value.toFixed(decimals)).toLocaleString()}
+        {isPct ? pct(value) : Number(value.toFixed(decimals)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: decimals })}
       </button>
     )
   }
