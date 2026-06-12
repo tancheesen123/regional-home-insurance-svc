@@ -23,7 +23,7 @@ export default function CustomizePage() {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto bg-transparent min-h-0">
-        <div className="pt-8">
+        <div className="pt-8 min-h-full">
           <PlanCustomization />
         </div>
       </div>

@@ -446,16 +446,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">ធាតុ </td>
-										<td style="width:40%" colsapn="2">ការពិពណ៌នាអំពីអចលនទ្រព្យ / ផលប្រយោជន៍ធានារ៉ាប់រង</td>
+										<td style="width:45%;vertical-align:top;">ធាតុ </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">ការពិពណ៌នាអំពីអចលនទ្រព្យ / ផលប្រយោជន៍ធានារ៉ាប់រង</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">ចំនួនទឹកប្រាក់ធានារ៉ាប់រង</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">ចំនួនទឹកប្រាក់ធានារ៉ាប់រង</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">លើអគារមួយ</td>
-										<td style="width:5%">USD</td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">លើអគារមួយ</td>
+										<td style="width:5%;vertical-align:top;">USD</td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_BuildingSumInsured" />
 										</td>
 
@@ -525,16 +525,16 @@
 
 								<table style="width:100%; font-size:16px; ">
 									<tr style="height: 30px;">
-										<td style="width:45%;">ធាតុ </td>
-										<td style="width:40%" colsapn="2">ការពិពណ៌នាអំពីអចលនទ្រព្យ / ផលប្រយោជន៍ធានារ៉ាប់រង</td>
+										<td style="width:45%;vertical-align:top;">ធាតុ </td>
+										<td style="width:40%;vertical-align:top;" colsapn="2">ការពិពណ៌នាអំពីអចលនទ្រព្យ / ផលប្រយោជន៍ធានារ៉ាប់រង</td>
 
-										<td style="width:15%; text-align: right;" colspan="2">ចំនួនទឹកប្រាក់ធានារ៉ាប់រង</td>
+										<td style="width:15%; text-align: right;vertical-align:top;" colspan="2">ចំនួនទឹកប្រាក់ធានារ៉ាប់រង</td>
 									</tr>
 									<tr style="height: 40px;">
-										<td style="width:45%;">1 </td>
-										<td style="width:5%">លើមាតិកា</td>
-										<td style="width:5%">USD</td>
-										<td style="text-align:right;">
+										<td style="width:45%;vertical-align:top;">1 </td>
+										<td style="width:5%;vertical-align:top;">លើមាតិកា</td>
+										<td style="width:5%;vertical-align:top;">USD</td>
+										<td style="text-align:right;vertical-align:top;">
 											<xsl:value-of select="root/P_ContentSumInsured" />
 										</td>
 

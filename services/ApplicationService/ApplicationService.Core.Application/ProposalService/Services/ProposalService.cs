@@ -1176,10 +1176,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     return "data:image/png;base64," + Convert.ToBase64String(bytes);
                 }
 
-                var headerImage  = LoadEpolicyImage("EGIB-ENG.png");
-                var footerImage  = LoadEpolicyImage("egib-footer-EV.png");
-                var checkedImg   = LoadEpolicyImage("checked.png");
-                var uncheckedImg = LoadEpolicyImage("uncheck.png");
+                var headerImage   = LoadEpolicyImage("EGIB-ENG.png");
+                var footerImage   = LoadEpolicyImage("egib-footer-EV.png");
+                var bmHeaderImage = LoadEpolicyImage("EGIB-BM.png");
+                var bmFooterImage = LoadEpolicyImage("egib-footer-BV.png");
+                var checkedImg    = LoadEpolicyImage("checked.png");
+                var uncheckedImg  = LoadEpolicyImage("uncheck.png");
 
                 var rc = GetRegionConfig(region);
 
@@ -1190,6 +1192,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         // Images
                         new XElement("ImageEgibEnHeader", headerImage),
                         new XElement("ImageEgibEnFooter", footerImage),
+                        new XElement("ImageEgibBmHeader", bmHeaderImage),
+                        new XElement("ImageEgibBmFooter", bmFooterImage),
                         new XElement("ImageChecked",      checkedImg),
                         new XElement("ImageUnchecked",    uncheckedImg),
 

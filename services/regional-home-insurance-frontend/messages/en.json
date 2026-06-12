@@ -266,7 +266,7 @@
       "fullBrickDesc": "My house is built with sturdy brick walls and concrete floors",
       "partialBrickTitle": "Partial Brick",
       "partialBrickDesc": "My house has a mixture of brick, concrete, and timber materials such as attap roof, wooden glass walls. The roof is made of non-flammable materials.",
-      "postcodeLabel": "Key in your postcode to check for flood risk",
+      "postcodeLabel": "Key in your postcode",
       "postcodePlaceholder": "Enter postcode",
       "currentFlooding": "Is your property currently experiencing flooding?",
       "unoccupiedProperty": "Will this property be unoccupied for 90 days or more?",
@@ -281,11 +281,7 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Get a Quote",
       "gettingQuote": "Getting Quote...",
-      "failedToGetQuote": "Failed to get quote. Please try again.",
-      "floodChecking": "Checking flood risk for this area…",
-      "floodAtRisk": "Active flooding has been reported in this area. We cannot proceed while the property is in a flood zone.",
-      "floodClear": "No active flooding reported in this area.",
-      "floodSource": "Source: PetaBencana.id (real-time)"
+      "failedToGetQuote": "Failed to get quote. Please try again."
     },
     "customize": {
       "title": "Customise your protection",

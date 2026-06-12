@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { setSession, isSessionValid } from "@/lib/session"
+import { setSession, isSessionValid, getSession } from "@/lib/session"
 import { login, getCustomerByUserId } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +52,10 @@ export default function LoginForm() {
 
   // Redirect to dashboard if session already exists
   useEffect(() => {
-    if (isSessionValid()) router.replace("/dashboard")
+    if (isSessionValid()) {
+      const session = getSession()
+      router.replace(session?.role === "Admin" ? "/dashboard/sales" : "/dashboard")
+    }
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,7 +111,7 @@ export default function LoginForm() {
         rememberMe,
       )
 
-      router.push("/dashboard")
+      router.push(response.data.role === "Admin" ? "/dashboard/sales" : "/dashboard")
     } catch (err) {
       console.error("[Login Error]", err)
       setError("Unable to connect to the server. Please try again.")

@@ -266,7 +266,7 @@
       "fullBrickDesc": "Rumah saya dibangun dengan dinding bata kokoh dan lantai beton",
       "partialBrickTitle": "Sebagian Bata",
       "partialBrickDesc": "Rumah saya memiliki campuran bata, beton, dan material kayu seperti atap rumbia, dinding kaca kayu. Atapnya terbuat dari material tidak mudah terbakar.",
-      "postcodeLabel": "Masukkan kode pos Anda untuk memeriksa risiko banjir",
+      "postcodeLabel": "Masukkan kode pos Anda",
       "postcodePlaceholder": "Masukkan kode pos",
       "currentFlooding": "Apakah properti Anda saat ini sedang mengalami banjir?",
       "unoccupiedProperty": "Apakah properti ini akan kosong selama 90 hari atau lebih?",
@@ -281,11 +281,7 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Dapatkan Penawaran",
       "gettingQuote": "Mendapatkan Penawaran...",
-      "failedToGetQuote": "Gagal mendapatkan penawaran. Silakan coba lagi.",
-      "floodChecking": "Memeriksa risiko banjir untuk wilayah ini…",
-      "floodAtRisk": "Banjir aktif dilaporkan di wilayah ini. Kami tidak dapat melanjutkan selama properti berada di zona banjir.",
-      "floodClear": "Tidak ada banjir aktif yang dilaporkan di wilayah ini.",
-      "floodSource": "Sumber: PetaBencana.id (real-time)"
+      "failedToGetQuote": "Gagal mendapatkan penawaran. Silakan coba lagi."
     },
     "customize": {
       "title": "Sesuaikan perlindungan Anda",

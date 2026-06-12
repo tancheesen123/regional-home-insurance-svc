@@ -101,7 +101,8 @@ builder.Services.AddCors(options =>
                 "https://localhost:3000"
             )
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition");
     });
 });
 

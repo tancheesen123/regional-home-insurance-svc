@@ -266,7 +266,7 @@
       "fullBrickDesc": "Ang aking bahay ay itinayo na may matibay na brick na dingding at kongkretong sahig",
       "partialBrickTitle": "Partial Brick",
       "partialBrickDesc": "Ang aking bahay ay may halo ng brick, kongkreto, at timber na materyales tulad ng attap na bubong, wooden glass na dingding. Ang bubong ay gawa sa hindi nasusunog na materyales.",
-      "postcodeLabel": "Ilagay ang iyong postcode upang suriin ang panganib ng baha",
+      "postcodeLabel": "Ilagay ang iyong postcode",
       "postcodePlaceholder": "Ilagay ang postcode",
       "currentFlooding": "Kasalukuyan bang nararamdaman ng iyong ari-arian ang baha?",
       "unoccupiedProperty": "Ang ari-ariang ito ba ay magiging walang tao sa loob ng 90 araw o higit pa?",
@@ -281,11 +281,7 @@
       "dobPlaceholder": "DD/MM/YYYY",
       "getQuote": "Kumuha ng Quote",
       "gettingQuote": "Kinukuha ang Quote...",
-      "failedToGetQuote": "Nabigo ang pagkuha ng quote. Mangyaring subukan muli.",
-      "floodChecking": "Sinusuri ang panganib ng baha para sa lugar na ito…",
-      "floodAtRisk": "May aktibong pagbaha na naiulat sa lugar na ito. Hindi kami makakapagpatuloy habang ang ari-arian ay nasa flood zone.",
-      "floodClear": "Walang aktibong pagbaha na naiulat sa lugar na ito.",
-      "floodSource": "Pinagmulan: PetaBencana.id (real-time)"
+      "failedToGetQuote": "Nabigo ang pagkuha ng quote. Mangyaring subukan muli."
     },
     "customize": {
       "title": "I-customize ang iyong proteksyon",
