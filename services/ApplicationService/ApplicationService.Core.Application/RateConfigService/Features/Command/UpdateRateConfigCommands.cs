@@ -145,6 +145,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 if (cmd.Body.MaxStoreys          != null) { Track("MaxStoreys",          row.MaxStoreys.ToString(),             cmd.Body.MaxStoreys.Value.ToString());                          row.MaxStoreys          = cmd.Body.MaxStoreys.Value; }
                 if (cmd.Body.ProfessionalFeeRate != null) { Track("ProfessionalFeeRate", row.ProfessionalFeeRate.ToString("F4"),cmd.Body.ProfessionalFeeRate.Value.ToString("F4"));            row.ProfessionalFeeRate = cmd.Body.ProfessionalFeeRate.Value; }
                 if (cmd.Body.BenchmarkYear       != null) { Track("BenchmarkYear",       row.BenchmarkYear.ToString(),          cmd.Body.BenchmarkYear.Value.ToString());                       row.BenchmarkYear       = cmd.Body.BenchmarkYear.Value; }
+                if (cmd.Body.BuildingRate        != null) { Track("BuildingRate",        row.BuildingRate.ToString("F6"),       cmd.Body.BuildingRate.Value.ToString("F6"));                    row.BuildingRate        = cmd.Body.BuildingRate.Value; }
+                if (cmd.Body.ContentRate         != null) { Track("ContentRate",         row.ContentRate.ToString("F6"),        cmd.Body.ContentRate.Value.ToString("F6"));                     row.ContentRate         = cmd.Body.ContentRate.Value; }
 
                 row.UpdatedAt = DateTime.UtcNow;
                 row.UpdatedBy = cmd.UpdatedBy;
@@ -161,6 +163,7 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     AreaMin = row.AreaMin, AreaMax = row.AreaMax,
                     StoreyIncrementPct = row.StoreyIncrementPct, MaxStoreys = row.MaxStoreys,
                     ProfessionalFeeRate = row.ProfessionalFeeRate, BenchmarkYear = row.BenchmarkYear,
+                    BuildingRate = row.BuildingRate, ContentRate = row.ContentRate,
                     IsActive = row.IsActive,
                 };
             }

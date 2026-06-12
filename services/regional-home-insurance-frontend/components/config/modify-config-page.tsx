@@ -352,7 +352,7 @@ function BuildingRatesTab({ rows, countryCode, onSaved }: {
 
 // ─── Tab: Region Config ───────────────────────────────────────────────────────
 
-type RegionPending = Partial<Pick<RegionConfigRow, "areaMin" | "areaMax" | "storeyIncrementPct" | "maxStoreys" | "professionalFeeRate" | "benchmarkYear">>
+type RegionPending = Partial<Pick<RegionConfigRow, "areaMin" | "areaMax" | "storeyIncrementPct" | "maxStoreys" | "professionalFeeRate" | "benchmarkYear" | "buildingRate" | "contentRate">>
 
 function RegionConfigTab({ config, countryCode, onSaved }: {
   config: RegionConfigRow | null; countryCode: string; onSaved: () => void
@@ -379,13 +379,15 @@ function RegionConfigTab({ config, countryCode, onSaved }: {
   if (!config) return <EmptyState message="No region config found. Try seeding this country first." />
 
   const val = <K extends keyof RegionPending>(f: K) => (f in pending ? pending[f] : config[f]) as number
-  const FIELDS: { field: keyof RegionPending; label: string; isPct: boolean }[] = [
+  const FIELDS: { field: keyof RegionPending; label: string; isPct: boolean; decimals?: number }[] = [
     { field: "areaMin",             label: "Min Area",      isPct: false },
     { field: "areaMax",             label: "Max Area",      isPct: false },
     { field: "storeyIncrementPct",  label: "Storey Inc %",  isPct: true  },
     { field: "maxStoreys",          label: "Max Storeys",   isPct: false },
     { field: "professionalFeeRate", label: "Prof Fee %",    isPct: true  },
     { field: "benchmarkYear",       label: "Benchmark Yr",  isPct: false },
+    { field: "buildingRate",        label: "Building Rate", isPct: false, decimals: 6 },
+    { field: "contentRate",         label: "Content Rate",  isPct: false, decimals: 6 },
   ]
 
   return (
@@ -412,10 +414,10 @@ function RegionConfigTab({ config, countryCode, onSaved }: {
               <td className={TD}>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#F5F5F5] text-[#555555] text-xs font-mono border border-[#E0E0E0]">{config.areaUnit}</span>
               </td>
-              {FIELDS.map(({ field, isPct }) => (
+              {FIELDS.map(({ field, isPct, decimals }) => (
                 <td key={field} className={TD}>
                   <div className="flex justify-end">
-                    <EditCell value={val(field)} onSave={(v) => stage(field, v)} decimals={isPct ? 2 : 0} isPct={isPct} pending={field in pending} />
+                    <EditCell value={val(field)} onSave={(v) => stage(field, v)} decimals={decimals ?? (isPct ? 2 : 0)} isPct={isPct} pending={field in pending} />
                   </div>
                 </td>
               ))}

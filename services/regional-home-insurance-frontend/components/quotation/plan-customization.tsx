@@ -380,7 +380,6 @@ export default function PlanCustomization() {
         session.countryCode,
       )
 
-      console.log("[CustomizePlan Response]", response)
 
       if (!response.succeeded) {
         setError(response.message ?? t("customize.failedToSave"))

@@ -1,6 +1,6 @@
 """
 POST /scan-content
-Upload 1–5 room photos — AI detects furniture/items, categorises them by room,
+Upload 1–10 room photos — AI detects furniture/items, categorises them by room,
 and estimates the replacement price in local currency.
 
 Customer reviews the itemised list before the total is applied to the content sum insured.
@@ -17,7 +17,7 @@ from app.services.content_extractor import ContentExtractorService, build_conten
 from app.services.image_utils import ImageUtils
 
 router     = APIRouter()
-MAX_PHOTOS = 5
+MAX_PHOTOS = 10
 _utils     = ImageUtils()
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -30,9 +30,9 @@ async def scan_content(
     _claims:     dict             = Depends(require_jwt),
 ) -> ContentScanResult:
     """
-    Upload 1–5 room photos (JPG / PNG / WEBP, max 10 MB each).
+    Upload 1–10 room photos (JPG / PNG / WEBP, max 10 MB each).
 
-    - **files** *(required)*: 1–5 room photos
+    - **files** *(required)*: 1–10 room photos
     - **countryCode** *(required)*: `PH` | `ID` | `KH`
 
     The AI will:

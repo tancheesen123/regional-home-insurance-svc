@@ -15,6 +15,10 @@ export interface RegionConfig {
   roundingUnit:        number
   /** If set, the "Get estimate" button for building opens this URL in a new tab */
   buildingEstimateUrl?: string
+  /** Per-item value range and total coverage cap for declared valuables */
+  valuableMinItem:     number
+  valuableMaxItem:     number
+  valuableMaxTotal:    number
 }
 
 export const REGION_CONFIG: Record<string, RegionConfig> = {
@@ -26,6 +30,9 @@ export const REGION_CONFIG: Record<string, RegionConfig> = {
     defaultBuildingOnly: 400_000,      defaultContentOnly:  90_000,
     roundingUnit:        1_000,
     buildingEstimateUrl: "https://bcc.piam.org.my/",
+    valuableMinItem:     3_000,
+    valuableMaxItem:     20_000,
+    valuableMaxTotal:    60_000,
   },
   PH: {
     symbol: "₱",
@@ -34,6 +41,9 @@ export const REGION_CONFIG: Record<string, RegionConfig> = {
     defaultBuilding:  7_500_000,   defaultContent:      900_000,
     defaultBuildingOnly: 6_000_000, defaultContentOnly: 1_350_000,
     roundingUnit:        1_000,
+    valuableMinItem:     50_000,
+    valuableMaxItem:     300_000,
+    valuableMaxTotal:    900_000,
   },
   ID: {
     symbol: "Rp",
@@ -42,6 +52,9 @@ export const REGION_CONFIG: Record<string, RegionConfig> = {
     defaultBuilding: 1_456_900_000, defaultContent:  208_266_600,
     defaultBuildingOnly: 1_165_520_000, defaultContentOnly: 312_400_000,
     roundingUnit:        1_000_000,
+    valuableMinItem:     15_000_000,
+    valuableMaxItem:     85_000_000,
+    valuableMaxTotal:    260_000_000,
   },
   KH: {
     symbol: "$",
@@ -50,6 +63,9 @@ export const REGION_CONFIG: Record<string, RegionConfig> = {
     defaultBuilding: 126_520,      defaultContent:   15_182,
     defaultBuildingOnly: 101_200,  defaultContentOnly: 22_800,
     roundingUnit:        100,
+    valuableMinItem:     750,
+    valuableMaxItem:     5_000,
+    valuableMaxTotal:    15_000,
   },
 }
 

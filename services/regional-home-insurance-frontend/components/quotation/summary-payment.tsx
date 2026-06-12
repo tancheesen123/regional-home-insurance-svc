@@ -32,7 +32,6 @@ export default function SummaryPayment() {
     getProposal(proposalId, session.countryCode)
       .then((res) => {
         if (!res.succeeded) { setError(res.message ?? t("summary.failedToLoad")); return }
-        console.log("[GetProposal Response]", res.data)
         setProposal(res.data)
       })
       .catch(() => setError(t("summary.failedToLoad")))
@@ -58,8 +57,6 @@ export default function SummaryPayment() {
         { proposalId, paymentMethod: "card" },
         session.countryCode,
       )
-
-      console.log("[InitiatePayment Response]", response)
 
       if (!response.succeeded) {
         setError(response.message ?? t("summary.failedPayment"))

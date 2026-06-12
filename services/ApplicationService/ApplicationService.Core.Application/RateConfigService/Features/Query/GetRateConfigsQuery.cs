@@ -45,6 +45,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                         MaxStoreys          = regionConfig.MaxStoreys,
                         ProfessionalFeeRate = regionConfig.ProfessionalFeeRate,
                         BenchmarkYear       = regionConfig.BenchmarkYear,
+                        BuildingRate        = regionConfig.BuildingRate,
+                        ContentRate         = regionConfig.ContentRate,
                         IsActive            = regionConfig.IsActive,
                     },
 
