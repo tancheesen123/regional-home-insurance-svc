@@ -183,13 +183,24 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 
             private static List<object> BuildValuableRateRows(string region)
             {
+                // Per-item / per-category caps must match REGION_CONFIG.valuableMaxItem /
+                // valuableMaxTotal in lib/region.ts, so every category accepts the same
+                // range the frontend advertises to the user. Only `rate` varies by category.
+                var (maxPerItem, maxTotal) = region switch
+                {
+                    "PH" => (300_000m, 900_000m),
+                    "ID" => (85_000_000m, 260_000_000m),
+                    "KH" => (5_000m, 15_000m),
+                    _    => (20_000m, 60_000m), // MY default
+                };
+
                 return new List<object>
                 {
-                    new { category = "jewellery",        maxPerItem = 5_000m,  maxTotal = 20_000m, rate = 0.02m },
-                    new { category = "electronics",      maxPerItem = 3_000m,  maxTotal = 15_000m, rate = 0.015m },
-                    new { category = "artwork",          maxPerItem = 5_000m,  maxTotal = 10_000m, rate = 0.025m },
-                    new { category = "sports-equipment", maxPerItem = 2_000m,  maxTotal = 8_000m,  rate = 0.015m },
-                    new { category = "other",            maxPerItem = 1_000m,  maxTotal = 5_000m,  rate = 0.02m },
+                    new { category = "jewellery",        maxPerItem, maxTotal, rate = 0.02m },
+                    new { category = "electronics",      maxPerItem, maxTotal, rate = 0.015m },
+                    new { category = "artwork",          maxPerItem, maxTotal, rate = 0.025m },
+                    new { category = "sports-equipment", maxPerItem, maxTotal, rate = 0.015m },
+                    new { category = "other",            maxPerItem, maxTotal, rate = 0.02m },
                 };
             }
 
