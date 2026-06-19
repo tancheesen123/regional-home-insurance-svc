@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
   Search,
   Filter,
@@ -13,6 +14,7 @@ import {
   Clock,
   Loader2,
   RefreshCw,
+  Eye,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   fetchCustomerProposals,
   type CustomerProposal,
+  type CustomerProposalDocument,
 } from "@/lib/api"
 import { downloadPolicyDocuments, DocumentDownloadError } from "@/lib/api"
 import { getSession } from "@/lib/session"
@@ -84,7 +87,9 @@ interface Policy {
   endDateRaw:      Date
   issuedAt:        string
   issuedAtRaw:     Date
+  issuedBy:        string
   isDocumentReady: boolean
+  documents:       CustomerProposalDocument[]
 }
 
 function mapProposal(p: CustomerProposal): Policy {
@@ -103,7 +108,9 @@ function mapProposal(p: CustomerProposal): Policy {
     endDateRaw:      new Date(pol.endDate),
     issuedAt:        fmtDate(pol.issuedAt),
     issuedAtRaw:     new Date(pol.issuedAt),
+    issuedBy:        pol.issuedBy,
     isDocumentReady: pol.isDocumentReady,
+    documents:       pol.documents,
   }
 }
 
@@ -156,12 +163,13 @@ function TableRowSkeleton() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PoliciesManagement() {
-  const [policies,      setPolicies]      = useState<Policy[]>([])
-  const [isLoading,     setIsLoading]     = useState(true)
-  const [loadError,     setLoadError]     = useState<string | null>(null)
-  const [downloadingId, setDownloadingId] = useState<string | null>(null)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
-  const [activeTab,     setActiveTab]     = useState("all")
+  const router = useRouter()
+  const [policies,        setPolicies]        = useState<Policy[]>([])
+  const [isLoading,       setIsLoading]       = useState(true)
+  const [loadError,       setLoadError]       = useState<string | null>(null)
+  const [downloadingId,   setDownloadingId]   = useState<string | null>(null)
+  const [downloadError,   setDownloadError]   = useState<string | null>(null)
+  const [activeTab,       setActiveTab]       = useState("all")
   const [filters,       setFilters]       = useState<FilterState>({
     search: "", status: [], coverageType: [], country: [], issuedFrom: "", issuedTo: "",
   })
@@ -575,6 +583,14 @@ export default function PoliciesManagement() {
 
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="View policy details"
+                          onClick={() => router.push(`policies/${policy.proposalId}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         {/* Download — enabled only when isDocumentReady */}
                         <Button
                           variant="ghost"
