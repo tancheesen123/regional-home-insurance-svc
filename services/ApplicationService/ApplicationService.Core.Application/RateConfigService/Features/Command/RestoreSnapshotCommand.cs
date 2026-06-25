@@ -46,7 +46,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 var region = cmd.Region.ToUpper();
                 var logs   = new List<RateConfigChangeLogDto>();
 
-                // ── Restore RegionConfig ──────────────────────────────────────
                 var regionRow = await _repo.GetRegionConfigAsync(region);
                 if (regionRow != null)
                 {
@@ -71,7 +70,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     regionRow.ProfessionalFeeRate = payload.ProfessionalFeeRate;
                     regionRow.BenchmarkYear       = payload.BenchmarkYear;
 
-                    // Restore building rates JSON if present in snapshot
                     if (!string.IsNullOrWhiteSpace(payload.BuildingRatesJson))
                     {
                         TrackR("BuildingRatesJson", regionRow.BuildingRatesJson, payload.BuildingRatesJson);
@@ -83,7 +81,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     await _repo.UpdateRegionConfigAsync(regionRow);
                 }
 
-                // ── Restore LocationTier multipliers ──────────────────────────
                 if (payload.LocationTiers != null)
                 {
                     var tierRows = await _repo.GetMultipliersAsync(region, "location_tier");
@@ -112,7 +109,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                     }
                 }
 
-                // ── Restore RiskMultiplier multipliers ────────────────────────
                 if (payload.RiskMultipliers != null)
                 {
                     var riskRows = await _repo.GetMultipliersAsync(region, "risk_factor");

@@ -19,12 +19,6 @@ namespace ApplicationService.WebAPI.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Returns a filtered list of sales records and an unfiltered period summary.
-        /// All filters are optional. Summary is always computed from the full date-range
-        /// dataset — not limited by status / search filters.
-        /// Requires X-Country-Code header: PH | ID | KH
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> GetSalesRecords([FromBody] GetSalesRecordsRequest request)
         {
@@ -40,12 +34,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Exports the filtered sales records as an .xlsx file with two sheets:
-        /// "Sales Records" (one row per record) and "Summary" (aggregated KPIs).
-        /// Same filters as GetSalesRecords — all optional.
-        /// Requires X-Country-Code header: PH | ID | KH
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> ExportExcel([FromBody] GetSalesRecordsRequest request)
         {
@@ -70,12 +58,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Returns the full detail of a single sales record by its ProposalId
-        /// (the "id" field returned in the sales records list).
-        /// Requires X-Country-Code header: PH | ID | KH
-        /// </summary>
-        /// <param name="recordId">ProposalId of the sales record.</param>
         [HttpGet("{recordId}")]
         public async Task<IActionResult> GetSalesRecordDetail(string recordId)
         {

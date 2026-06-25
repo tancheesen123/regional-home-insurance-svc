@@ -44,10 +44,8 @@ namespace ApplicationService.WebAPI.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // AutoMapper
             services.AddAutoMapper(cfg => cfg.AddProfile<CustomerMappingProfile>());
 
-            // MediatR — queries & commands
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CustomerGetAllQuery).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AuthGetAllQuery).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly));
@@ -59,7 +57,6 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SeedRateConfigCommand).Assembly));
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetBuildingConfigQuery).Assembly));
 
-            // Services
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmailService, EmailService>();
@@ -72,27 +69,21 @@ namespace ApplicationService.WebAPI.Extensions
             services.AddScoped<IInforcePolicyService, InforcePolicyService>();
             services.AddScoped<IInforceService, InforceService>();
             services.AddScoped<IProposalErrorService, ProposalErrorService>();
-            // DinkToPdf: IConverter MUST be Singleton — wraps a non-reentrant native library.
-            // PdfService is also Singleton because it holds the Singleton IConverter.
             services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             services.AddSingleton<IPdfService, PdfService>();
             services.AddScoped<INotificationEmailService, NotificationEmailService>();
             services.AddScoped<RateConfigAuditService>();
             services.AddScoped<ISmsService, SmsService>();
 
-            // Settings
             services.Configure<DocumentSettings>(configuration.GetSection("DocumentSettings"));
             services.Configure<NotificationEmailSettings>(configuration.GetSection("EmailSettings"));
 
-            // Settings
             services.Configure<StripeSettings>(configuration.GetSection("StripeSettings"));
 
-            // Settings
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
             services.Configure<FileStorageSettings>(configuration.GetSection("FileStorageSettings"));
 
-            // JWT Authentication
             var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
             services.AddAuthentication(options =>
             {

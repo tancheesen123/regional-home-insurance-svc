@@ -7,11 +7,11 @@ export interface Session {
   userId: string
   customerId: string
   country: string
-  countryCode: string  // e.g. "PH", "ID", "KH"
+  countryCode: string
   role: UserRole
   token: string
   loginAt: number
-  expiresAt: number  // unix ms — sourced from API response
+  expiresAt: number
   rememberMe: boolean
 }
 
@@ -24,7 +24,7 @@ export function setSession(
     countryCode: string
     role: UserRole
     token: string
-    expiresAt: string  // ISO string from API e.g. "2026-04-09T14:21:47Z"
+    expiresAt: string
   },
   rememberMe: boolean
 ): void {
@@ -71,7 +71,6 @@ export function isSessionValid(): boolean {
   return getSession() !== null
 }
 
-/** Returns milliseconds until session expires, or 0 if already expired */
 export function getTimeUntilExpiry(): number {
   const session = getSession()
   if (!session) return 0

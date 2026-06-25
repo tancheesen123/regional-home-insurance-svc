@@ -9,18 +9,14 @@ namespace ApplicationService.Core.Application.Common.Constants
         public static readonly IReadOnlyDictionary<ValuableCategory, ValuableCategoryLimit> Map =
             new Dictionary<ValuableCategory, ValuableCategoryLimit>
             {
-                [ValuableCategory.Jewellery]       = new(10_000m, 30_000m, 0.020m),  // 2.0 %
-                [ValuableCategory.Gold] = new(10_000m, 30_000m, 0.020m),  // 2.0 %
-                [ValuableCategory.Electronics]     = new( 8_000m, 20_000m, 0.015m),  // 1.5 %
-                [ValuableCategory.Artwork]         = new(15_000m, 30_000m, 0.018m),  // 1.8 %
-                [ValuableCategory.SportsEquipment] = new( 5_000m, 15_000m, 0.015m),  // 1.5 %
-                [ValuableCategory.Other]           = new( 5_000m, 20_000m, 0.015m),  // 1.5 %
+                [ValuableCategory.Jewellery]       = new(10_000m, 30_000m, 0.020m),
+                [ValuableCategory.Gold] = new(10_000m, 30_000m, 0.020m),
+                [ValuableCategory.Electronics]     = new( 8_000m, 20_000m, 0.015m),
+                [ValuableCategory.Artwork]         = new(15_000m, 30_000m, 0.018m),
+                [ValuableCategory.SportsEquipment] = new( 5_000m, 15_000m, 0.015m),
+                [ValuableCategory.Other]           = new( 5_000m, 20_000m, 0.015m),
             };
 
-        /// <summary>
-        /// Resolves the frontend kebab-case string to a ValuableCategory enum.
-        /// Returns false if the string is not a recognised category.
-        /// </summary>
         public static bool TryResolve(string category, out ValuableCategory result)
         {
             result = category.ToLowerInvariant() switch

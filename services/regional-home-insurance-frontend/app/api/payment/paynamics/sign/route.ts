@@ -1,25 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 
-/**
- * POST /api/payment/paynamics/sign
- *
- * Generates the Paynamics SHA1 request signature server-side so the merchant
- * key is never exposed to the browser.
- *
- * Body (JSON):
- *   request_id, notification_url, response_url, cancel_url,
- *   fname, lname, mname,
- *   address1, address2, city, state, country, zip,
- *   email, phone,
- *   secure3d, trxtype,
- *   amount (string, e.g. "1500.00"),
- *   currency (e.g. "PHP"),
- *   payment_method (e.g. "GCASH")
- *
- * Returns:
- *   { merchantid, signature, gatewayUrl, ...all original fields }
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -42,7 +23,6 @@ export async function POST(request: NextRequest) {
       amount, currency,
     } = body
 
-    // Paynamics SHA1 signature field order (must exactly match their spec)
     const sigParts = [
       merchantId,
       request_id,

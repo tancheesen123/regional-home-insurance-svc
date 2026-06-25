@@ -1,13 +1,4 @@
-/**
- * Address API helpers — one section per country.
- *
- * ID  → alamat.thecloudalert.com   (live REST API)
- * PH  → psgc.cloud                 (live REST API, no auth)
- * KH  → pumi npm package           (static bundled data)
- * MY  → (no external API — manual entry)
- */
 
-// ── Indonesia ─────────────────────────────────────────────────────────────────
 
 const ID_BASE = "https://alamat.thecloudalert.com/api"
 

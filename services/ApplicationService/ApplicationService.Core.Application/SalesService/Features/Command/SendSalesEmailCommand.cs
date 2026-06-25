@@ -14,7 +14,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Command
 
     public class SendSalesEmailCommand : IRequest<SendSalesEmailResult>
     {
-        /// <summary>ProposalId of the sales record whose email should be sent.</summary>
         public string RecordId { get; set; } = string.Empty;
         public string ToEmail  { get; set; } = string.Empty;
 
@@ -60,7 +59,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Command
                 var policyNumber = policy.PolicyNumber ?? string.Empty;
                 var region       = (proposal.Quotation?.Region ?? string.Empty).ToUpper();
 
-                // ── 3. Build HTML body (XSL → fallback) ─────────────────────────
                 var entity   = _docSettings.Entity.ToLower();
                 var emailXsl = Path.Combine(
                     _docSettings.DocsPath, "Home", "Email",

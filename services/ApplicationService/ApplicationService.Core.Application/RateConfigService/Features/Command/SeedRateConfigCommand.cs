@@ -6,10 +6,6 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 {
-    /// <summary>
-    /// Seeds initial rate configuration for one region.
-    /// Safe to call multiple times — skips seeding if data already exists for that region.
-    /// </summary>
     public class SeedRateConfigCommand : IRequest<SeedRateConfigResult>
     {
         public string Region { get; set; } = string.Empty;
@@ -41,8 +37,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 
                 _logger.LogInformation("SeedRateConfig | Seeding region {Region}…", region);
 
-                // Build RegionConfig first so its auto-generated Id is available
-                // as a FK reference on every multiplier row.
                 var regionConfig = BuildRegionConfig(region);
                 await _repo.SeedRegionConfigAsync(regionConfig);
                 await _repo.SeedMultipliersAsync(BuildLocationTiers(region, regionConfig.Id));
@@ -54,15 +48,12 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 return new SeedRateConfigResult { Seeded = true, Message = $"Region {region} seeded successfully." };
             }
 
-            // ── RegionConfig (merged: rates + tax + area settings + building rates JSON) ──
 
             private static RegionConfig BuildRegionConfig(string region)
             {
-                // Building construction rates per property subtype
                 var buildingRates = BuildBuildingRateRows(region);
                 var buildingRatesJson = JsonSerializer.Serialize(buildingRates);
 
-                // Valuable category rate limits
                 var valuableRates = BuildValuableRateRows(region);
                 var valuableRatesJson = JsonSerializer.Serialize(valuableRates);
 
@@ -183,15 +174,12 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 
             private static List<object> BuildValuableRateRows(string region)
             {
-                // Per-item / per-category caps must match REGION_CONFIG.valuableMaxItem /
-                // valuableMaxTotal in lib/region.ts, so every category accepts the same
-                // range the frontend advertises to the user. Only `rate` varies by category.
                 var (maxPerItem, maxTotal) = region switch
                 {
                     "PH" => (300_000m, 900_000m),
                     "ID" => (85_000_000m, 260_000_000m),
                     "KH" => (5_000m, 15_000m),
-                    _    => (20_000m, 60_000m), // MY default
+                    _    => (20_000m, 60_000m),
                 };
 
                 return new List<object>

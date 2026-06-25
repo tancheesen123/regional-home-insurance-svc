@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PaynamicsResponseData {
   request_id:       string | null
@@ -14,21 +13,7 @@ interface PaynamicsResponseData {
   signature:        string | null
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
 
-/**
- * POST /api/payment/paynamics/response
- *
- * Paynamics redirects the customer's browser here after payment completes
- * (success or failure). It also POSTs the same data to notification_url
- * (a separate server-to-server call handled by /api/payment/paynamics/notification).
- *
- * Flow:
- *  1. Parse form-encoded body from Paynamics
- *  2. Verify SHA1 signature (merchant key server-side only)
- *  3. Call backend to update payment status
- *  4. Redirect customer to success or payment-failed page
- */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -50,7 +35,6 @@ export async function POST(request: NextRequest) {
       response_id:   data.response_id,
     })
 
-    // 1. Verify signature — reject tampered callbacks immediately
     if (!verifySignature(data)) {
       console.warn("[paynamics/response] Invalid signature — request_id:", data.request_id)
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
@@ -59,10 +43,8 @@ export async function POST(request: NextRequest) {
     const isSuccess =
       data.response_code === "GR001" || data.response_code === "GR002"
 
-    // 2. Notify backend so it can mark the payment and trigger policy inforce
     await notifyBackend(data, isSuccess ? "completed" : "failed")
 
-    // 3. Redirect customer's browser
     const baseUrl = request.nextUrl.origin
     if (isSuccess) {
       return NextResponse.redirect(new URL("/dashboard/quotation/success", baseUrl))

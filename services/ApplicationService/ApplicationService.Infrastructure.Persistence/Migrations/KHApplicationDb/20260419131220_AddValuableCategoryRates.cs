@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    /// <inheritdoc />
     public partial class AddValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -37,11 +35,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 table: "ValuableCategoryRates",
                 columns: new[] { "Region", "Category", "IsActive" });
 
-            // ── Seed: Cambodia (USD) ──────────────────────────────────────────
             var now = DateTime.UtcNow;
             var khRates = new[]
             {
-                // category            maxPerItem    maxTotal      rate
                 ("jewellery",          2_500m,       7_500m,       0.020m),
                 ("gold",               2_500m,       7_500m,       0.020m),
                 ("electronics",        2_000m,       5_000m,       0.015m),
@@ -59,7 +55,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

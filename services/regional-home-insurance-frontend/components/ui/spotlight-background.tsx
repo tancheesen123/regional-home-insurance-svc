@@ -1,43 +1,19 @@
 "use client"
 
-/**
- * SpotlightBackground — cursor-following radial glow
- * ─────────────────────────────────────────────────────────────────────────────
- * State machine (all state lives in refs — zero React re-renders):
- *
- *   'tracking'  Mouse is inside the container.
- *               target  = live mouse position
- *               lerp    = 0.18  (snappy, ~1-2 frames lag)
- *
- *   'drifting'  Mouse moved to sidebar or another element outside the container.
- *               target  = centre of the container
- *               lerp    = 0.05  (slow, graceful ease toward centre)
- *
- *   'frozen'    Mouse truly left the browser window (relatedTarget === null).
- *               Light stays at whatever position it had — no movement.
- *               Loop self-stops to save CPU.
- *
- * On re-entry:  state → 'tracking', loop restarts from current position,
- *               so the light smoothly follows from wherever it froze/drifted.
- * ─────────────────────────────────────────────────────────────────────────────
- */
 
 import { useRef, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
 
 type State = "tracking" | "drifting" | "frozen"
 
-// Lerp factors — tweak here to change feel
-const LERP_TRACKING = 0.18   // snappy follow
-const LERP_DRIFTING = 0.05   // slow drift to centre
-const SETTLE_PX     = 0.5    // stop loop when within 0.5px of target
+const LERP_TRACKING = 0.18
+const LERP_DRIFTING = 0.05
+const SETTLE_PX     = 0.5
 
 interface SpotlightBackgroundProps {
   children:   React.ReactNode
   className?: string
-  /** Spotlight radius in px (default 650) */
   size?:      number
-  /** Peak opacity of the glow 0–1 (default 0.18) */
   intensity?: number
 }
 
@@ -51,18 +27,15 @@ export default function SpotlightBackground({
   const rafRef          = useRef<number | undefined>(undefined)
   const isLoopRunning   = useRef(false)
 
-  // All position + state in refs — writing these never triggers a render
   const pos   = useRef({ currentX: -9999, currentY: -9999, targetX: 0, targetY: 0 })
   const state = useRef<State>("frozen")
 
-  // ── Continuous lerp loop ────────────────────────────────────────────────────
 
   const startLoop = useCallback(() => {
-    if (isLoopRunning.current) return   // already running, nothing to do
+    if (isLoopRunning.current) return
     isLoopRunning.current = true
 
     const tick = () => {
-      // 'frozen' → light should not move; stop the loop
       if (state.current === "frozen") {
         isLoopRunning.current = false
         return
@@ -73,11 +46,9 @@ export default function SpotlightBackground({
 
       const lerpFactor = state.current === "tracking" ? LERP_TRACKING : LERP_DRIFTING
 
-      // Exponential lerp: current += (target - current) * factor
       pos.current.currentX += (pos.current.targetX - pos.current.currentX) * lerpFactor
       pos.current.currentY += (pos.current.targetY - pos.current.currentY) * lerpFactor
 
-      // Write directly to CSS custom property — no React involved
       el.style.setProperty("--sl-x", `${pos.current.currentX}px`)
       el.style.setProperty("--sl-y", `${pos.current.currentY}px`)
 

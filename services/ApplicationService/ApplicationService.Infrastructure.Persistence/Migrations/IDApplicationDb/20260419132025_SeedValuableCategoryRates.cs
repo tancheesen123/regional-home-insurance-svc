@@ -5,18 +5,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
 {
-    /// <inheritdoc />
     public partial class SeedValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // ── Indonesia (IDR) ───────────────────────────────────────────────
-            // Limits scaled to Rupiah values (~4,000× USD equivalent).
             var now = DateTime.UtcNow;
             var rows = new[]
             {
-                // category             maxPerItem           maxTotal             rate
                 ("jewellery",           20_000_000m,         60_000_000m,         0.020m),
                 ("gold",                20_000_000m,         60_000_000m,         0.020m),
                 ("electronics",         16_000_000m,         40_000_000m,         0.015m),
@@ -34,7 +29,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DeleteData(

@@ -5,7 +5,7 @@ import LoginForm from "@/components/login-form"
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left side - branding */}
+      {}
       <div className="bg-[#0056b3] text-white md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto">
           <div className="flex items-center mb-6">
@@ -41,7 +41,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Right side - login form */}
+      {}
       <div className="md:w-1/2 p-8 flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md">
           <LoginForm />

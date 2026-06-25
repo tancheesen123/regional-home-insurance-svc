@@ -1,4 +1,4 @@
-﻿using ApplicationService.Core.Application.AuthService.DTOs;
+using ApplicationService.Core.Application.AuthService.DTOs;
 using ApplicationService.Core.Application.AuthService.DTOs.Auth;
 using ApplicationService.Core.Application.AuthService.Interfaces.Services;
 using AutoMapper;
@@ -27,13 +27,7 @@ namespace ApplicationService.Core.Application.AuthService.Features.Auth.Query
             public async Task<Response<AuthGetAllResponse>> Handle(AuthGetAllQuery request, CancellationToken cancellationToken)
             {
                 _logger.LogInformation("=== Start AuthGetAllQueryHandler ===");
-                //if (string.IsNullOrEmpty(request.CountryCode))
-                //{
-                //    throw new ValidationException("Country Code cannot be empty!");
-                //}
                 AuthGetAllResponse retieveResult = await _authService.GetAllCustomerAsync();
-                //RetrieveMotorProposalResponse response = new RetrieveMotorProposalResponse();
-                //response = await _motorcarService.RetrieveMotorProposalAsync(retieveResult, true, false);
                 return new Response<AuthGetAllResponse>(retieveResult);
             }
         }

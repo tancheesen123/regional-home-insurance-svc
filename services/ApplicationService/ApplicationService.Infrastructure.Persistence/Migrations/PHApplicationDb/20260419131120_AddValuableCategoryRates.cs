@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
 {
-    /// <inheritdoc />
     public partial class AddValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -37,11 +35,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                 table: "ValuableCategoryRates",
                 columns: new[] { "Region", "Category", "IsActive" });
 
-            // ── Seed: Philippines (PHP) ───────────────────────────────────────
             var now = DateTime.UtcNow;
             var phRates = new[]
             {
-                // category            maxPerItem      maxTotal        rate
                 ("jewellery",          55_000m,        165_000m,       0.020m),
                 ("gold",               55_000m,        165_000m,       0.020m),
                 ("electronics",        44_000m,        110_000m,       0.015m),
@@ -59,7 +55,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

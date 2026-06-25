@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left side - branding */}
+      {}
       <div className="bg-[#0056b3] text-white md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto">
           <div className="flex items-center mb-6">
@@ -44,7 +44,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right side - registration form */}
+      {}
       <div className="md:w-1/2 p-8 flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md">
           <RegisterForm />

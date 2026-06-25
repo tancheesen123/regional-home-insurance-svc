@@ -13,16 +13,10 @@ namespace ApplicationService.Core.Domain.Entities
         public string IssuedBy { get; set; }
         public string ProposalId { get; set; }
 
-        /// <summary>True once all policy PDF documents (ePolicy, Tax Invoice, PDS) have been generated.</summary>
         public bool HasFullDocument { get; set; } = false;
 
-        /// <summary>
-        /// Policy documents serialised as JSON array — replaces PolicyDocument table.
-        /// Shape: [{ "documentId": "...", "fileName": "...", "fileUrl": "...", "fileType": "PDS", "uploadedAt": "..." }]
-        /// </summary>
         public string? DocumentsJson { get; set; }
 
-        // Navigation
         public Proposal Proposal { get; set; }
     }
 }

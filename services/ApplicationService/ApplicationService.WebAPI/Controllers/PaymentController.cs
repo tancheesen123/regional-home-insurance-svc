@@ -61,12 +61,10 @@ namespace ApplicationService.WebAPI.Controllers
                 var command = new ConfirmPaymentCommand { SessionId = session_id };
                 var result  = await _mediator.Send(command);
 
-                // Redirect the customer's browser to the frontend success page
                 return Redirect(result.RedirectUrl);
             }
             catch (KeyNotFoundException ex)
             {
-                // Redirect to frontend with error so the user sees a friendly message
                 var errorUrl = $"{_stripeSettings.FrontendSuccessUrl}?error={Uri.EscapeDataString(ex.Message)}";
                 return Redirect(errorUrl);
             }
@@ -86,7 +84,7 @@ namespace ApplicationService.WebAPI.Controllers
         [HttpPost("[action]")]
         public async Task<IActionResult> Callback()
         {
-           
+
             string json;
             using (var reader = new StreamReader(HttpContext.Request.Body))
                 json = await reader.ReadToEndAsync();
@@ -111,7 +109,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                // Return 500 so Stripe retries the event — do not swallow silently
                 return StatusCode(500, new { message = ex.Message });
             }
         }

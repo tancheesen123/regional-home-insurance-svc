@@ -36,7 +36,6 @@ export default function DokuPayment({
   ]
 
   const generateSignature = (data: any) => {
-    // In production, this should be done on the server side
     const crypto = require("crypto")
     const sharedKey = process.env.DOKU_SHARED_KEY || ""
     const signatureString = `${data.amount}${data.mallid}${sharedKey}${data.transidmerchant}`

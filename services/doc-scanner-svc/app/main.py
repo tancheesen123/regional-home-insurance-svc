@@ -11,7 +11,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -20,14 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(health.router)
 app.include_router(docs_meta.router)
 app.include_router(scan_random.router)
 app.include_router(scan_content.router)
 
 
-# ── Global error handler ──────────────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(

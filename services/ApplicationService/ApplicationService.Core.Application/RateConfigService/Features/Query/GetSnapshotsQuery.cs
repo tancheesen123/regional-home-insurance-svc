@@ -5,7 +5,6 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Query
 {
-    // ── List snapshots for a region ───────────────────────────────────────────
 
     public class GetSnapshotsQuery : IRequest<List<RateConfigSnapshotDto>>
     {
@@ -29,13 +28,11 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     SnapshotType = s.SnapshotType,
                     CreatedBy    = s.CreatedBy ?? string.Empty,
                     CreatedAt    = s.CreatedAt,
-                    // ChangeLogs intentionally empty on list view
                 }).ToList();
             }
         }
     }
 
-    // ── Single snapshot with full change-log detail ───────────────────────────
 
     public class GetSnapshotByIdQuery : IRequest<RateConfigSnapshotDto>
     {
@@ -77,7 +74,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
         }
     }
 
-    // ── Paginated field-level change log for a region ─────────────────────────
 
     public class GetChangeLogsQuery : IRequest<List<RateConfigChangeLogDto>>
     {
@@ -96,8 +92,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 var page     = Math.Max(1, request.Page);
                 var pageSize = Math.Clamp(request.PageSize, 1, 200);
 
-                // Change logs are now embedded in each snapshot's ChangeLogsJson.
-                // Collect all logs for the region across all snapshots, then paginate.
                 var snapshots = await _repo.GetSnapshotsAsync(request.Region.ToUpper());
 
                 var allLogs = snapshots

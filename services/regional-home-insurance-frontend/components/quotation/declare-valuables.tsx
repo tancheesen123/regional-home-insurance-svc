@@ -41,8 +41,6 @@ export default function DeclareValuables() {
   const router = useRouter()
   const t = useTranslations("quotation")
 
-  // Defer session-dependent values to the client only — avoids SSR/client hydration
-  // mismatch caused by sessionStorage being unavailable during server rendering.
   const [region, setRegion] = useState(() => getRegionConfig(""))
   useEffect(() => {
     setRegion(getRegionConfig(getSession()?.countryCode ?? ""))
@@ -61,15 +59,13 @@ export default function DeclareValuables() {
     { id: "collectibles", nameKey: "declare.collectibles", descKey: "declare.collectiblesDesc", Icon: Archive, items: [], isExpanded: false },
   ])
 
-  // Per-category input state — keyed by category id so multiple open cards don't share one input
   const [newItems, setNewItems] = useState<Record<string, { description: string; value: string }>>({})
 
-  // Tracks which item (if any) is currently being edited, per category
   const [editingItem, setEditingItem] = useState<Record<string, string | null>>({})
 
-  const MIN_ITEM_VALUE     = region.valuableMinItem   // per-item floor
-  const MAX_ITEM_VALUE     = region.valuableMaxItem   // per-item ceiling
-  const MAX_TOTAL_DECLARED = region.valuableMaxTotal  // coverage cap across all declared valuables
+  const MIN_ITEM_VALUE     = region.valuableMinItem
+  const MAX_ITEM_VALUE     = region.valuableMaxItem
+  const MAX_TOTAL_DECLARED = region.valuableMaxTotal
 
   const totalDeclaredAmount = categories.reduce(
     (total, category) => total + category.items.reduce((sum, item) => sum + item.value, 0),
@@ -79,10 +75,6 @@ export default function DeclareValuables() {
   const isAtLimit          = totalDeclaredAmount >= MAX_TOTAL_DECLARED
   const isNearLimit        = !isAtLimit && totalDeclaredAmount >= MAX_TOTAL_DECLARED * 0.8
 
-  // ── Summary bar data — deferred to client to avoid SSR/hydration mismatch.
-  // localStorage is unavailable during server rendering so both functions return
-  // null on the server. If we read them synchronously the breakdown prop would be
-  // undefined on the server but populated on the client, causing a DOM mismatch.
   const [storedPremium, setStoredPremium] = useState<ReturnType<typeof getQuotationPremium>>(null)
   const [propSummary,   setPropSummary]   = useState<ReturnType<typeof getQuotationPropertySummary>>(null)
   useEffect(() => {

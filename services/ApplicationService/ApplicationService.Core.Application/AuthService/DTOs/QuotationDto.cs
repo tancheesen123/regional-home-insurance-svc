@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace ApplicationService.Core.Application.AuthService.DTOs
 {
-    // Mirror of QuotationService response
     public class QuotationDto
     {
         public Guid Id { get; set; }

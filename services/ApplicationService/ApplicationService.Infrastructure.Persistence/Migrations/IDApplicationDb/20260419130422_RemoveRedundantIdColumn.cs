@@ -1,13 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
 {
-    /// <inheritdoc />
     public partial class RemoveRedundantIdColumn : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
@@ -55,7 +53,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                 table: "CustomerPaymentMethods");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(

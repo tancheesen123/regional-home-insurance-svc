@@ -7,16 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Core.Application.SalesService.Features.Query
 {
-    /// <summary>
-    /// Generates a two-sheet Excel report (Sales Records + Summary)
-    /// applying the same filters as GetSalesRecordsQuery.
-    /// Returns the raw .xlsx bytes for the controller to stream as a file download.
-    /// </summary>
     public class ExportSalesExcelQuery : IRequest<ExportSalesExcelResult>
     {
         public GetSalesRecordsRequest Request { get; set; } = new();
 
-        /// <summary>Region code from X-Country-Code header — used for filename and currency formatting.</summary>
         public string Region { get; set; } = string.Empty;
 
         public class ExportSalesExcelQueryHandler
@@ -42,10 +36,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     "=== ExportSalesExcel | Region={Region} DateFrom={DateFrom} DateTo={DateTo} ===",
                     query.Region, req.DateFrom, req.DateTo);
 
-                // ── Load & filter (same logic as GetSalesRecordsQuery) ──────────
                 var all = await _proposalRepository.GetSalesProposalsAsync(req.DateFrom, req.DateTo);
 
-                // Load the immediately preceding period of the same length for growth comparison
                 decimal? priorPeriodPremium = null;
                 if (req.DateFrom.HasValue && req.DateTo.HasValue)
                 {
@@ -57,15 +49,12 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     priorPeriodPremium = priorProposals.Select(GetPremium).Sum();
                 }
 
-                // Summary computed before additional filters
                 var summary = ComputeSummary(all, req, priorPeriodPremium);
 
                 var filtered = ApplyFilters(all, req);
 
-                // ── Build Excel ─────────────────────────────────────────────────
                 var bytes = BuildExcel(filtered, summary, req, query.Region);
 
-                // ── Filename: Sales_Report_PH_2025-01-01_2025-01-31.xlsx ─────────
                 var fromPart = req.DateFrom.HasValue
                     ? req.DateFrom.Value.ToString("yyyy-MM-dd")
                     : "All";
@@ -86,7 +75,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 };
             }
 
-            // ── Excel builder ───────────────────────────────────────────────────
 
             private static byte[] BuildExcel(
                 List<Proposal> records,
@@ -108,7 +96,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
             {
                 var ws = wb.Worksheets.Add("Sales Records");
 
-                // ── Header row ──────────────────────────────────────────────────
                 var headers = new[]
                 {
                     "No.", "Policy Number", "Customer Name", "Customer Email",
@@ -127,7 +114,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 }
 
-                // ── Data rows ───────────────────────────────────────────────────
                 var now      = DateTime.UtcNow;
                 var currency = CurrencyPrefix(region);
 
@@ -156,16 +142,14 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     ws.Cell(row, 15).Value = p.Policy?.IssuedBy ?? string.Empty;
                     ws.Cell(row, 16).Value = p.Policy?.IssuedBy ?? string.Empty;
 
-                    // Alternate row background for readability
                     if (i % 2 == 1)
                     {
                         ws.Row(row).Style.Fill.BackgroundColor = XLColor.FromHtml("#f0f4f8");
                     }
                 }
 
-                // ── Auto-fit columns ────────────────────────────────────────────
                 ws.Columns().AdjustToContents();
-                ws.Column(1).Width = 6;  // No.
+                ws.Column(1).Width = 6;
             }
 
             private static void BuildSheet2(
@@ -178,7 +162,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 var currency = CurrencyPrefix(region);
                 var now      = DateTime.UtcNow;
 
-                // Title
                 ws.Cell(1, 1).Value = "Sales Report Summary";
                 ws.Cell(1, 1).Style.Font.Bold     = true;
                 ws.Cell(1, 1).Style.Font.FontSize = 14;
@@ -204,7 +187,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
 
                 for (int i = 0; i < rows.Length; i++)
                 {
-                    int rowNum = i + 3; // start at row 3 (title on row 1, blank on row 2)
+                    int rowNum = i + 3;
 
                     var labelCell = ws.Cell(rowNum, 1);
                     labelCell.Value = rows[i].Label;
@@ -219,7 +202,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 ws.Column(2).Width = 35;
             }
 
-            // ── Filter helpers (mirrors GetSalesRecordsQuery) ───────────────────
 
             private static List<Proposal> ApplyFilters(List<Proposal> all, GetSalesRecordsRequest req)
             {
@@ -285,7 +267,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 };
             }
 
-            // ── Field mapping helpers ───────────────────────────────────────────
 
             private static decimal GetPremium(Proposal p)
                 => p.Quotation?.Premium ?? p.Policy?.CoverageAmount ?? 0m;

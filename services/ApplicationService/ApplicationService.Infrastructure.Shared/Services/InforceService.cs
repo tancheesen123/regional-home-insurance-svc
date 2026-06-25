@@ -5,11 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
-    /// <summary>
-    /// Bridges InforcePolicyService → ProposalService background processing pipeline.
-    /// Receives the BackendInvokeRequest after a policy is inforced and hands it off
-    /// to ProposalService.ExecuteCallInBackend (PDF generation, email, SMS).
-    /// </summary>
     public class InforceService : IInforceService
     {
         private readonly ILogger<InforceService> _logger;

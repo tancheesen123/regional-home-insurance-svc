@@ -17,17 +17,13 @@ export default function DashboardLayout({
       >
         <DashboardSidebar />
 
-        {/*
-          SpotlightBackground wraps SidebarInset so the spotlight covers the
-          full content area. It uses useRef + rAF — zero React re-renders on
-          mouse move, so the rest of the page is never affected.
-        */}
+        {}
         <SpotlightBackground
           className="flex flex-col h-full min-h-0 overflow-hidden flex-1 bg-[#F1F5F9]"
           size={420}
           intensity={0.13}
         >
-          {/* Dot-grid texture — dark dots on light bg */}
+          {}
           <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 z-0" />
 
           <SidebarInset className="flex flex-col h-full min-h-0 bg-transparent">

@@ -1,23 +1,20 @@
-// ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface ScanSessionField {
   value:      string | null
-  confidence: number               // 0.0 – 1.0
+  confidence: number
   filled:     boolean
-  source:     "scanned" | "manual" // updated to 'manual' when customer edits
+  source:     "scanned" | "manual"
 }
 
 export interface ScanSession {
-  scannedAt:    string             // ISO timestamp
-  documentType: string             // e.g. "IC", "PASSPORT", "POLICY"
+  scannedAt:    string
+  documentType: string
   fields:       Record<string, ScanSessionField>
 }
 
-// ── Storage key ────────────────────────────────────────────────────────────────
 
 const KEY = "scanSession"
 
-// ── Read / Write / Clear ───────────────────────────────────────────────────────
 
 export function saveScanSession(data: ScanSession): void {
   if (typeof window === "undefined") return
@@ -40,10 +37,6 @@ export function clearScanSession(): void {
   sessionStorage.removeItem(KEY)
 }
 
-/**
- * Mark a single AI field as manually edited.
- * Call this whenever the customer changes an auto-filled input.
- */
 export function markFieldManual(aiKey: string): void {
   const session = getScanSession()
   if (!session?.fields[aiKey]) return
@@ -51,16 +44,13 @@ export function markFieldManual(aiKey: string): void {
   saveScanSession(session)
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 export const CONFIDENCE_THRESHOLD = 0.80
 
-/** True if field was AI-filled with high confidence */
 export function isAutoFilled(field: ScanSessionField): boolean {
   return field.filled && field.source === "scanned" && field.confidence >= CONFIDENCE_THRESHOLD
 }
 
-/** True if field needs manual verification (low confidence) */
 export function isLowConfidence(field: ScanSessionField): boolean {
   return field.filled && field.source === "scanned" && field.confidence < CONFIDENCE_THRESHOLD
 }

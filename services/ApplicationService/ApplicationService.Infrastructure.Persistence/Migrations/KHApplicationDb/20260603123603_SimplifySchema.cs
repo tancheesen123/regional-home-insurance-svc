@@ -1,22 +1,15 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    /// <inheritdoc />
     public partial class SimplifySchema : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 1 â€” Add new columns to existing tables FIRST
-            //           (must exist before we can copy data into them)
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-            // Customer: embed address fields
             migrationBuilder.AddColumn<string>("AddressLine1", "Customers", "nvarchar(100)", maxLength: 100, nullable: true);
             migrationBuilder.AddColumn<string>("AddressLine2", "Customers", "nvarchar(100)", maxLength: 100, nullable: true);
             migrationBuilder.AddColumn<string>("City",         "Customers", "nvarchar(100)", maxLength: 100, nullable: true);
@@ -24,7 +17,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             migrationBuilder.AddColumn<string>("Postcode",     "Customers", "nvarchar(10)",  maxLength: 10,  nullable: true);
             migrationBuilder.AddColumn<string>("State",        "Customers", "nvarchar(100)", maxLength: 100, nullable: true);
 
-            // Quotation: embed premium breakdown + valuables JSON
             migrationBuilder.AddColumn<decimal>("PlanPremium",        "Quotations", "decimal(18,2)", nullable: true);
             migrationBuilder.AddColumn<decimal>("AddOnPremium",       "Quotations", "decimal(18,2)", nullable: true);
             migrationBuilder.AddColumn<decimal>("GrossPremium",       "Quotations", "decimal(18,2)", nullable: true);
@@ -36,18 +28,12 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             migrationBuilder.AddColumn<decimal>("TotalBeforeDiscount","Quotations", "decimal(18,2)", nullable: true);
             migrationBuilder.AddColumn<string> ("ValuableItemsJson",  "Quotations", "TEXT", nullable: true);
 
-            // Policy: embed documents JSON
             migrationBuilder.AddColumn<string>("DocumentsJson", "Policies", "TEXT", nullable: true);
 
-            // AddOn: embed rates JSON (replaces AddOnRates table)
             migrationBuilder.AddColumn<string>("RatesJson", "AddOns", "TEXT", nullable: false, defaultValue: "{}");
 
-            // RateConfigSnapshot: embed change logs JSON
             migrationBuilder.AddColumn<string>("ChangeLogsJson", "RateConfigSnapshots", "TEXT", nullable: false, defaultValue: "[]");
 
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 2 â€” Create new tables
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
             migrationBuilder.CreateTable(
                 name: "RegionConfigs",
@@ -104,11 +90,7 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             migrationBuilder.CreateIndex("IX_RegionConfigs_Region_IsActive",                  "RegionConfigs",        new[] { "Region", "IsActive" });
             migrationBuilder.CreateIndex("IX_RateMultiplierConfigs_Region_Type_FactorKey_IsActive", "RateMultiplierConfigs", new[] { "Region", "Type", "FactorKey", "IsActive" });
 
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 3 â€” DATA MIGRATION (copy before dropping old tables)
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-            // 1. Copy address from Addresses â†’ Customers
             migrationBuilder.Sql(@"
                 UPDATE c SET
                     c.AddressLine1 = a.AddressLine1,
@@ -121,7 +103,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 INNER JOIN Addresses a ON c.AddressId = a.Id
             ");
 
-            // 2. Copy premium breakdown from QuotationPremiums â†’ Quotations
             migrationBuilder.Sql(@"
                 UPDATE q SET
                     q.PlanPremium         = qp.PlanPremium,
@@ -137,7 +118,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 INNER JOIN QuotationPremiums qp ON q.QuotationId = qp.QuotationId
             ");
 
-            // 3. Serialize ValuableItems â†’ Quotations.ValuableItemsJson
             migrationBuilder.Sql(@"
                 UPDATE q SET q.ValuableItemsJson = ISNULL((
                     SELECT vi.ItemId      AS itemId,
@@ -151,7 +131,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM Quotations q
             ");
 
-            // 4. Serialize PolicyDocuments â†’ Policies.DocumentsJson
             migrationBuilder.Sql(@"
                 UPDATE p SET p.DocumentsJson = ISNULL((
                     SELECT pd.DocumentId AS documentId,
@@ -166,7 +145,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM Policies p
             ");
 
-            // 5. Merge ProductPremiumRates + TaxConfigs + RegionRateConfigs â†’ RegionConfigs
             migrationBuilder.Sql(@"
                 INSERT INTO RegionConfigs
                     (Id, Region, IsActive,
@@ -201,7 +179,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 WHERE ppr.IsActive = 1
             ");
 
-            // 6. Serialize BuildingConstructionRates â†’ RegionConfigs.BuildingRatesJson
             migrationBuilder.Sql(@"
                 UPDATE rc SET rc.BuildingRatesJson = ISNULL((
                     SELECT bcr.Id               AS id,
@@ -216,7 +193,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM RegionConfigs rc
             ");
 
-            // 7. Serialize ValuableCategoryRates â†’ RegionConfigs.ValuableRatesJson
             migrationBuilder.Sql(@"
                 UPDATE rc SET rc.ValuableRatesJson = ISNULL((
                     SELECT vcr.Category   AS category,
@@ -230,7 +206,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM RegionConfigs rc
             ");
 
-            // 8. Migrate LocationTierConfigs â†’ RateMultiplierConfigs
             migrationBuilder.Sql(@"
                 INSERT INTO RateMultiplierConfigs
                     (Id, Region, Type, FactorKey, Multiplier, Label, KeywordsJson, Description, IsActive, CreatedAt)
@@ -239,7 +214,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM LocationTierConfigs
             ");
 
-            // 9. Migrate RiskMultiplierConfigs â†’ RateMultiplierConfigs
             migrationBuilder.Sql(@"
                 INSERT INTO RateMultiplierConfigs
                     (Id, Region, Type, FactorKey, Multiplier, Label, KeywordsJson, Description, IsActive, CreatedAt)
@@ -252,7 +226,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM RiskMultiplierConfigs
             ");
 
-            // 10. Serialize AddOnRates â†’ AddOns.RatesJson
             migrationBuilder.Sql(@"
                 UPDATE a SET a.RatesJson = ISNULL((
                     SELECT CONCAT('{""', ar.Region, '"":',
@@ -263,7 +236,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM AddOns a
             ");
 
-            // 11. Serialize RateConfigChangeLogs â†’ RateConfigSnapshots.ChangeLogsJson
             migrationBuilder.Sql(@"
                 UPDATE s SET s.ChangeLogsJson = ISNULL((
                     SELECT l.Id        AS id,
@@ -281,9 +253,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 FROM RateConfigSnapshots s
             ");
 
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 4 â€” Drop FK constraints and indexes (before dropping tables)
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
             migrationBuilder.DropForeignKey("FK_Customers_Addresses_AddressId",   "Customers");
             migrationBuilder.DropForeignKey("FK_Quotations_Products_ProductId",   "Quotations");
@@ -292,9 +261,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             migrationBuilder.DropIndex("IX_Customers_AddressId",   "Customers");
             migrationBuilder.DropUniqueConstraint("AK_AddOns_Code", "AddOns");
 
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 5 â€” Drop old tables (data already copied above)
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
             migrationBuilder.DropTable("AddOnRates");
             migrationBuilder.DropTable("Addresses");
@@ -311,19 +277,13 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             migrationBuilder.DropTable("ValuableCategoryRates");
             migrationBuilder.DropTable("ValuableItems");
 
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            // PHASE 6 â€” Drop old columns from surviving tables
-            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
             migrationBuilder.DropColumn("ProductId", "Quotations");
             migrationBuilder.DropColumn("AddressId", "Customers");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // NOTE: Down migration restores schema only â€” data loss from old tables is not recoverable here.
-            // Restore from a database backup if a rollback with data is needed.
 
             migrationBuilder.DropTable("RateMultiplierConfigs");
             migrationBuilder.DropTable("RegionConfigs");

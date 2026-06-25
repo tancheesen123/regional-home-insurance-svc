@@ -30,7 +30,6 @@ import { getMappingsForStep } from "@/lib/scan-field-map"
 import ScanFieldBadge from "@/components/quotation/scan-field-badge"
 import ScanBanner from "@/components/quotation/scan-banner"
 
-// ─── Section data interfaces ──────────────────────────────────────────────────
 
 interface PersonalData {
   name: string
@@ -51,8 +50,8 @@ interface PropertyData {
   propertyPostcode: string
   propertyState:    string
   propertyCountry:  string
-  propertyDistrict: string   // Kecamatan (ID), District (KH/PH if applicable)
-  propertyVillage:  string   // Kelurahan/Desa (ID), Commune (KH)
+  propertyDistrict: string
+  propertyVillage:  string
 }
 
 interface MailingData {
@@ -63,8 +62,8 @@ interface MailingData {
   mailingPostcode:  string
   mailingState:     string
   mailingCountry:   string
-  mailingDistrict:  string   // Kecamatan (ID), District (KH/PH if applicable)
-  mailingVillage:   string   // Kelurahan/Desa (ID), Commune (KH)
+  mailingDistrict:  string
+  mailingVillage:   string
 }
 
 interface BankData {
@@ -72,9 +71,7 @@ interface BankData {
   accountNumber: string
 }
 
-// ─── Country-specific helpers ─────────────────────────────────────────────────
 
-/** ID type options per country code */
 function getIdTypeOptions(cc: string): { value: string; label: string }[] {
   switch (cc.toUpperCase()) {
     case "ID": return [
@@ -89,7 +86,7 @@ function getIdTypeOptions(cc: string): { value: string; label: string }[] {
       { value: "KHMERID",  label: "Khmer Identity Card" },
       { value: "PASSPORT", label: "PASSPORT" },
     ]
-    default: return [ // MY and fallback
+    default: return [
       { value: "MYKAD",    label: "MYKAD" },
       { value: "PASSPORT", label: "PASSPORT" },
       { value: "MYPR",     label: "MYPR" },
@@ -97,7 +94,6 @@ function getIdTypeOptions(cc: string): { value: string; label: string }[] {
   }
 }
 
-/** Default nationality when a non-passport ID type is selected */
 function getDefaultNationality(cc: string): string {
   switch (cc.toUpperCase()) {
     case "ID": return "INDONESIAN"
@@ -107,9 +103,7 @@ function getDefaultNationality(cc: string): string {
   }
 }
 
-// ─── Static constants (never recreated) ──────────────────────────────────────
 
-/** International dialling code per region (hard-coded per requirement). */
 const PHONE_DIAL_CODE: Record<string, string> = {
   MY: "+60",
   ID: "+62",
@@ -122,7 +116,6 @@ function getDialCode(cc: string): string {
 
 const RACES = ["MALAY", "CHINESE", "INDIAN", "OTHERS"]
 
-/** Banks list per region — used in the Bank Details section for claims payout reference. */
 function getBanks(cc: string): string[] {
   switch (cc.toUpperCase()) {
     case "PH":
@@ -140,7 +133,7 @@ function getBanks(cc: string): string[] {
         "ABA BANK", "ACLEDA BANK", "CANADIA BANK",
         "MAYBANK CAMBODIA", "ANZ ROYAL BANK",
       ]
-    default: // MY
+    default:
       return [
         "MAYBANK", "CIMB BANK", "PUBLIC BANK", "RHB BANK", "HONG LEONG BANK",
         "AMBANK", "BANK ISLAM", "BANK RAKYAT", "AFFIN BANK", "ALLIANCE BANK",
@@ -148,7 +141,6 @@ function getBanks(cc: string): string[] {
   }
 }
 
-/** Human-readable label for the ID number field. */
 function getIdNumberLabel(cc: string, idType: string): string {
   if (idType === "PASSPORT") return "Passport Number"
   switch (cc.toUpperCase()) {
@@ -159,16 +151,13 @@ function getIdNumberLabel(cc: string, idType: string): string {
   }
 }
 
-/** Inline field error message + red styling helper. */
 function FErr({ msg }: { msg?: string }) {
   if (!msg) return null
   return <p className="mt-1 text-xs text-[#D32F2F]">{msg}</p>
 }
-/** Returns red-border class when an error is present. */
 const errCls = (msg?: string) => (msg ? "border-[#D32F2F] focus-visible:ring-[#D32F2F]" : "")
 
 
-// ─── Memoized section components ─────────────────────────────────────────────
 
 interface PersonalSectionProps {
   data: PersonalData
@@ -196,7 +185,6 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
   const idTypeOptions = getIdTypeOptions(countryCode)
   const isPassport    = data.idType === "PASSPORT"
 
-  /** Parse stored "DD/MM/YYYY" → Date for the Calendar */
   const dobDate: Date | undefined = (() => {
     if (!data.dateOfBirth) return undefined
     const parsed = parse(data.dateOfBirth, "dd/MM/yyyy", new Date())
@@ -205,7 +193,6 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
 
   const handleIdTypeChange = (value: string) => {
     onChange("idType", value)
-    // When switching away from PASSPORT, snap nationality back to the country default
     if (value !== "PASSPORT") {
       onChange("nationality", getDefaultNationality(countryCode))
     }
@@ -275,7 +262,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
           </div>
 
-          {/* Nationality — only shown when customer selects PASSPORT */}
+          {}
           {isPassport && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -298,7 +285,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
             </div>
           )}
 
-          {/* Race — MY only; ID/PH/KH do not collect ethnicity on standard insurance forms */}
+          {}
           {countryCode.toUpperCase() === "MY" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -351,7 +338,7 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Date of Birth — calendar picker */}
+            {}
             <div>
               <Label htmlFor="dob" className="inline-flex items-center">
                 {t("fillDetails.dobLabel")}
@@ -426,7 +413,6 @@ const PersonalDetailsSection = memo(function PersonalDetailsSection({
   )
 })
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface PropertySectionProps {
   data: PropertyData
@@ -515,7 +501,6 @@ const PropertyDetailsSection = memo(function PropertyDetailsSection({
   )
 })
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface MailingSectionProps {
   data: MailingData
@@ -583,13 +568,10 @@ const MailingAddressSection = memo(function MailingAddressSection({
             />
           </div>
 
-          {/* When "same as property" is ticked, show copied values as readonly fields.
-              AddressSelect uses internal dropdown state that can't be pre-seeded from
-              outside, so we bypass it entirely to display the mirrored values.
-              Fields shown depend on country — district/village only appear when non-empty. */}
+          {}
           {data.sameAsPropertyAddress ? (
             <div className="space-y-3">
-              {/* Province / State */}
+              {}
               {data.mailingState && (
                 <div>
                   <Label>
@@ -602,7 +584,7 @@ const MailingAddressSection = memo(function MailingAddressSection({
                 </div>
               )}
 
-              {/* City / Kabupaten / District */}
+              {}
               {data.mailingCity && (
                 <div>
                   <Label>
@@ -615,7 +597,7 @@ const MailingAddressSection = memo(function MailingAddressSection({
                 </div>
               )}
 
-              {/* Kecamatan / District (ID only) */}
+              {}
               {data.mailingDistrict && (
                 <div>
                   <Label>{countryCode.toUpperCase() === "ID" ? "Kecamatan" : "District"}</Label>
@@ -623,7 +605,7 @@ const MailingAddressSection = memo(function MailingAddressSection({
                 </div>
               )}
 
-              {/* Kelurahan / Commune (ID + KH) */}
+              {}
               {data.mailingVillage && (
                 <div>
                   <Label>{countryCode.toUpperCase() === "ID" ? "Kelurahan / Desa" : "Commune"}</Label>
@@ -631,7 +613,7 @@ const MailingAddressSection = memo(function MailingAddressSection({
                 </div>
               )}
 
-              {/* Postcode + Country */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>{countryCode.toUpperCase() === "ID" ? "Kode Pos" : t("fillDetails.postcode")}</Label>
@@ -670,7 +652,6 @@ const MailingAddressSection = memo(function MailingAddressSection({
   )
 })
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface BankSectionProps {
   data: BankData
@@ -745,7 +726,6 @@ const BankDetailsSection = memo(function BankDetailsSection({
   )
 })
 
-// ─── Main form component ──────────────────────────────────────────────────────
 
 export default function FillDetailsForm() {
   const router = useRouter()
@@ -762,7 +742,6 @@ export default function FillDetailsForm() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Per-field validation errors, keyed by field name (matches input ids where possible)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [expandedSections, setExpandedSections] = useState({
@@ -772,12 +751,10 @@ export default function FillDetailsForm() {
     bank: true,
   })
 
-  // ── Separate state per section — typing in one section won't re-render others ──
 
-  // Identity carried over from the quotation page — locks idType + idNumber here.
   const quotationIdentity = getQuotationIdentity()
   const defaultIdType = quotationIdentity?.idType
-    ? quotationIdentity.idType.toUpperCase()              // "ktp" → "KTP", "passport" → "PASSPORT"
+    ? quotationIdentity.idType.toUpperCase()
     : getIdTypeOptions(countryCode)[0].value
   const defaultNationality = getDefaultNationality(countryCode)
 
@@ -811,7 +788,7 @@ export default function FillDetailsForm() {
     mailingCity:      "",
     mailingPostcode:  "",
     mailingState:     "",
-    mailingCountry:   countryName,   // pre-set so Negara/Country is never blank
+    mailingCountry:   countryName,
     mailingDistrict:  "",
     mailingVillage:   "",
   })
@@ -821,7 +798,6 @@ export default function FillDetailsForm() {
     accountNumber: "",
   })
 
-  // ── Scan session auto-fill ────────────────────────────────────────────────
 
   const [scanSession,  setScanSession]  = useState<ReturnType<typeof getScanSession>>(null)
   const [scanFields,   setScanFields]   = useState<Record<string, ScanSessionField>>({})
@@ -834,7 +810,6 @@ export default function FillDetailsForm() {
     const raw = session.fields
     const applied: Record<string, ScanSessionField> = {}
 
-    // ── Helper: try each key in order, return first filled entry ─────────────
     const resolve = (keys: string[]) => {
       for (const k of keys) {
         const f = raw[k]
@@ -843,7 +818,6 @@ export default function FillDetailsForm() {
       return null
     }
 
-    // ── Gender normaliser — KTP returns Indonesian ("Laki-Laki" / "Perempuan")
     const normaliseGender = (v: string): string => {
       const lower = v.toLowerCase()
       if (lower.includes("laki") || lower.includes("male")   || lower === "m") return "MALE"
@@ -851,32 +825,27 @@ export default function FillDetailsForm() {
       return v.toUpperCase()
     }
 
-    // ── Personal data auto-fill ───────────────────────────────────────────────
     setPersonalData((prev) => {
       const next = { ...prev }
 
-      // Full name: policy → "insuredName", KTP-ID → "name", PHL → "givenNames"
       const name = resolve(["insuredName", "name", "fullName", "givenNames"])
       if (name && !prev.name) {
         next.name = name.f.value!
         applied[name.k] = { ...name.f, source: "scanned" }
       }
 
-      // NIK / ID number: KTP → "nik", PHL → "idNumber"
       const nik = resolve(["nik", "idNumber", "nric"])
       if (nik && !prev.nricNumber) {
         next.nricNumber = nik.f.value!
         applied[nik.k] = { ...nik.f, source: "scanned" }
       }
 
-      // Date of birth: KTP → "birthdate", PHL → "dateOfBirth"
       const dob = resolve(["dateOfBirth", "birthdate", "birthDate"])
       if (dob && !prev.dateOfBirth) {
         next.dateOfBirth = dob.f.value!
         applied[dob.k] = { ...dob.f, source: "scanned" }
       }
 
-      // Gender: KTP → "gender" (value: "Laki-Laki" / "Perempuan")
       const gender = resolve(["gender"])
       if (gender && !prev.gender) {
         next.gender = normaliseGender(gender.f.value!)
@@ -886,18 +855,15 @@ export default function FillDetailsForm() {
       return next
     })
 
-    // ── Property data auto-fill ───────────────────────────────────────────────
     setPropertyData((prev) => {
       const next = { ...prev }
 
-      // Address line 1: policy → "insuredAddress" / "riskAddress", PHL → "address"
       const addr = resolve(["insuredAddress", "riskAddress", "address", "addressLine1"])
       if (addr && !prev.propertyAddress1) {
         next.propertyAddress1 = addr.f.value!
         applied[addr.k] = { ...addr.f, source: "scanned" }
       }
 
-      // City / province from address APIs
       const city = resolve(["city", "propertyCity"])
       if (city && !prev.propertyCity) {
         next.propertyCity = city.f.value!
@@ -916,7 +882,6 @@ export default function FillDetailsForm() {
         applied[postcode.k] = { ...postcode.f, source: "scanned" }
       }
 
-      // ID (KTP) only — parsed from address line keywords "Kecamatan" / "Kel/Desa"
       const district = resolve(["kecamatan", "district"])
       if (district && !prev.propertyDistrict) {
         next.propertyDistrict = district.f.value!
@@ -933,12 +898,10 @@ export default function FillDetailsForm() {
     })
 
     setScanFields(applied)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
 
-  // Wrap personal / property change handlers to mark fields manual on edit
   const clearFieldError = useCallback((key: string) => {
     setFieldErrors((prev) => {
       if (!prev[key]) return prev
@@ -968,12 +931,9 @@ export default function FillDetailsForm() {
     clearFieldError(field as string)
   }, [clearFieldError])
 
-  // Ref keeps latest propertyData accessible inside mailing handler without
-  // causing the handler to be recreated on every property field change.
   const propertyDataRef = useRef(propertyData)
   propertyDataRef.current = propertyData
 
-  // ── Stable section change handlers ───────────────────────────────────────────
 
   const handlePersonalChange = useCallback((field: keyof PersonalData, value: string) => {
     setPersonalData((prev) => ({ ...prev, [field]: value }))
@@ -986,7 +946,6 @@ export default function FillDetailsForm() {
   const handleMailingChange = useCallback((field: keyof MailingData, value: string | boolean) => {
     setMailingData((prev) => {
       const updated = { ...prev, [field]: value }
-      // Auto-fill mailing from property when checkbox is ticked
       if (field === "sameAsPropertyAddress" && value === true) {
         const prop = propertyDataRef.current
         updated.mailingAddress1  = prop.propertyAddress1
@@ -1008,24 +967,18 @@ export default function FillDetailsForm() {
     clearFieldError(field as string)
   }, [clearFieldError])
 
-  // ── Toggle handlers (stable) ──────────────────────────────────────────────────
 
   const togglePersonal = useCallback(() => setExpandedSections((p) => ({ ...p, personal: !p.personal })), [])
   const toggleProperty = useCallback(() => setExpandedSections((p) => ({ ...p, property: !p.property })), [])
   const toggleMailing  = useCallback(() => setExpandedSections((p) => ({ ...p, mailing:  !p.mailing  })), [])
   const toggleBank     = useCallback(() => setExpandedSections((p) => ({ ...p, bank:     !p.bank     })), [])
 
-  // ── Submit ────────────────────────────────────────────────────────────────────
 
-  // ── Validation — required fields across all sections ───────────────────────
-  // Note: race is intentionally OPTIONAL. Ethnicity/"suku" is not a standard
-  // field on Indonesian insurance forms (unlike Malaysia), so we never block on it.
   const validateDetails = (): Record<string, string> => {
     const e: Record<string, string> = {}
     const req = t("validation.required")
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-    // Personal
     if (!personalData.name.trim())         e.name        = req
     if (!personalData.gender)              e.gender      = req
     if (!personalData.dateOfBirth)         e.dateOfBirth = req
@@ -1034,19 +987,16 @@ export default function FillDetailsForm() {
     else if (!emailRe.test(personalData.email.trim())) e.email = t("validation.emailFormat")
     if (personalData.idType === "PASSPORT" && !personalData.nationality) e.nationality = req
 
-    // Property address
     if (!propertyData.propertyAddress1.trim()) e.propertyAddress1 = req
     if (!propertyData.propertyState.trim())    e.propertyState    = req
     if (!propertyData.propertyCity.trim())     e.propertyCity     = req
     if (!propertyData.propertyPostcode.trim()) e.propertyPostcode = req
 
-    // Mailing — only when not same as property
     if (!mailingData.sameAsPropertyAddress) {
       if (!mailingData.mailingAddress1.trim()) e.mailingAddress1 = req
       if (!mailingData.mailingPostcode.trim()) e.mailingPostcode = req
     }
 
-    // Bank — required for MY (auto-debit source); optional for PH/ID/KH (claims payout reference)
     if (countryCode.toUpperCase() === "MY") {
       if (!bankData.bankName)             e.bankName      = req
       if (!bankData.accountNumber.trim()) e.accountNumber = req
@@ -1059,11 +1009,9 @@ export default function FillDetailsForm() {
     e?.preventDefault()
     setError(null)
 
-    // Validate before anything else
     const errs = validateDetails()
     setFieldErrors(errs)
     if (Object.keys(errs).length > 0) {
-      // Expand every section so the highlighted fields are visible
       setExpandedSections({ personal: true, property: true, mailing: true, bank: true })
       setError(t("validation.fixHighlighted"))
       return
@@ -1150,7 +1098,6 @@ export default function FillDetailsForm() {
     }
   }
 
-  // ── Summary bar data (real premium carried from earlier steps) ──────────────
   const storedPremium = getQuotationPremium()
   const propSummary   = getQuotationPropertySummary()
 

@@ -2,7 +2,6 @@ import { getSession } from "@/lib/session"
 
 const SCANNER_URL = process.env.NEXT_PUBLIC_SCANNER_URL ?? "http://localhost:8001"
 
-// ── Response types ─────────────────────────────────────────────────────────────
 
 export interface ScannedItem {
   name: string
@@ -14,7 +13,7 @@ export interface ScannedItem {
 }
 
 export interface ScannedRoom {
-  roomType: string       // e.g. "Living Room", "Bedroom"
+  roomType: string
   photoIndex: number
   items: ScannedItem[]
   subtotal: number
@@ -29,7 +28,6 @@ export interface ScanContentResult {
   warnings: string[]
 }
 
-// ── Service function ───────────────────────────────────────────────────────────
 
 export async function scanContent(
   files: File[],

@@ -3,7 +3,6 @@ import { getSession, clearSession } from "@/lib/session"
 
 const BASE_URL = "https://localhost:44337/api"
 
-// ── Create Proposal ──────────────────────────────────────────────────────────
 
 export interface ProposalAddress {
   addressLine1: string
@@ -71,7 +70,6 @@ export async function createProposal(
   })
 }
 
-// ── Get Proposal ─────────────────────────────────────────────────────────────
 
 export interface ProposalQuotation {
   quotationId: string
@@ -148,7 +146,6 @@ export async function getProposal(
   })
 }
 
-// ── Get Customer Proposals ────────────────────────────────────────────────────
 
 export interface CustomerProposalDocument {
   documentId: string
@@ -171,7 +168,7 @@ export interface CustomerProposalPolicy {
 
 export interface CustomerProposal {
   proposalId:      string
-  status:          string   // "INFORCED" | "PENDING" | etc.
+  status:          string
   createdAt:       string
   planType:        string
   region:          string
@@ -182,14 +179,6 @@ export interface CustomerProposal {
   policy:          CustomerProposalPolicy | null
 }
 
-/**
- * POST /api/proposal/GetCustomerProposals
- * Returns all proposals (with nested policy) for the given customerId.
- * customerId is sourced from the session — never ask the user for it.
- *
- * NOTE: this endpoint returns { proposals: [...] } directly — no APIResponse
- * wrapper — so we use a raw fetch instead of the shared request() helper.
- */
 export async function fetchCustomerProposals(
   customerId: string,
 ): Promise<CustomerProposal[]> {

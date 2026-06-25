@@ -5,12 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Core.Application.SalesService.Features.Query
 {
-    /// <summary>
-    /// Returns the full detail of a single sales record identified by its ProposalId.
-    /// </summary>
     public class GetSalesRecordDetailQuery : IRequest<GetSalesRecordDetailResult>
     {
-        /// <summary>ProposalId returned as "id" in the sales records list.</summary>
         public string RecordId { get; set; } = string.Empty;
 
         public class GetSalesRecordDetailQueryHandler
@@ -46,16 +42,7 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 return result;
             }
 
-            // ── Helpers ────────────────────────────────────────────────────────
 
-            /// <summary>
-            /// Single entry point that assembles the full <see cref="GetSalesRecordDetailResult"/>
-            /// from the loaded entity graph: picks the latest successful payment, computes
-            /// premium/commission/totals, builds CustomerInfo/PolicyDetails/FinancialInfo/SalesInfo,
-            /// maps status/payment/region/coverage labels, deserializes Policy.DocumentsJson,
-            /// and builds the Timeline. Kept as one cohesive mapping step so callers (and the
-            /// sequence diagram) only need to know "BuildSalesRecordDetail(entity graph)".
-            /// </summary>
             private static GetSalesRecordDetailResult BuildSalesRecordDetail(Proposal p)
             {
                 var payment = LatestSuccessfulPayment(p);
@@ -63,7 +50,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 var q       = p.Quotation;
                 var now     = DateTime.UtcNow;
 
-                // ── Customer info ──────────────────────────────────────────────
                 var address = string.Join(", ", new[]
                 {
                     p.PropAddressLine1,
@@ -84,7 +70,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     IdType      = p.IdType       ?? string.Empty,
                 };
 
-                // ── Policy details ─────────────────────────────────────────────
                 var statusStr = p.Status switch
                 {
                     "INFORCED"  => p.Policy?.EndDate < now ? "Expired" : "Active",
@@ -105,7 +90,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     Status         = statusStr,
                 };
 
-                // ── Financial info ─────────────────────────────────────────────
                 var commission = Math.Round(premium * 0.10m, 2);
                 var taxes      = q?.TaxAmount  ?? 0m;
                 var fees       = q?.StampDuty  ?? 0m;
@@ -133,7 +117,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     TransactionId  = payment?.TransactionId ?? payment?.ReferenceNumber ?? string.Empty,
                 };
 
-                // ── Sales info ─────────────────────────────────────────────────
                 var saleDate = payment?.PaymentDate ?? p.Policy?.IssuedAt ?? p.CreatedAt;
 
                 var salesInfo = new SalesSalesInfo
@@ -141,14 +124,13 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     SaleDate   = saleDate.ToString("yyyy-MM-dd"),
                     AgentName  = p.Policy?.IssuedBy ?? string.Empty,
                     AgentId    = p.Policy?.IssuedBy ?? string.Empty,
-                    AgentEmail = string.Empty,   // not stored — extend Agent entity if needed
-                    AgentPhone = string.Empty,   // not stored — extend Agent entity if needed
+                    AgentEmail = string.Empty,
+                    AgentPhone = string.Empty,
                     Region     = MapRegion(p.Quotation?.Region),
-                    Branch     = string.Empty,   // not stored — extend if needed
+                    Branch     = string.Empty,
                     Channel    = "Online",
                 };
 
-                // ── Documents ──────────────────────────────────────────────────
                 var documents = DeserializeDocuments(p.Policy?.DocumentsJson)
                     .Select(d => new SalesDocument
                     {
@@ -160,7 +142,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     })
                     .ToList();
 
-                // ── Timeline ───────────────────────────────────────────────────
                 var timeline = BuildTimeline(p, payment);
 
                 return new GetSalesRecordDetailResult
@@ -293,7 +274,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
         }
     }
 
-    // ── Result types ───────────────────────────────────────────────────────────
 
     public class GetSalesRecordDetailResult
     {
@@ -371,7 +351,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
         public string Event { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
 
-        /// <summary>"completed" | "pending"</summary>
         public string Status { get; set; } = string.Empty;
     }
 }

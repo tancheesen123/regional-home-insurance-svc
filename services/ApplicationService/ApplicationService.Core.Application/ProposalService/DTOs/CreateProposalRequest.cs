@@ -30,8 +30,8 @@ namespace ApplicationService.Core.Application.ProposalService.DTOs
         public string? Postcode { get; set; }
         public string? State { get; set; }
         public string? Country { get; set; }
-        public string? District { get; set; }  // Kecamatan (ID only)
-        public string? Village { get; set; }   // Kelurahan/Desa (ID only)
+        public string? District { get; set; }
+        public string? Village { get; set; }
     }
 
     public class ProposalMailingAddressDto
@@ -43,8 +43,8 @@ namespace ApplicationService.Core.Application.ProposalService.DTOs
         public string? Postcode { get; set; }
         public string? State { get; set; }
         public string? Country { get; set; }
-        public string? District { get; set; }  // Kecamatan (ID only)
-        public string? Village { get; set; }   // Kelurahan/Desa (ID only)
+        public string? District { get; set; }
+        public string? Village { get; set; }
     }
 
     public class ProposalBankDetailsDto

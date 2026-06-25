@@ -16,7 +16,6 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
         private readonly IInforceService                _inforceService;
         private readonly IProposalErrorService          _errorService;
 
-        // Regions where SMS is sent by default
         private static readonly HashSet<string> SmsDefaultOnRegions =
             new(StringComparer.OrdinalIgnoreCase) { "PH" };
 
@@ -90,8 +89,6 @@ namespace ApplicationService.Core.Application.InforcePolicyService.Services
                     PolicyId       = Guid.NewGuid().ToString(),
                     PolicyNumber   = GeneratePolicyNumber(region),
                     StartDate      = quotation?.CoverageStartDate                           ?? DateTime.UtcNow.Date,
-                    // ExpiryDate is already set to StartDate + 1yr - 1day at quotation time.
-                    // Fallback applies the same rule in case quotation is null.
                     EndDate        = quotation?.ExpiryDate ?? DateTime.UtcNow.Date.AddYears(1).AddDays(-1),
                     CoverageAmount = quotation?.Premium * 100     ?? 0m,
                     IssuedAt       = DateTime.UtcNow,

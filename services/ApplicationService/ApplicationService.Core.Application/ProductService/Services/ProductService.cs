@@ -11,7 +11,6 @@ namespace ApplicationService.Core.Application.ProductService.Services
         private readonly ILogger<ProductService> _logger;
         private readonly IProductRepository _productRepository;
 
-        /// <summary>Online-purchase rebate applied to every online quote (15% of gross premium).</summary>
         private const decimal OnlineRebateRate = 0.15m;
 
         public ProductService(ILogger<ProductService> logger, IProductRepository productRepository)
@@ -26,12 +25,10 @@ namespace ApplicationService.Core.Application.ProductService.Services
             _logger.LogInformation("=== ProductService.CalculatePremiumAsync | Region={Region} PlanType={PlanType} ===",
                 region, request.PlanType);
 
-            // ── Load region config (replaces ProductPremiumRate + TaxConfig) ──
             var regionConfig = await _productRepository.GetRegionConfigAsync(region)
                 ?? throw new InvalidOperationException(
                     $"No active region config found for region '{region}'. Please seed RegionConfig.");
 
-            // ── Validate inputs ───────────────────────────────────────────────
             Validate(request);
 
             var buildingSi = request.BuildingSumInsured ?? 0m;
@@ -48,7 +45,6 @@ namespace ApplicationService.Core.Application.ProductService.Services
 
             decimal planPremium = buildingPremium + contentPremium;
 
-            // ── Add-on premiums (rates now in AddOn.RatesJson) ────────────────
             var addOnBreakdowns = new List<AddOnBreakdown>();
 
             if (request.AddOnCodes.Count > 0)
@@ -76,7 +72,6 @@ namespace ApplicationService.Core.Application.ProductService.Services
                         _         => buildingSi
                     };
 
-                    // Read rate from JSON: { "PH": 0.001, "ID": 0.0012, "KH": 0.0008 }
                     var rates = JsonSerializer.Deserialize<Dictionary<string, decimal>>(
                         addOn.RatesJson ?? "{}", new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     decimal rate    = rates?.GetValueOrDefault(region.ToUpper(), 0m) ?? 0m;
@@ -96,18 +91,13 @@ namespace ApplicationService.Core.Application.ProductService.Services
             decimal totalAddOnPremium = addOnBreakdowns.Sum(a => a.Premium);
             decimal grossPremium      = planPremium + totalAddOnPremium;
 
-            // ── Discount ──────────────────────────────────────────────────────
-            // Online purchase rebate (always applied for online quotes) + any
-            // explicit campaign discount passed in the request.
             decimal onlineRebate   = Round(grossPremium * OnlineRebateRate);
             decimal discountAmount = request.DiscountAmount + onlineRebate;
             decimal netPremium     = Math.Max(0m, grossPremium - discountAmount);
 
-            // ── Dates ─────────────────────────────────────────────────────────
             var startDate = request.StartDate.Date;
             var endDate   = startDate.AddYears(1).AddDays(-1);
 
-            // ── Tax (from RegionConfig) ───────────────────────────────────────
             decimal serviceTaxAmount = netPremium * (regionConfig.ServiceTaxRate / 100m);
 
             decimal stampDutyAmount = 0m;

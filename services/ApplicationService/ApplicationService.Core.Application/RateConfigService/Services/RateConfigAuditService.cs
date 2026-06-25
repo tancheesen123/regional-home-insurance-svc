@@ -5,10 +5,6 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Services
 {
-    /// <summary>
-    /// Shared helper that builds a full region snapshot and writes change-log entries.
-    /// Change logs are now embedded as JSON in RateConfigSnapshot.ChangeLogsJson.
-    /// </summary>
     public class RateConfigAuditService
     {
         private readonly IRateConfigRepository _repo;
@@ -31,7 +27,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Services
         {
             var snapshotJson = preBuiltSnapshotJson ?? await BuildSnapshotJsonAsync(region);
 
-            // Populate audit fields on each log entry
             var now = DateTime.UtcNow;
             foreach (var log in changeLogs)
             {
@@ -41,7 +36,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Services
 
             var changeLogsJson = JsonSerializer.Serialize(changeLogs);
 
-            // Resolve the active RegionConfig.Id so the snapshot has a proper FK
             var regionConfig = await _repo.GetRegionConfigAsync(region);
 
             var snapshot = new RateConfigSnapshot

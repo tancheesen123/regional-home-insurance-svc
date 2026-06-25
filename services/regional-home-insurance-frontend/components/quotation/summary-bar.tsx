@@ -48,7 +48,6 @@ export default function SummaryBar({
   proceedDisabled,
 }: SummaryBarProps) {
   const [open, setOpen] = useState(false)
-  // Defer session-dependent symbol to client — sessionStorage unavailable during SSR
   const [symbol, setSymbol] = useState<string>("")
   useEffect(() => {
     setSymbol(getRegionConfig(getSession()?.countryCode ?? "").symbol)

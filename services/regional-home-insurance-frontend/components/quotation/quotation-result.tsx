@@ -15,7 +15,6 @@ export default function QuotationResult() {
 
   const handleProceedToPurchase = () => {
     setIsProcessing(true)
-    // Navigate to purchase flow
     setTimeout(() => {
       router.push("/dashboard/purchase")
     }, 1000)
@@ -38,7 +37,7 @@ export default function QuotationResult() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Quote Summary */}
+      {}
       <Card>
         <CardHeader className="bg-green-50 border-b">
           <div className="flex items-center gap-2">
@@ -92,7 +91,7 @@ export default function QuotationResult() {
         </CardContent>
       </Card>
 
-      {/* Coverage Details */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -156,7 +155,7 @@ export default function QuotationResult() {
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
+      {}
       <div className="flex flex-col sm:flex-row gap-4 justify-end">
         <Button variant="outline" onClick={() => router.back()}>
           Modify Quote

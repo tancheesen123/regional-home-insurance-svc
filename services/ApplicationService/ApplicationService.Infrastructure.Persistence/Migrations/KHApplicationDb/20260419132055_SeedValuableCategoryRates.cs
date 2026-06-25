@@ -5,18 +5,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    /// <inheritdoc />
     public partial class SeedValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // ── Cambodia (USD) ────────────────────────────────────────────────
-            // Limits in US dollars.
             var now = DateTime.UtcNow;
             var rows = new[]
             {
-                // category             maxPerItem    maxTotal      rate
                 ("jewellery",           2_500m,       7_500m,       0.020m),
                 ("gold",                2_500m,       7_500m,       0.020m),
                 ("electronics",         2_000m,       5_000m,       0.015m),
@@ -34,7 +29,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DeleteData(

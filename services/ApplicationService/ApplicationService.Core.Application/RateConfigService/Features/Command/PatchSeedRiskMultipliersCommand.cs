@@ -4,10 +4,6 @@ using MediatR;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 {
-    /// <summary>
-    /// Inserts any missing RateMultiplierConfig rows (type=risk_factor) for a region.
-    /// Safe to call multiple times — skips keys that already exist.
-    /// </summary>
     public class PatchSeedRiskMultipliersCommand : IRequest<PatchSeedResult>
     {
         public string Region { get; set; } = string.Empty;

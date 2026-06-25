@@ -49,7 +49,6 @@ import { fetchSalesRecords, exportSalesExcel, type SalesRecord, type SalesSummar
 import { getSession } from "@/lib/session"
 import { formatAmount, getCurrencyByCountryCode } from "@/lib/currency"
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getStatusColor(status: string) {
   switch (status) {

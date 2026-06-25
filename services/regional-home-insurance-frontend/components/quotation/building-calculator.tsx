@@ -30,14 +30,12 @@ import {
 } from "@/lib/address-api"
 import { cn } from "@/lib/utils"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 type AgeOfBuilding   = "1to10" | "11to20" | "21to30" | "30plus"
 type BuildQuality    = "low" | "standard" | "high"
 type Topography      = "flat" | "slope"
 type SiteSurrounding = "normal" | "confined" | "city-centre"
 
-// ── Display maps ──────────────────────────────────────────────────────────────
 
 const AGE_LABELS: Record<AgeOfBuilding, string> = {
   "1to10": "1–10 yrs", "11to20": "11–20 yrs", "21to30": "21–30 yrs", "30plus": "30+ yrs",
@@ -71,7 +69,6 @@ const TIER_BADGE: Record<LocationId, string> = {
   rural: "bg-green-100 text-green-700 ring-1 ring-green-300",
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   onBack:      () => void
@@ -80,9 +77,6 @@ interface Props {
   countryCode: string
 }
 
-// ── State shape (useReducer) ───────────────────────────────────────────────────
-// All form state lives in one object → one re-render per user action
-// instead of 2–5 re-renders from cascading individual setState calls.
 
 interface FormState {
   propertyType:    PropertyTypeId | ""
@@ -95,7 +89,6 @@ interface FormState {
   siteSurrounding: SiteSurrounding
   location:        LocationId
   tierAutoSet:     boolean
-  // Address
   provinces:    { value: string; label: string }[]
   cities:       { value: string; label: string }[]
   selProv:      string
@@ -104,7 +97,6 @@ interface FormState {
   selCityName:  string
   loadProv:     boolean
   loadCity:     boolean
-  // Cost add-ons
   furnitureRaw: string
   featuresRaw:  string
   extRenovRaw:  string
@@ -172,16 +164,12 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const parseAmt         = (raw: string) => parseFloat(raw.replace(/,/g, "")) || 0
 const fmtRaw           = (raw: string) => { const n = parseAmt(raw); return n > 0 ? n.toLocaleString("en") : "" }
 const stripNonNumeric  = (v: string)   => v.replace(/[^0-9.]/g, "")
 
-// ── Memoized sub-components ───────────────────────────────────────────────────
 
-// StepBadge never changes appearance for the same `n` — memo prevents
-// re-renders when parent rebuilds the breakdown section.
 const StepBadge = memo(function StepBadge({ n }: { n: number | "+" }) {
   return (
     <span className={cn(
@@ -193,8 +181,6 @@ const StepBadge = memo(function StepBadge({ n }: { n: number | "+" }) {
   )
 })
 
-// AreaInput — local state buffer so keystrokes NEVER re-render the parent.
-// Parent only re-renders on blur when the committed value changes.
 const AreaInput = memo(function AreaInput({
   committedValue, areaUnit, areaMin, areaMax, onCommit,
 }: {
@@ -206,7 +192,6 @@ const AreaInput = memo(function AreaInput({
 }) {
   const [local, setLocal] = useState(committedValue)
 
-  // Sync if parent resets the value (e.g. region change)
   useEffect(() => { setLocal(committedValue) }, [committedValue])
 
   const parsed = parseAmt(local)
@@ -221,7 +206,7 @@ const AreaInput = memo(function AreaInput({
           onBlur={() => {
             const formatted = fmtRaw(local)
             setLocal(formatted)
-            onCommit(formatted)          // single parent dispatch on blur
+            onCommit(formatted)
           }}
           placeholder={`e.g. ${areaUnit === "sqft" ? "1,500" : "150"}`}
           inputMode="decimal"

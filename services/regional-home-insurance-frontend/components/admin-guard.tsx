@@ -1,15 +1,5 @@
 "use client"
 
-/**
- * AdminGuard — wraps any page that requires Admin role.
- *
- * - No session          → redirect to /
- * - role === "User"     → redirect to /dashboard (403-like)
- * - role === "Admin"    → render children normally
- *
- * Uses client-side redirect because role is stored in localStorage (not cookies),
- * so Next.js middleware cannot read it.
- */
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"

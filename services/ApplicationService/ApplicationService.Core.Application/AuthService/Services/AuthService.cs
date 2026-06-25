@@ -63,8 +63,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             if (!user.IsVerified)
                 throw new UnauthorizedAccessException("Please verify your email before logging in.");
 
-            // Fetch the customer record linked to this user account so we can include
-            // the CustomerId in the JWT — used for ownership checks in Proposal/Quotation APIs.
             var customer   = await _customerRepository.GetByUserIdAsync(user.UserId);
             var customerId = customer?.CustomerId ?? string.Empty;
 
@@ -85,12 +83,10 @@ namespace ApplicationService.Core.Application.AuthService.Services
         {
             _logger.LogInformation("=== AuthService.RegisterAsync ===");
 
-            // AF1: Email already registered
             var emailExists = await _authRepository.ExistsAsync(u => u.Email == request.Email);
             if (emailExists)
                 throw new InvalidOperationException("Email already registered. Please log in or reset your password.");
 
-            // Create UserAccount
             var userId = Guid.NewGuid().ToString();
             var userAccount = new UserAccount
             {
@@ -101,7 +97,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 Role           = "User"
             };
 
-            // Create Customer linked to UserAccount
             var customer = new Customer
             {
                 CustomerId  = Guid.NewGuid().ToString(),
@@ -126,7 +121,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
 
             await _authRepository.RegisterAsync(userAccount, customer);
 
-            // Generate verification JWT token (short-lived) — no customerId or role needed for verification flow
             var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.VerificationExpiryHours);
             var verificationToken = GenerateJwtToken(userId, request.Email, string.Empty, string.Empty, "email-verification", expiresAt);
             var verificationLink  = $"{_jwtSettings.BaseUrl}/api/auth/VerifyEmail?token={verificationToken}&email={Uri.EscapeDataString(request.Email)}&countryCode={request.Region.ToUpper()}";
@@ -150,7 +144,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             if (principal == null)
                 throw new SecurityTokenException("Invalid or expired verification link.");
 
-            // Ensure this token is specifically a verification token
             var purpose = principal.FindFirst("purpose")?.Value;
             if (purpose != "email-verification")
                 throw new SecurityTokenException("Invalid token purpose.");
@@ -160,7 +153,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
             if (string.IsNullOrEmpty(userId))
                 throw new SecurityTokenException("Invalid token claims.");
 
-            // Validate email matches the token's email claim
             var tokenEmail = principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value
                           ?? principal.FindFirst(ClaimTypes.Email)?.Value;
             if (!string.Equals(tokenEmail, email, StringComparison.OrdinalIgnoreCase))
@@ -171,7 +163,7 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 throw new KeyNotFoundException("User not found.");
 
             if (user.IsVerified)
-                return true; // Already verified — idempotent
+                return true;
 
             await _authRepository.UpdateIsVerifiedAsync(userId);
 
@@ -193,7 +185,6 @@ namespace ApplicationService.Core.Application.AuthService.Services
                 new Claim("purpose",                     purpose)
             };
 
-            // Include customerId and role only for auth tokens — verification tokens don't need them
             if (!string.IsNullOrEmpty(customerId))
                 claims.Add(new Claim("customerId", customerId));
 

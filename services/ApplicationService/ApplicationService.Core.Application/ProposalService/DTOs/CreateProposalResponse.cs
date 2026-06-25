@@ -4,8 +4,8 @@ namespace ApplicationService.Core.Application.ProposalService.DTOs
     {
         public string ProposalId { get; set; }
         public string QuotationId { get; set; }
-        public string Status { get; set; }          // "PENDING"
-        public string QuotationStatus { get; set; } // "LOCKED"
+        public string Status { get; set; }
+        public string QuotationStatus { get; set; }
         public decimal Premium { get; set; }
         public string CoverageStartDate { get; set; }
         public string ExpiryDate { get; set; }

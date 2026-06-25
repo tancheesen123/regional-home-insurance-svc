@@ -1,9 +1,5 @@
 namespace ApplicationService.Core.Application.ProposalService.Interfaces.Services
 {
-    /// <summary>
-    /// Sends policy-related notification emails (with optional PDF attachments).
-    /// Separate from the auth IEmailService to avoid coupling concerns.
-    /// </summary>
     public interface INotificationEmailService
     {
         Task<bool> SendPolicyEmailAsync(

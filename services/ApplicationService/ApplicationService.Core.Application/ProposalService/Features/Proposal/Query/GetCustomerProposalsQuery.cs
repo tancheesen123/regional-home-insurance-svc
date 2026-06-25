@@ -5,14 +5,8 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.Query
 {
-    /// <summary>
-    /// Returns all proposals for a given customer, regardless of status.
-    /// Each proposal includes its linked policy (if issued) and all policy documents.
-    /// Proposal is the aggregate root — policy and documents are nested beneath it.
-    /// </summary>
     public class GetCustomerProposalsQuery : IRequest<GetCustomerProposalsResult>
     {
-        /// <summary>The customer whose proposals should be returned.</summary>
         public string CustomerId { get; set; } = string.Empty;
 
         public class GetCustomerProposalsQueryHandler
@@ -43,7 +37,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
 
                 var result = proposals.Select(p =>
                 {
-                    // Map policy documents if policy exists
                     List<CustomerProposalDocumentDetail> documents = new();
                     CustomerProposalPolicyDetail? policyDetail = null;
 
@@ -79,16 +72,13 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
                         Status      = p.Status,
                         CreatedAt   = p.CreatedAt,
 
-                        // Quotation snapshot
                         PlanType = p.Quotation?.PlanType ?? string.Empty,
                         Region   = p.Quotation?.Region   ?? string.Empty,
 
-                        // Insured personal info
                         InsuredName  = p.Name           ?? string.Empty,
                         MobileNumber = p.MobileNumber   ?? string.Empty,
                         Email        = p.Email          ?? string.Empty,
 
-                        // Property address
                         PropertyAddress = new CustomerProposalAddressDetail
                         {
                             AddressLine1 = p.PropAddressLine1 ?? string.Empty,
@@ -136,15 +126,12 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
     {
         public string ProposalId { get; set; } = string.Empty;
 
-        /// <summary>"PENDING" | "INFORCED" | "CANCELLED"</summary>
         public string Status { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }
 
-        /// <summary>"building" | "contents" | "building-contents"</summary>
         public string PlanType { get; set; } = string.Empty;
 
-        /// <summary>Region code: "ID" | "KH" | "PH"</summary>
         public string Region { get; set; } = string.Empty;
 
         public string InsuredName { get; set; } = string.Empty;
@@ -153,7 +140,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
 
         public CustomerProposalAddressDetail PropertyAddress { get; set; } = new();
 
-        /// <summary>Null when the proposal has not yet been inforced.</summary>
         public CustomerProposalPolicyDetail? Policy { get; set; }
     }
 
@@ -177,13 +163,8 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
         public DateTime IssuedAt { get; set; }
         public string IssuedBy { get; set; } = string.Empty;
 
-        /// <summary>True once all PDF documents (PDS, ePolicy, Tax Invoice) have been generated.</summary>
         public bool IsDocumentReady { get; set; }
 
-        /// <summary>
-        /// Empty when IsDocumentReady is false.
-        /// To download call GET /api/document/DownloadFile?proposalId=&amp;fileType=
-        /// </summary>
         public List<CustomerProposalDocumentDetail> Documents { get; set; } = new();
     }
 
@@ -191,7 +172,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Proposal.
     {
         public string DocumentId { get; set; } = string.Empty;
 
-        /// <summary>"PDS" | "EPolicy" | "TaxInvoice" | "PDS_Local" | "EPolicy_Local" | "TaxInvoice_Local"</summary>
         public string FileType { get; set; } = string.Empty;
 
         public string FileName { get; set; } = string.Empty;

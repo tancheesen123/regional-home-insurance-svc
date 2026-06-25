@@ -6,7 +6,6 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Command
 {
-    // ── Bulk-update building rates (embedded in RegionConfig.BuildingRatesJson) ──
 
     public class UpdateBuildingRatesCommand : IRequest<UpdateBuildingRatesResult>
     {
@@ -38,7 +37,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 var regionConfig = await _repo.GetRegionConfigAsync(cmd.Region)
                     ?? throw new KeyNotFoundException($"RegionConfig for region '{cmd.Region}' not found.");
 
-                // Deserialize current building rates JSON
                 var rows = JsonSerializer.Deserialize<List<BuildingRateRow>>(
                     regionConfig.BuildingRatesJson ?? "[]", _json) ?? new();
 
@@ -72,7 +70,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
                 if (errors.Count > 0)
                     return new UpdateBuildingRatesResult { UpdatedCount = 0, Updated = new(), Errors = errors };
 
-                // Serialize back and save
                 regionConfig.BuildingRatesJson = JsonSerializer.Serialize(rows);
                 regionConfig.UpdatedAt         = DateTime.UtcNow;
                 regionConfig.UpdatedBy         = cmd.UpdatedBy;
@@ -104,7 +101,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         public List<string>          Errors       { get; set; } = new();
     }
 
-    // ── Update RegionConfig (area / storey / fee settings) ────────────────────
 
     public class UpdateRegionConfigCommand : IRequest<RegionRateConfigDto>
     {
@@ -170,7 +166,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         }
     }
 
-    // ── Update single LocationTierConfig → RateMultiplierConfig ───────────────
 
     public class UpdateLocationTierCommand : IRequest<LocationTierDto>
     {
@@ -240,7 +235,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         }
     }
 
-    // ── Bulk-update LocationTierConfig rows ───────────────────────────────────
 
     public class UpdateLocationTiersCommand : IRequest<UpdateLocationTiersResult>
     {
@@ -333,7 +327,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         public List<string>          Errors       { get; set; } = new();
     }
 
-    // ── Bulk-update RiskMultiplierConfig rows ─────────────────────────────────
 
     public class UpdateRiskMultipliersCommand : IRequest<UpdateRiskMultipliersResult>
     {
@@ -410,7 +403,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Command
         public List<string>            Errors      { get; set; } = new();
     }
 
-    // ── Update single RiskMultiplierConfig ────────────────────────────────────
 
     public class UpdateRiskMultiplierCommand : IRequest<RiskMultiplierDto>
     {

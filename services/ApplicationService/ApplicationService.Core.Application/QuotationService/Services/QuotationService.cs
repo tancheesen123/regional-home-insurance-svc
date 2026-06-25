@@ -29,7 +29,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             _productService      = productService;
         }
 
-        // ── GetQuote ──────────────────────────────────────────────────────────
 
         public async Task<GetQuoteResponse> GetQuoteAsync(GetQuoteRequest request, string region)
         {
@@ -83,7 +82,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
         }
 
-        // ── CustomizePlan ─────────────────────────────────────────────────────
 
         public async Task<CustomizePlanResponse> CustomizePlanAsync(CustomizePlanRequest request)
         {
@@ -119,11 +117,9 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 DiscountAmount     = request.DiscountAmount
             }, quotation.Region);
 
-            // ── Record which RegionConfig was used to price this quote ────────
             var regionConfig = await _quotationRepository.GetRegionConfigAsync(quotation.Region);
             quotation.RegionConfigId = regionConfig?.Id;
 
-            // ── Sync QuotationAddOn junction table ────────────────────────────
             if (addOnCodes.Count > 0)
             {
                 var addOnIdMap = await _quotationRepository.GetAddOnIdsByCodesAsync(addOnCodes);
@@ -134,7 +130,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 await _quotationRepository.ReplaceAddOnsAsync(quotation.QuotationId, Enumerable.Empty<string>());
             }
 
-            // ── Persist plan + premium breakdown on Quotation ─────────────────
             quotation.PlanType                    = request.PlanType;
             quotation.BuildingSum                 = request.BuildingSum;
             quotation.ContentsSum                 = request.ContentsSum;
@@ -188,7 +183,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
         }
 
-        // ── DeclareValuables ──────────────────────────────────────────────────
 
         public async Task<DeclareValuablesResponse> DeclareValuablesAsync(DeclareValuablesRequest request)
         {
@@ -204,7 +198,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             if (string.IsNullOrEmpty(quotation.PlanType))
                 throw new InvalidOperationException("Plan has not been customised yet. Call CustomizePlan before declaring valuables.");
 
-            // ── Load valuable category limits from RegionConfig.ValuableRatesJson ──
             var regionConfig = await _quotationRepository.GetRegionConfigAsync(quotation.Region);
             if (regionConfig == null)
                 throw new InvalidOperationException($"No active region config found for region '{quotation.Region}'.");
@@ -214,7 +207,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 throw new InvalidOperationException(
                     $"No valuable category rates configured for region '{quotation.Region}'.");
 
-            // ── Validate each item ────────────────────────────────────────────
             var categoryTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var item in request.Items)
@@ -242,7 +234,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                         $"Total for '{cat}' ({total:C}) exceeds category limit of {limits.MaxTotal:C}.");
             }
 
-            // ── Build item records + calculate premiums ────────────────────────
             var now          = DateTime.UtcNow;
             var itemRecords  = request.Items.Select(i =>
             {
@@ -258,7 +249,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
                 };
             }).ToList();
 
-            // ── Serialize to JSON and update Quotation ────────────────────────
             var jsonItems = itemRecords.Select(x => new
             {
                 itemId      = x.ItemId,
@@ -300,7 +290,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
         }
 
-        // ── SubmitPolicy ──────────────────────────────────────────────────────
 
         public async Task<SubmitPolicyResponse> SubmitPolicyAsync(SubmitPolicyRequest request)
         {
@@ -379,7 +368,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             };
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private decimal CalculatePremium(GetQuoteRequest request)
         {
@@ -406,10 +394,6 @@ namespace ApplicationService.Core.Application.QuotationService.Services
             return DateTime.UtcNow.Date;
         }
 
-        /// <summary>
-        /// Deserialises ValuableRatesJson → category → (MaxPerItem, MaxTotal, Rate).
-        /// JSON shape: [{ "category": "jewellery", "maxPerItem": 5000, "maxTotal": 20000, "rate": 0.02 }]
-        /// </summary>
         private static Dictionary<string, (decimal MaxPerItem, decimal MaxTotal, decimal Rate)>
             DeserializeValuableRates(string? json)
         {

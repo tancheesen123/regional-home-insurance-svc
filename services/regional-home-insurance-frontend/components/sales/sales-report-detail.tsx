@@ -46,7 +46,6 @@ interface SalesReportDetailProps {
   reportId: string
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -84,7 +83,6 @@ function safeFormatDateTime(isoStr: string): { date: string; time: string } {
   }
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function LoadingSkeleton() {
   return (
@@ -109,7 +107,6 @@ function LoadingSkeleton() {
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SalesReportDetail({ reportId }: SalesReportDetailProps) {
   const router = useRouter()
@@ -119,12 +116,10 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
   const [error,   setError]   = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
 
-  // Download state
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
   const [downloadingAll,   setDownloadingAll]   = useState(false)
   const [downloadError,    setDownloadError]    = useState<string | null>(null)
 
-  // Email state
   const [emailOpen,    setEmailOpen]    = useState(false)
   const [emailTo,      setEmailTo]      = useState("")
   const [emailSending, setEmailSending] = useState(false)
@@ -157,7 +152,6 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
     return () => { cancelled = true }
   }, [reportId])
 
-  // ── Download handlers ──────────────────────────────────────────────────────
 
   const handleDownloadDoc = async (docId: string, fileType: string, fileName: string) => {
     if (!data) return
@@ -191,7 +185,6 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
     }
   }
 
-  // ── Email handlers ────────────────────────────────────────────────────────
 
   const openEmailDialog = () => {
     if (!data) return
@@ -251,7 +244,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
 
   return (
     <>
-    {/* ── Email Dialog ─────────────────────────────────────────────────────── */}
+    {}
     <Dialog open={emailOpen} onOpenChange={(open) => { if (!emailSending) setEmailOpen(open) }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -319,7 +312,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
     </Dialog>
 
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => router.back()}>
@@ -347,7 +340,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
         </div>
       </div>
 
-      {/* Status Alert */}
+      {}
       <Alert className={policyStatus === "Active" ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}>
         <Shield className="h-4 w-4" />
         <AlertDescription>
@@ -359,7 +352,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
         </AlertDescription>
       </Alert>
 
-      {/* Quick Summary Cards */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -404,7 +397,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
         </Card>
       </div>
 
-      {/* Tabs */}
+      {}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -414,10 +407,10 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
 
-        {/* ── Overview ── */}
+        {}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Customer Summary */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -445,7 +438,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
               </CardContent>
             </Card>
 
-            {/* Sales Agent */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -478,7 +471,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
             </Card>
           </div>
 
-          {/* Policy Overview */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -544,7 +537,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
           </Card>
         </TabsContent>
 
-        {/* ── Customer ── */}
+        {}
         <TabsContent value="customer" className="space-y-6">
           <Card>
             <CardHeader>
@@ -598,7 +591,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
           </Card>
         </TabsContent>
 
-        {/* ── Policy Details ── */}
+        {}
         <TabsContent value="policy" className="space-y-6">
           <Card>
             <CardHeader>
@@ -655,7 +648,7 @@ export default function SalesReportDetail({ reportId }: SalesReportDetailProps) 
 
               <Separator />
 
-              {/* Documents */}
+              {}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold">Documents</h4>

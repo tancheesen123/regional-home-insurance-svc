@@ -1,8 +1,5 @@
 namespace ApplicationService.Core.Application.InforcePolicyService.DTOs
 {
-    /// <summary>
-    /// Payload passed from InforcePolicyService into the background processing pipeline.
-    /// </summary>
     public class BackendInvokeRequest
     {
         public string ProposalId   { get; set; } = string.Empty;

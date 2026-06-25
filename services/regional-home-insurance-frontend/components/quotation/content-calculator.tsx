@@ -10,7 +10,6 @@ import ContentScanner, { type ScanApplyPayload } from "./content-scanner"
 import { getSession } from "@/lib/session"
 import { useSidebar } from "@/components/ui/sidebar"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type RoomKey =
   | "livingRoom"
@@ -36,7 +35,6 @@ export const EMPTY_ROOM_AMOUNTS: RoomAmounts = {
   storeRoom:  "", carpark: "", balcony:   "", garden:  "", miscellaneous: "",
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function parseRoomValue(raw: string, roundingUnit: number): number {
   return roundToUnit(parseFloat(raw.replace(/,/g, "")) || 0, roundingUnit)
@@ -50,7 +48,6 @@ function filledRooms(amounts: RoomAmounts, roundingUnit: number): number {
   return ROOM_KEYS.filter((k) => parseRoomValue(amounts[k], roundingUnit) > 0).length
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   onBack:       () => void
@@ -62,7 +59,6 @@ interface Props {
   initialAmounts?: RoomAmounts
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ContentCalculator({
   onBack, onConfirm, minAmount, maxAmount, roundingUnit, symbol, initialAmounts,
@@ -70,13 +66,11 @@ export default function ContentCalculator({
   const t           = useTranslations("quotation")
   const countryCode = getSession()?.countryCode ?? "ID"
 
-  // ── Sidebar state → dynamic sticky-bar left offset ────────────────────────
   const { state: sidebarState, isMobile } = useSidebar()
   const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "16rem" : "3rem"
 
   const [amounts, setAmounts] = useState<RoomAmounts>(initialAmounts ?? EMPTY_ROOM_AMOUNTS)
 
-  // ── Scanner apply ─────────────────────────────────────────────────────────
 
   const handleScanApply = useCallback((payload: ScanApplyPayload) => {
     setAmounts((prev) => {
@@ -91,7 +85,6 @@ export default function ContentCalculator({
     })
   }, [roundingUnit])
 
-  // ── Derived ──────────────────────────────────────────────────────────────
 
   const totalAmount = calcTotal(amounts, roundingUnit)
   const filled      = filledRooms(amounts, roundingUnit)
@@ -106,7 +99,6 @@ export default function ContentCalculator({
     : !isAboveMin || !isBelowMax ? "bg-[#D32F2F]"
     : "bg-[#00A651]"
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleChange = useCallback((room: RoomKey, raw: string) => {
     setAmounts((prev) => ({ ...prev, [room]: raw.replace(/[^0-9,]/g, "") }))
@@ -122,7 +114,6 @@ export default function ContentCalculator({
   const handleReset   = () => setAmounts(EMPTY_ROOM_AMOUNTS)
   const handleConfirm = () => { if (isValid) onConfirm(totalAmount, amounts) }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const roomTitle = (key: RoomKey) => t(`calculator.${key}Title` as any)
   const roomItems = (key: RoomKey) => t(`calculator.${key}Items` as any)
   /* eslint-enable @typescript-eslint/no-explicit-any */

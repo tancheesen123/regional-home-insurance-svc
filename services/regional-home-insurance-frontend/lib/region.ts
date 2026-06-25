@@ -4,18 +4,12 @@ export interface RegionConfig {
   buildingMax:         number
   contentMin:          number
   contentMax:          number
-  /** Default sum insured for Building + Contents plan */
   defaultBuilding:     number
   defaultContent:      number
-  /** Default sum insured when plan = Building Only */
   defaultBuildingOnly: number
-  /** Default sum insured when plan = Content Only */
   defaultContentOnly:  number
-  /** Snap inputs to the nearest multiple of this unit (e.g. 1_000 for MYR) */
   roundingUnit:        number
-  /** If set, the "Get estimate" button for building opens this URL in a new tab */
   buildingEstimateUrl?: string
-  /** Per-item value range and total coverage cap for declared valuables */
   valuableMinItem:     number
   valuableMaxItem:     number
   valuableMaxTotal:    number
@@ -75,13 +69,11 @@ export function getRegionConfig(countryCode: string): RegionConfig {
   return REGION_CONFIG[countryCode?.toUpperCase()] ?? DEFAULT_REGION
 }
 
-/** Round n to the nearest multiple of unit (e.g. nearest 1,000). */
 export function roundToUnit(n: number, unit: number): number {
   if (unit <= 0) return n
   return Math.round(n / unit) * unit
 }
 
-/** Clamp value between min and max, then round to the region's rounding unit. */
 export function clampAndRound(
   value: number,
   min: number,
@@ -91,7 +83,6 @@ export function clampAndRound(
   return roundToUnit(Math.max(min, Math.min(value, max)), unit)
 }
 
-/** Format with commas; shows decimals only when the value has a fractional part. */
 export function fmtAmount(n: number): string {
   return n % 1 !== 0
     ? n.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })

@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplicationDb
 {
-    /// <inheritdoc />
     public partial class AddValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -37,11 +35,9 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
                 table: "ValuableCategoryRates",
                 columns: new[] { "Region", "Category", "IsActive" });
 
-            // ── Seed: Indonesia (IDR) ─────────────────────────────────────────
             var now = DateTime.UtcNow;
             var idRates = new[]
             {
-                // category            maxPerItem          maxTotal            rate
                 ("jewellery",          20_000_000m,        60_000_000m,        0.020m),
                 ("gold",               20_000_000m,        60_000_000m,        0.020m),
                 ("electronics",        16_000_000m,        40_000_000m,        0.015m),
@@ -59,7 +55,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.IDApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

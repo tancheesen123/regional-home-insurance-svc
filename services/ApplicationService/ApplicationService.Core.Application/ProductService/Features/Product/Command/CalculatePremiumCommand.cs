@@ -9,7 +9,6 @@ namespace ApplicationService.Core.Application.ProductService.Features.Product.Co
     {
         public CalculatePremiumRequest Request { get; set; } = null!;
 
-        /// <summary>Region resolved from X-Country-Code header by the controller.</summary>
         public string Region { get; set; } = string.Empty;
 
         public class CalculatePremiumCommandHandler

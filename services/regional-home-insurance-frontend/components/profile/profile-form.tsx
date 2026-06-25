@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface ProfileData {
-  // Personal Information
   firstName: string
   lastName: string
   email: string
@@ -20,7 +19,6 @@ interface ProfileData {
   idType: string
   idNumber: string
 
-  // Address Information
   address1: string
   address2: string
   city: string
@@ -28,23 +26,19 @@ interface ProfileData {
   postcode: string
   country: string
 
-  // Emergency Contact
   emergencyName: string
   emergencyRelation: string
   emergencyPhone: string
 
-  // Preferences
   language: string
   currency: string
   timezone: string
 
-  // Notifications
   emailNotifications: boolean
   smsNotifications: boolean
   marketingEmails: boolean
   policyReminders: boolean
 
-  // Security
   twoFactorEnabled: boolean
 }
 
@@ -126,7 +120,6 @@ export default function ProfileForm() {
           nationality: c.nationality ?? prev.nationality,
           idType: c.idType ?? prev.idType,
           idNumber: c.idNumber ?? prev.idNumber,
-          // Address (null-safe)
           address1: c.address?.addressLine1 ?? prev.address1,
           address2: c.address?.addressLine2 ?? prev.address2,
           city: c.address?.city ?? prev.city,
@@ -203,7 +196,7 @@ export default function ProfileForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Profile Settings</h1>
@@ -252,7 +245,7 @@ export default function ProfileForm() {
         </div>
       </div>
 
-      {/* Profile Card */}
+      {}
       <div className="bg-white border border-[#E0E0E0] rounded-xl shadow-sm p-6">
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 rounded-full bg-[#FEF3DC] flex items-center justify-center text-[#F5A623] font-bold text-xl shrink-0">

@@ -21,10 +21,6 @@ namespace ApplicationService.Infrastructure.Persistence
             _httpContextAccessor = httpContextAccessor;
         }
 
-        /// <summary>
-        /// Resolves the correct DbContext from the current HTTP request's X-Country-Code header.
-        /// Use this overload for controller/request-scoped code.
-        /// </summary>
         public ApplicationDbContext Resolve()
         {
             var request     = _httpContextAccessor.HttpContext?.Request;
@@ -36,10 +32,6 @@ namespace ApplicationService.Infrastructure.Persistence
             return Resolve(countryCode);
         }
 
-        /// <summary>
-        /// Resolves the correct DbContext from an explicit region string (e.g. "PH", "ID", "KH").
-        /// Use this overload for background / fire-and-forget code where HttpContext is unavailable.
-        /// </summary>
         public ApplicationDbContext Resolve(string? region)
         {
             return region?.ToUpper() switch

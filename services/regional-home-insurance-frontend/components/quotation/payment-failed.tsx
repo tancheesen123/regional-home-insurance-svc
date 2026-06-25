@@ -16,12 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cancelPayment } from "@/lib/api"
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Maps known gateway response codes / reasons to a friendly message.
- * Falls back to a generic message when the code is unrecognized or absent.
- */
 function reasonForCode(code: string | null, message: string | null, reason: string | null): string {
   if (message) return message
 
@@ -42,7 +37,6 @@ function reasonForCode(code: string | null, message: string | null, reason: stri
   }
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function PaymentFailed() {
   const router       = useRouter()
@@ -57,16 +51,11 @@ export default function PaymentFailed() {
   const isCancelled = reasonParam === "cancelled" || code === "CANCELLED" || code === "GR099"
   const reason = reasonForCode(code, message, reasonParam)
 
-  // When Stripe redirects here after a user-initiated cancel, the Payment record is
-  // still "PENDING" in the backend (Stripe never notified us). Mark it CANCELLED so
-  // the proposal isn't blocked by the "pending payment already exists" guard on retry.
   const cancelNotified = useRef(false)
   useEffect(() => {
     if (reasonParam === "cancelled" && reference && !cancelNotified.current) {
       cancelNotified.current = true
       cancelPayment(reference).catch(() => {
-        // Best-effort — if this fails, the user can still retry; the backend
-        // guard will surface a clear error if the old payment is still pending.
       })
     }
   }, [reasonParam, reference])
@@ -76,7 +65,7 @@ export default function PaymentFailed() {
   return (
     <div className="max-w-4xl mx-auto px-4 pb-12">
 
-      {/* ── Failure Header ── */}
+      {}
       <div className="text-center mb-8 pt-2">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-[#FFEBEE] rounded-full mb-4">
           <XCircle className="h-12 w-12 text-[#D32F2F]" />
@@ -87,7 +76,7 @@ export default function PaymentFailed() {
         <p className="text-base text-[#555555] mb-4">{t("failed.subtitle")}</p>
       </div>
 
-      {/* ── Reason notice ── */}
+      {}
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-[#FECACA] bg-[#FFEBEE] p-4">
         <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-[#D32F2F]" />
         <div className="text-sm text-[#1A1A1A]">
@@ -105,7 +94,7 @@ export default function PaymentFailed() {
         </div>
       </div>
 
-      {/* ── What to do next ── */}
+      {}
       <Card className="mb-6 rounded-xl border-[#E0E0E0] shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
@@ -132,7 +121,7 @@ export default function PaymentFailed() {
         </CardContent>
       </Card>
 
-      {/* ── Actions ── */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <Button
           onClick={handleRetry}
@@ -151,7 +140,7 @@ export default function PaymentFailed() {
         </Button>
       </div>
 
-      {/* ── Support ── */}
+      {}
       <Card className="rounded-xl border-[#E0E0E0] shadow-sm">
         <CardHeader><CardTitle className="text-base font-semibold text-[#1A1A1A]">{t("success.needHelp")}</CardTitle></CardHeader>
         <CardContent>

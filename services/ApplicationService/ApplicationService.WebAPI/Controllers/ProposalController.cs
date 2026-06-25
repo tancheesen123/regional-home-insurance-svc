@@ -20,11 +20,6 @@ namespace ApplicationService.WebAPI.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Returns all proposals for a given customer (any status),
-        /// with their linked policy and policy documents nested beneath each proposal.
-        /// Use this for a full customer portfolio view.
-        /// </summary>
         [HttpPost("[action]")]
         [Authorize]
         public async Task<IActionResult> GetCustomerProposals([FromBody] GetCustomerProposalsRequest request)
@@ -44,12 +39,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Step 5 — Retrieve full proposal details (personal info, addresses,
-        /// quotation snapshot, plan, valuables and premium breakdown) for review
-        /// before proceeding to payment.
-        /// Only returns data belonging to the authenticated customer.
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> GetProposal([FromBody] GetProposalRequest request)
         {
@@ -64,17 +53,10 @@ namespace ApplicationService.WebAPI.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                // Return 403 without leaking the reason — avoids confirming whether
-                // the resource exists for a different customer (IDOR oracle).
                 return Forbid();
             }
         }
 
-        /// <summary>
-        /// Step 4 — Create a formal proposal from a quoted/customised quotation.
-        /// Locks the quotation so no further plan changes are allowed.
-        /// Only allows creating a proposal for a quotation owned by the authenticated customer.
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> CreateProposal([FromBody] CreateProposalRequest request)
         {

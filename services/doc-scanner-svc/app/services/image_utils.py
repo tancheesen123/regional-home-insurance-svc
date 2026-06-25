@@ -43,7 +43,6 @@ class ImageUtils:
         """
         img = Image.open(io.BytesIO(image_bytes))
 
-        # Normalise colour mode — LLaMA expects RGB
         if img.mode not in ("RGB",):
             img = img.convert("RGB")
 

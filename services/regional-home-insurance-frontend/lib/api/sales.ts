@@ -2,7 +2,6 @@ import { getSession, clearSession } from "@/lib/session"
 
 const BASE_URL = "https://localhost:44337/api"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface SalesRecord {
   id: string
@@ -48,7 +47,7 @@ export interface SalesDocument {
 }
 
 export interface SalesTimelineEvent {
-  date: string         // ISO datetime e.g. "2025-01-06T08:00:00"
+  date: string
   event: string
   description: string
   status: "completed" | "pending"
@@ -102,7 +101,6 @@ export interface SalesRecordDetail {
   timeline: SalesTimelineEvent[]
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
   const session = getSession()

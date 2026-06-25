@@ -3,10 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
-    /// <summary>
-    /// Stub implementation of ISmsService.
-    /// Replace with your SMS gateway SDK (e.g. EPP Conversation, Twilio, Vonage).
-    /// </summary>
     public class SmsService : ISmsService
     {
         private readonly ILogger<SmsService> _logger;
@@ -26,13 +22,6 @@ namespace ApplicationService.Infrastructure.Shared.Services
                 "SmsService.SendSmsAsync (stub) | Ref={RefId} To={Mobile} Country={Country} Message={Message}",
                 sourceRefId, mobileNumber, countryCode, message);
 
-            // TODO: Integrate a real SMS gateway.
-            // Example with Twilio:
-            //   var sms = await _twilioClient.Messages.CreateAsync(
-            //       to:   new PhoneNumber(mobileNumber),
-            //       from: new PhoneNumber(_settings.FromNumber),
-            //       body: message);
-            //   return sms.Status != MessageStatus.Failed;
 
             return Task.FromResult(true);
         }

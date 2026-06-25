@@ -114,7 +114,6 @@ export default function RegisterForm() {
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value }
-      // Reset idType when region changes
       if (field === "region") {
         updated.idType = ""
       }

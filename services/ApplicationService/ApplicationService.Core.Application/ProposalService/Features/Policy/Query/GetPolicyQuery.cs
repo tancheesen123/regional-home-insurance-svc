@@ -6,15 +6,10 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Query
 {
-    /// <summary>
-    /// Returns full details of a single inforced policy — including its document list —
-    /// for the authenticated customer who owns the proposal.
-    /// </summary>
     public class GetPolicyQuery : IRequest<GetPolicyResult>
     {
         public string ProposalId { get; set; } = string.Empty;
 
-        /// <summary>Authenticated user — used for IDOR ownership check.</summary>
         public ClaimsPrincipal User { get; set; } = new ClaimsPrincipal();
 
         public class GetPolicyQueryHandler
@@ -47,8 +42,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
                 if (p == null)
                     throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
 
-                // Ownership already guaranteed by GetAllByCustomerIdAsync filtering on customerId,
-                // but we make the check explicit to guard against future refactors.
                 if (p.CustomerId != customerId)
                     throw new UnauthorizedAccessException(
                         "You are not authorised to view this policy.");
@@ -77,7 +70,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
                     PlanType     = p.Quotation?.PlanType  ?? string.Empty,
                     Region       = p.Quotation?.Region    ?? string.Empty,
 
-                    // Property address
                     PropertyAddress = new PropertyAddressDetail
                     {
                         AddressLine1 = p.PropAddressLine1 ?? string.Empty,
@@ -127,10 +119,8 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
         public string PolicyId { get; set; } = string.Empty;
         public string PolicyNumber { get; set; } = string.Empty;
 
-        /// <summary>"building" | "contents" | "building-contents"</summary>
         public string PlanType { get; set; } = string.Empty;
 
-        /// <summary>Region code: "ID" | "KH" | "PH"</summary>
         public string Region { get; set; } = string.Empty;
 
         public PropertyAddressDetail PropertyAddress { get; set; } = new();
@@ -141,14 +131,8 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
         public DateTime IssuedAt { get; set; }
         public string IssuedBy { get; set; } = string.Empty;
 
-        /// <summary>True once all PDF documents (PDS, ePolicy, Tax Invoice) have been generated.</summary>
         public bool IsDocumentReady { get; set; }
 
-        /// <summary>
-        /// Document records stored in the database.
-        /// Empty when IsDocumentReady is false.
-        /// To download a file call GET /api/document/DownloadFile?proposalId=&amp;fileType=
-        /// </summary>
         public List<PolicyDocumentDetail> Documents { get; set; } = new();
     }
 
@@ -166,7 +150,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
     {
         public string DocumentId { get; set; } = string.Empty;
 
-        /// <summary>"PDS" | "EPolicy" | "TaxInvoice" | "PDS_Local" | "EPolicy_Local" | "TaxInvoice_Local"</summary>
         public string FileType { get; set; } = string.Empty;
 
         public string FileName { get; set; } = string.Empty;
