@@ -2,16 +2,15 @@ import { getSession } from "@/lib/session"
 
 const SCANNER_URL = process.env.NEXT_PUBLIC_SCANNER_URL ?? "http://localhost:8001"
 
-// ── Response types (matching actual /scan-document response) ───────────────────
 
 export interface ScannedField {
   value:      string | null
-  confidence: number       // 0.0 – 1.0
+  confidence: number
   filled:     boolean
 }
 
 export interface ScanDocumentSource {
-  documentType: string   // e.g. "UNKNOWN", "KTP", "PASSPORT"
+  documentType: string
   autoDetected: boolean
   confidence:   number
   fieldsFound:  number
@@ -19,14 +18,13 @@ export interface ScanDocumentSource {
 
 export interface ScanDocumentResult {
   countryCode:       string
-  extractionMethod:  string          // e.g. "vision"
+  extractionMethod:  string
   confidence:        number
   fields:            Record<string, ScannedField>
   warnings:          string[]
   sources:           ScanDocumentSource[]
 }
 
-// ── API call ───────────────────────────────────────────────────────────────────
 
 export async function scanDocument(
   files:       File[],

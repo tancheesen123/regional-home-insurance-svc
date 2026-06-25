@@ -30,8 +30,6 @@ async def require_jwt(request: Request) -> dict:
         )
 
     if not settings.jwt_secret:
-        # Dev convenience: if no secret is configured, skip validation
-        # Never reaches production because .env sets JWT_SECRET
         if settings.app_env == "development":
             return {"sub": "dev-bypass"}
         raise HTTPException(

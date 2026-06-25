@@ -51,7 +51,7 @@ function CalculationSummary({
 
   return (
     <>
-      {/* Mobile/Tablet Toggle Button */}
+      {}
       <div className="lg:hidden fixed bottom-4 right-4 z-50">
         <Button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -62,7 +62,7 @@ function CalculationSummary({
         </Button>
       </div>
 
-      {/* Desktop Sidebar Toggle */}
+      {}
       <div className="hidden lg:block fixed right-0 top-1/2 transform -translate-y-1/2 z-40">
         <Button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -76,12 +76,12 @@ function CalculationSummary({
         </Button>
       </div>
 
-      {/* Overlay for mobile */}
+      {}
       {isExpanded && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsExpanded(false)} />
       )}
 
-      {/* Summary Panel */}
+      {}
       <div
         className={cn(
           "fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-200 z-50 overflow-y-auto will-change-[transform]",
@@ -90,7 +90,7 @@ function CalculationSummary({
         )}
       >
         <div className="p-6">
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <Calculator className="h-5 w-5 text-[#0056b3]" />
@@ -101,7 +101,7 @@ function CalculationSummary({
             </Button>
           </div>
 
-          {/* Step Indicator */}
+          {}
           <div className="mb-6">
             <Badge variant="outline" className="mb-2">
               {getStepTitle()}
@@ -113,7 +113,7 @@ function CalculationSummary({
             </div>
           </div>
 
-          {/* Coverage Plan */}
+          {}
           {planData && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
@@ -132,7 +132,7 @@ function CalculationSummary({
                   </span>
                 </div>
 
-                {/* Coverage dates from API when available */}
+                {}
                 <div className="flex justify-between">
                   <span className="text-[#555555]">Coverage Period</span>
                   <span className="text-right text-xs">

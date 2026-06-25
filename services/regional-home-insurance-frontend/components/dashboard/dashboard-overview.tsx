@@ -12,7 +12,6 @@ export default function DashboardOverview() {
   const t      = useTranslations("dashboard.overview")
   const tCommon = useTranslations("common")
 
-  // ── Data ──────────────────────────────────────────────────────────────────────
 
   const categories = [
     { id: "home",       name: t("categories.home"),       icon: Home,   discount: "15%", comingSoon: false },
@@ -36,7 +35,6 @@ export default function DashboardOverview() {
 
   const filteredProducts = products.filter((p) => p.category === selectedCategory)
 
-  // ── Handlers ──────────────────────────────────────────────────────────────────
 
   const handleCategoryClick = (id: string) => {
     const cat = categories.find((c) => c.id === id)
@@ -45,18 +43,17 @@ export default function DashboardOverview() {
 
   const handleApplyOnline = () => router.push("/dashboard/quotation")
 
-  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-8">
 
-      {/* ── Page heading ─────────────────────────────────────────────────────── */}
+      {}
       <div>
         <h1 className="text-2xl font-bold text-[#1A1A1A]">{t("signUpOnline")}</h1>
         <p className="text-sm text-[#555555] mt-1">Select a category below to explore available plans.</p>
       </div>
 
-      {/* ── Category picker ──────────────────────────────────────────────────── */}
+      {}
       <div className="flex flex-wrap gap-3">
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat.id && !cat.comingSoon
@@ -74,14 +71,14 @@ export default function DashboardOverview() {
                 cat.comingSoon && "opacity-50 cursor-not-allowed hover:border-[#E0E0E0]",
               )}
             >
-              {/* Discount badge */}
+              {}
               {cat.discount && !cat.comingSoon && (
                 <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-[#E87722] text-white px-1.5 py-0.5 rounded-full leading-none">
                   {cat.discount}
                 </span>
               )}
 
-              {/* Icon */}
+              {}
               <div
                 className={cn(
                   "w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-150",
@@ -105,7 +102,7 @@ export default function DashboardOverview() {
                 {cat.name}
               </span>
 
-              {/* Coming soon pill */}
+              {}
               {cat.comingSoon && (
                 <span className="text-[10px] font-semibold bg-[#F5F5F5] text-[#9E9E9E] border border-[#E0E0E0] px-2 py-0.5 rounded-full leading-none">
                   {tCommon("comingSoon")}
@@ -116,20 +113,20 @@ export default function DashboardOverview() {
         })}
       </div>
 
-      {/* ── Home category content ─────────────────────────────────────────────── */}
+      {}
       {selectedCategory === "home" && (
         <>
-          {/* Product cards */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
                 className="bg-white border border-[#E0E0E0] rounded-xl p-5 shadow-sm hover:border-[#F5A623] hover:shadow-md transition-colors duration-150 flex flex-col"
               >
-                {/* Card header */}
+                {}
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1 min-w-0">
-                    {/* Category badge */}
+                    {}
                     <span
                       className={cn(
                         "inline-block text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md mb-2",
@@ -145,13 +142,13 @@ export default function DashboardOverview() {
                     </h3>
                     <p className="text-sm text-[#555555] leading-relaxed">{product.description}</p>
                   </div>
-                  {/* Icon */}
+                  {}
                   <div className="w-12 h-12 shrink-0 bg-[#FFFDE7] rounded-xl flex items-center justify-center">
                     <Home className="h-6 w-6 text-[#F5A623]" />
                   </div>
                 </div>
 
-                {/* Features */}
+                {}
                 <ul className="space-y-2 mb-5 flex-1">
                   {product.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
@@ -161,7 +158,7 @@ export default function DashboardOverview() {
                   ))}
                 </ul>
 
-                {/* Actions */}
+                {}
                 <div className="flex gap-2.5 pt-4 border-t border-[#E0E0E0]">
                   <button
                     type="button"
@@ -185,7 +182,7 @@ export default function DashboardOverview() {
         </>
       )}
 
-      {/* ── Coming soon placeholder ───────────────────────────────────────────── */}
+      {}
       {selectedCategory !== "home" && (
         <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-[#E0E0E0] bg-[#FAFAFA]">
           {(() => {

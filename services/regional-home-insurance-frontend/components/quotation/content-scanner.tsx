@@ -10,7 +10,6 @@ import { scanContent, type ScannedRoom, type ScanContentResult } from "@/lib/api
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { RoomKey } from "./content-calculator"
 
-// ── Room type → RoomKey mapping ────────────────────────────────────────────────
 
 const ROOM_TYPE_MAP: Record<string, RoomKey> = {
   "Living Room":        "livingRoom",
@@ -26,7 +25,6 @@ const ROOM_TYPE_MAP: Record<string, RoomKey> = {
   "Miscellaneous Items": "miscellaneous",
 }
 
-// Options offered to the user when a room couldn't be auto-identified
 const ROOM_TYPE_OPTIONS: { key: RoomKey; label: string }[] = [
   { key: "livingRoom",   label: "Living Room" },
   { key: "bedroom",      label: "Bedroom" },
@@ -40,7 +38,6 @@ const ROOM_TYPE_OPTIONS: { key: RoomKey; label: string }[] = [
   { key: "miscellaneous", label: "Miscellaneous Items" },
 ]
 
-// ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface EditableItem {
   _id: string
@@ -63,7 +60,6 @@ export interface ScanApplyPayload {
   totalEstimate: number
 }
 
-// ── Props ──────────────────────────────────────────────────────────────────────
 
 interface Props {
   countryCode: string
@@ -71,7 +67,6 @@ interface Props {
   onApply: (payload: ScanApplyPayload) => void
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function roomSubtotal(items: EditableItem[]) {
   return items.reduce((s, i) => s + i.estimatedPrice, 0)

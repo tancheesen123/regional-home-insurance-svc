@@ -32,7 +32,6 @@ export default function IPay88Payment({
   ]
 
   const generateSignature = (data: any) => {
-    // In production, this should be done on the server side for security
     const crypto = require("crypto")
     const merchantKey = process.env.IPAY88_MERCHANT_KEY || ""
     const signatureString = `${merchantKey}${data.MerchantCode}${data.RefNo}${data.Amount}${data.Currency}`

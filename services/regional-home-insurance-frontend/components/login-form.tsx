@@ -21,7 +21,6 @@ import { setSession, isSessionValid, getSession } from "@/lib/session"
 import { login, getCustomerByUserId } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
-// ── Country config ─────────────────────────────────────────────────────────────
 
 const COUNTRIES = [
   { value: "cambodia",    code: "KH", flag: "🇰🇭", label: "Cambodia"    },
@@ -35,7 +34,6 @@ const COUNTRY_CODE_MAP: Record<string, string> = {
   indonesia:   "ID",
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
 
 export default function LoginForm() {
   const router = useRouter()
@@ -50,7 +48,6 @@ export default function LoginForm() {
   const emailRef    = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
 
-  // Redirect to dashboard if session already exists
   useEffect(() => {
     if (isSessionValid()) {
       const session = getSession()
@@ -75,7 +72,6 @@ export default function LoginForm() {
         return
       }
 
-      // Temporarily persist token so getCustomerByUserId can authenticate
       localStorage.setItem("etiqa_session", JSON.stringify({
         token:      response.data.token,
         countryCode,
@@ -122,7 +118,7 @@ export default function LoginForm() {
 
   return (
     <div>
-      {/* Heading */}
+      {}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-[#1A1A1A] mb-1.5">
           {t("auth.signIn")}
@@ -134,7 +130,7 @@ export default function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* Error banner */}
+        {}
         {error && (
           <div className="flex items-start gap-2.5 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-4 py-3">
             <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
@@ -142,7 +138,7 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* Country */}
+        {}
         <div className="space-y-1.5">
           <Label htmlFor="country" className="text-sm font-medium text-[#1A1A1A]">
             {t("countries.selectCountry")}
@@ -167,7 +163,7 @@ export default function LoginForm() {
           </Select>
         </div>
 
-        {/* Email */}
+        {}
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm font-medium text-[#1A1A1A]">
             {t("auth.email")}
@@ -182,7 +178,7 @@ export default function LoginForm() {
           />
         </div>
 
-        {/* Password */}
+        {}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-sm font-medium text-[#1A1A1A]">
@@ -218,7 +214,7 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* Remember me */}
+        {}
         <div className="flex items-center gap-2.5">
           <Checkbox
             id="remember"
@@ -234,7 +230,7 @@ export default function LoginForm() {
           </label>
         </div>
 
-        {/* Submit */}
+        {}
         <button
           type="submit"
           disabled={isLoading}
@@ -255,7 +251,7 @@ export default function LoginForm() {
 
       </form>
 
-      {/* Create account */}
+      {}
       <div className="mt-6 pt-6 border-t border-[#E0E0E0] text-center">
         <p className="text-sm text-[#555555]">
           {t("auth.noAccount")}{" "}

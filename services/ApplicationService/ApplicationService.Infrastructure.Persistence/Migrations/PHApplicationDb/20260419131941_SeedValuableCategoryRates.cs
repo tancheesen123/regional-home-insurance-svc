@@ -5,18 +5,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
 {
-    /// <inheritdoc />
     public partial class SeedValuableCategoryRates : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // ── Philippines (PHP) ─────────────────────────────────────────────
-            // Rates are the same % as other regions; limits scaled to PHP values.
             var now = DateTime.UtcNow;
             var rows = new[]
             {
-                // category             maxPerItem       maxTotal         rate
                 ("jewellery",           55_000m,         165_000m,        0.020m),
                 ("gold",                55_000m,         165_000m,        0.020m),
                 ("electronics",         44_000m,         110_000m,        0.015m),
@@ -34,7 +29,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
             }
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DeleteData(

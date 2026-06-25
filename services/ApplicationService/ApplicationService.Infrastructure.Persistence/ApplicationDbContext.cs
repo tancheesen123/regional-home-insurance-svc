@@ -15,7 +15,6 @@ namespace ApplicationService.Infrastructure.Persistence
         {
         }
 
-        // ── Core domain ───────────────────────────────────────────────────────
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Quotation> Quotations { get; set; }
@@ -23,18 +22,15 @@ namespace ApplicationService.Infrastructure.Persistence
         public DbSet<Policy> Policies { get; set; }
         public DbSet<Payment> Payments { get; set; }
 
-        // ── Rate configuration ────────────────────────────────────────────────
         public DbSet<RegionConfig> RegionConfigs { get; set; }
         public DbSet<AddOn> AddOns { get; set; }
         public DbSet<RateMultiplierConfig> RateMultiplierConfigs { get; set; }
         public DbSet<RateConfigSnapshot> RateConfigSnapshots { get; set; }
 
-        // ── Junction tables ───────────────────────────────────────────────────
         public DbSet<QuotationAddOn> QuotationAddOns { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // ── UserAccount ───────────────────────────────────────────────────
             modelBuilder.Entity<UserAccount>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -46,7 +42,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.Role).IsRequired().HasMaxLength(20).HasDefaultValue("User");
             });
 
-            // ── Customer (address embedded) ───────────────────────────────────
             modelBuilder.Entity<Customer>(entity =>
             {
                 entity.HasKey(e => e.CustomerId);
@@ -77,7 +72,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .HasForeignKey<Customer>(e => e.UserId);
             });
 
-            // ── Quotation (premium breakdown + valuables embedded) ─────────────
             modelBuilder.Entity<Quotation>(entity =>
             {
                 entity.HasKey(e => e.QuotationId);
@@ -104,7 +98,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.Property(e => e.HasExtendedTheft).HasDefaultValue(false);
                 entity.Property(e => e.HasAlternativeAccommodation).HasDefaultValue(false);
                 entity.Property(e => e.HasPublicLiability).HasDefaultValue(false);
-                // Premium breakdown columns
                 entity.Property(e => e.PlanPremium).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.AddOnPremium).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.GrossPremium).HasColumnType("decimal(18,2)");
@@ -129,7 +122,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ── Proposal ──────────────────────────────────────────────────────
             modelBuilder.Entity<Proposal>(entity =>
             {
                 entity.HasKey(e => e.ProposalId);
@@ -172,7 +164,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
-            // ── Policy (documents embedded) ───────────────────────────────────
             modelBuilder.Entity<Policy>(entity =>
             {
                 entity.HasKey(e => e.PolicyId);
@@ -192,7 +183,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .HasForeignKey<Policy>(e => e.ProposalId);
             });
 
-            // ── Payment ───────────────────────────────────────────────────────
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.PaymentId);
@@ -216,7 +206,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .HasForeignKey(e => e.ProposalId);
             });
 
-            // ── RegionConfig ──────────────────────────────────────────────────
             modelBuilder.Entity<RegionConfig>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -245,7 +234,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasIndex(e => new { e.Region, e.IsActive });
             });
 
-            // ── AddOn ─────────────────────────────────────────────────────────
             modelBuilder.Entity<AddOn>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -263,7 +251,6 @@ namespace ApplicationService.Infrastructure.Persistence
                 entity.HasIndex(e => e.Code).IsUnique();
             });
 
-            // ── RateMultiplierConfig ──────────────────────────────────────────
             modelBuilder.Entity<RateMultiplierConfig>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -289,7 +276,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ── RateConfigSnapshot ────────────────────────────────────────────
             modelBuilder.Entity<RateConfigSnapshot>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -312,7 +298,6 @@ namespace ApplicationService.Infrastructure.Persistence
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ── QuotationAddOn (junction: Quotation ↔ AddOn M:N) ─────────────
             modelBuilder.Entity<QuotationAddOn>(entity =>
             {
                 entity.HasKey(e => new { e.QuotationId, e.AddOnId });

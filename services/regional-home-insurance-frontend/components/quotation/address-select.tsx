@@ -1,13 +1,5 @@
 "use client"
 
-/**
- * Country-aware cascading address selector.
- *
- * MY  → plain text inputs (no external API)
- * PH  → Province → City/Municipality (psgc.cloud, auto-fills postcode)
- * ID  → Province → Kab/Kota → Kecamatan → Kelurahan (alamat.thecloudalert.com, auto-fills postcode)
- * KH  → Province → District → Commune (pumi static data)
- */
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Loader2 } from "lucide-react"
@@ -29,15 +21,14 @@ import {
   type KhEntry,
 } from "@/lib/address-api"
 
-// ── Shared value shape ────────────────────────────────────────────────────────
 
 export interface AddressValues {
   city:      string
   postcode:  string
   state:     string
   country:   string
-  district?: string   // Kecamatan (ID only)
-  village?:  string   // Kelurahan/Desa (ID), Commune (KH)
+  district?: string
+  village?:  string
 }
 
 interface Props {
@@ -47,7 +38,6 @@ interface Props {
   disabled?:    boolean
 }
 
-// ── Small helpers ─────────────────────────────────────────────────────────────
 
 function SelectRow({
   label, id, value, options, placeholder, loading, onChange, disabled,
@@ -94,7 +84,6 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ── Philippines component ─────────────────────────────────────────────────────
 
 function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCode">) {
   const [provinces, setProvinces] = useState<PhProvince[]>([])
@@ -104,7 +93,6 @@ function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
   const [loadProv,  setLoadProv]  = useState(true)
   const [loadCity,  setLoadCity]  = useState(false)
 
-  // Load provinces once
   useEffect(() => {
     fetchPhProvinces().then((data) => {
       setProvinces(data)

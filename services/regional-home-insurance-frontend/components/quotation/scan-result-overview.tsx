@@ -1,36 +1,17 @@
 "use client"
 
-/**
- * ScanResultOverview
- * ─────────────────────────────────────────────────────────────────────────────
- * Replaces the inline scan-result block inside DocumentScanner after a
- * successful scan. Shows 4 journey-step cards, each expandable to show
- * field-level match status.
- *
- * Clicking a field row:
- *   • Step 1 fields  → scrollIntoView + 2-second amber pulse (Google Forms style)
- *   • Other steps    → nothing (they live on a different page)
- *
- * All 4 cards can be open simultaneously (not an accordion).
- * ─────────────────────────────────────────────────────────────────────────────
- */
 
 import { useState } from "react"
 import { CheckCircle2, AlertTriangle, Circle, ChevronDown, ArrowRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ScanDocumentResult } from "@/lib/api/scan-document"
 
-// ── Field definitions per step ────────────────────────────────────────────────
 
 interface StepField {
   label:    string
-  /** Primary AI response key to look up in ScanDocumentResult.fields */
   aiKey:    string
-  /** Fallback keys tried in order if the primary key has no value */
   altKeys?: string[]
-  /** DOM element id to scroll to — null means a different page, no scroll */
   fieldId:  string | null
-  /** Optional value transform for display (e.g. extract postcode from address) */
   display?: (raw: string) => string
 }
 
@@ -97,12 +78,10 @@ const STEP_CONFIGS: StepConfig[] = [
   },
 ]
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 type FieldStatus = "filled-high" | "filled-low" | "missing"
 type StepStatus  = "ready" | "review" | "partial" | "empty"
 
-/** Try the primary key then altKeys in order — return first filled entry. */
 function resolveField(
   field: StepField,
   result: ScanDocumentResult,
@@ -141,7 +120,6 @@ function countFilled(config: StepConfig, result: ScanDocumentResult): number {
   return config.fields.filter((f) => fieldStatus(f, result) !== "missing").length
 }
 
-/** Scroll to the target form element and pulse an amber ring (Google Forms style). */
 function scrollToField(fieldId: string) {
   const el = document.getElementById(fieldId)
   if (!el) return
@@ -150,7 +128,6 @@ function scrollToField(fieldId: string) {
   setTimeout(() => el.classList.remove("field-scan-highlight"), 2000)
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 
 function StepStatusIcon({ status }: { status: StepStatus }) {
   if (status === "ready")   return <CheckCircle2  className="h-4 w-4 text-[#00A651] shrink-0" />
@@ -165,7 +142,6 @@ function FieldStatusIcon({ status }: { status: FieldStatus }) {
   return <Circle className="h-3.5 w-3.5 text-[#BDBDBD] shrink-0" />
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   result:     ScanDocumentResult
@@ -190,7 +166,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
       )}
     >
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {}
       <div className="px-5 pt-4 pb-3.5 border-b border-[#F5F5F5]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -200,12 +176,12 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
             <div>
               <p className="text-sm font-semibold text-[#1A1A1A]">Document Scanned Successfully!</p>
               <p className="text-xs text-[#555555] mt-0.5">
-                {totalFilled} of {totalFields} fields matched 
+                {totalFilled} of {totalFields} fields matched
                 <span className="text-[#F5A623] font-medium"> click any row to jump to the field</span>
               </p>
             </div>
           </div>
-          {/* Re-scan */}
+          {}
           <button
             type="button"
             onClick={onRescan}
@@ -217,7 +193,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
         </div>
       </div>
 
-      {/* ── Step cards ─────────────────────────────────────────────────────── */}
+      {}
       <div className="divide-y divide-[#F5F5F5]">
         {STEP_CONFIGS.map((config) => {
           const status   = stepStatus(config, result)
@@ -228,7 +204,7 @@ export default function ScanResultOverview({ result, onContinue, onRescan }: Pro
           return (
             <div key={config.id}>
 
-              {/* Card header row */}
+              {}
               <button
                 type="button"
                 onClick={() => hasFields && toggle(config.id)}

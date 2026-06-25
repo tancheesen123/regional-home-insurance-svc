@@ -26,13 +26,11 @@ namespace ApplicationService.Core.Application.PaymentService.Services
         private static readonly Dictionary<string, string> RegionCurrency =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                ["PH"] = "PHP",   // Philippine Peso
-                ["ID"] = "IDR",   // Indonesian Rupiah
-                ["KH"] = "USD",   // Cambodia transacts in USD
+                ["PH"] = "PHP",
+                ["ID"] = "IDR",
+                ["KH"] = "USD",
             };
 
-        // Stripe minimum charge amounts per currency (in the currency's standard unit)
-        // Reference: https://stripe.com/docs/currencies#minimum-and-maximum-charge-amounts
         private static readonly Dictionary<string, decimal> StripeMinimumAmount =
             new(StringComparer.OrdinalIgnoreCase)
             {
@@ -41,7 +39,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 ["IDR"] = 1999m,
             };
 
-        // Stripe checkout session lasts 24 h; we mirror that locally
         private const int PaymentSessionMinutes = 1440;
 
         public PaymentService(
@@ -60,24 +57,20 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             _inforcePolicyService = inforcePolicyService;
         }
 
-        // ── InitiatePayment ───────────────────────────────────────────────────
 
         public async Task<InitiatePaymentResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string region)
         {
             _logger.LogInformation("=== PaymentService.InitiatePaymentAsync | Region={Region} ===", region);
 
-            // ── Validate region ───────────────────────────────────────────────
             region = region.ToUpper();
             if (!RegionCurrency.ContainsKey(region))
                 throw new InvalidOperationException(
                     $"Unsupported region '{region}'. Valid values: {string.Join(", ", RegionCurrency.Keys)}.");
 
-            // ── Validate proposal ─────────────────────────────────────────────
             var proposal = await _proposalRepository.GetByIdAsync(request.ProposalId);
             if (proposal == null)
                 throw new KeyNotFoundException($"Proposal '{request.ProposalId}' not found.");
 
-            // Ensure the header region matches the proposal's stored region
             var proposalRegion = proposal.Quotation?.Region?.ToUpper() ?? region;
             if (!string.Equals(proposalRegion, region, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
@@ -88,23 +81,19 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 throw new InvalidOperationException(
                     $"Proposal is in '{proposal.Status}' status. Only PENDING proposals can initiate payment.");
 
-            // Guard against duplicate pending payment
             var existing = await _paymentRepository.GetByProposalIdAsync(request.ProposalId);
             if (existing.Any(p => p.Status == "PENDING"))
                 throw new InvalidOperationException(
                     "A pending payment already exists for this proposal. Complete or cancel it first.");
 
-            // ── Resolve currency from region ──────────────────────────────────
             var currency = RegionCurrency[region];
             var amount   = proposal.Quotation?.Premium ?? 0m;
 
-            // ── Validate Stripe minimum charge ────────────────────────────────
             if (StripeMinimumAmount.TryGetValue(currency, out var minAmount) && amount < minAmount)
                 throw new InvalidOperationException(
                     $"Premium amount {amount:F2} {currency} is below Stripe's minimum charge of {minAmount:F2} {currency} for this currency. " +
                     $"Please review the quotation premium.");
 
-            // ── Create Stripe Checkout Session ────────────────────────────────
             var referenceNum = GenerateReferenceNumber(region);
 
             var stripeSession = await _stripeService.CreateCheckoutSessionAsync(
@@ -116,7 +105,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 customerEmail:      proposal.Email ?? string.Empty,
                 productDescription: "Home Insurance Premium");
 
-            // ── Persist Payment record ────────────────────────────────────────
             var now       = DateTime.UtcNow;
             var expiresAt = now.AddMinutes(PaymentSessionMinutes);
 
@@ -128,8 +116,8 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 Currency        = currency,
                 Status          = "PENDING",
                 PaymentMethod   = request.PaymentMethod,
-                GatewayName     = null,                      // no PaymentGateway row for Stripe
-                TransactionId   = stripeSession.SessionId,  // Stripe session ID stored here
+                GatewayName     = null,
+                TransactionId   = stripeSession.SessionId,
                 PaymentUrl      = stripeSession.CheckoutUrl,
                 ExpiresAt       = expiresAt,
                 PaymentDate     = now,
@@ -156,13 +144,11 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
-        // ── HandleCallback ────────────────────────────────────────────────────
 
         public async Task<PaymentCallbackResponse> HandleCallbackAsync(string json, string stripeSignature)
         {
             _logger.LogInformation("=== PaymentService.HandleCallbackAsync ===");
 
-            // ── Verify Stripe signature ───────────────────────────────────────
             Event stripeEvent;
             try
             {
@@ -184,7 +170,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 "checkout.session.expired" =>
                     await HandleSessionExpiredAsync(stripeEvent.Data.Object as Session),
 
-                // Return a neutral response for unhandled event types — always 200 to Stripe
                 _ => new PaymentCallbackResponse
                 {
                     Message = $"Event '{stripeEvent.Type}' received but not handled."
@@ -192,9 +177,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
-        // ── checkout.session.completed ────────────────────────────────────────
-        // Only updates the payment record to SUCCESS.
-        // Policy creation / proposal inforce is handled by the dedicated InforcePolicy API.
 
         private async Task<PaymentCallbackResponse> HandleSessionCompletedAsync(Session? session)
         {
@@ -207,7 +189,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
 
             if (payment.Status == "SUCCESS")
             {
-                // Idempotency — Stripe may retry
                 return new PaymentCallbackResponse
                 {
                     PaymentId       = payment.PaymentId,
@@ -236,7 +217,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
-        // ── checkout.session.expired ──────────────────────────────────────────
 
         private async Task<PaymentCallbackResponse> HandleSessionExpiredAsync(Session? session)
         {
@@ -262,15 +242,11 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
-        // ── ConfirmPayment ────────────────────────────────────────────────────
-        // Verifies the Stripe session was paid, updates Payment → SUCCESS,
-        // then immediately inforces the policy before redirecting to the frontend.
 
         public async Task<ConfirmPaymentResponse> ConfirmPaymentAsync(string sessionId)
         {
             _logger.LogInformation("=== PaymentService.ConfirmPaymentAsync | SessionId={SessionId} ===", sessionId);
 
-            // ── 1. Verify with Stripe that the session was actually paid ───────
             Stripe.Checkout.Session stripeSession;
             try
             {
@@ -286,12 +262,10 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 throw new InvalidOperationException(
                     $"Stripe session payment_status is '{stripeSession.PaymentStatus}'. Payment not yet completed.");
 
-            // ── 2. Find local Payment record ──────────────────────────────────
             var payment = await _paymentRepository.GetByTransactionIdAsync(sessionId);
             if (payment == null)
                 throw new KeyNotFoundException($"No payment found for Stripe session '{sessionId}'.");
 
-            // ── 3. Mark Payment → SUCCESS (idempotent) ────────────────────────
             payment.Status        = "SUCCESS";
             payment.TransactionId = stripeSession.PaymentIntentId ?? sessionId;
             payment.UpdatedAt     = DateTime.UtcNow;
@@ -301,11 +275,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             _logger.LogInformation("Payment {PaymentId} marked SUCCESS for ProposalId={ProposalId}.",
                 payment.PaymentId, payment.ProposalId);
 
-            // ── 4. Inforce the policy ─────────────────────────────────────────
-            // Payment is already confirmed above, so skip the payment check inside
-            // InforcePolicyAsync (CheckPayment = false). The call is server-initiated
-            // (Stripe redirect), so we pass a system ClaimsPrincipal — the service
-            // falls back to "SYSTEM" for IssuedBy when no identity is present.
             var policyId     = string.Empty;
             var policyNumber = string.Empty;
             var inforceMsg   = string.Empty;
@@ -316,12 +285,11 @@ namespace ApplicationService.Core.Application.PaymentService.Services
                 {
                     ProposalId    = payment.ProposalId,
                     SendEmail     = true,
-                    SendSms       = null,       // resolved from proposal region inside the service
-                    CheckPayment  = false,      // payment already verified above
+                    SendSms       = null,
+                    CheckPayment  = false,
                     WithUrlLink   = false
                 };
 
-                // System principal — no authenticated user in this Stripe redirect flow.
                 var systemPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
 
                 var inforceResult = await _inforcePolicyService.InforcePolicyAsync(
@@ -339,15 +307,12 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             }
             catch (Exception ex)
             {
-                // Inforce failure must NOT block the redirect — the customer's payment
-                // was accepted. Log the error for ops investigation and continue.
                 _logger.LogError(ex,
                     "InforcePolicy FAILED after successful payment | ProposalId={ProposalId} PaymentId={PaymentId}",
                     payment.ProposalId, payment.PaymentId);
                 inforceMsg = "Payment confirmed. Policy issuance pending — please contact support if not received.";
             }
 
-            // ── 5. Build redirect URL and return ──────────────────────────────
             var redirectUrl = BuildFrontendSuccessUrl(payment.ReferenceNumber, policyNumber);
 
             return new ConfirmPaymentResponse
@@ -363,7 +328,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             };
         }
 
-        // ── CancelPayment ─────────────────────────────────────────────────────
 
         public async Task<CancelPaymentResponse> CancelPaymentAsync(string referenceNumber)
         {
@@ -371,7 +335,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             if (payment == null)
                 throw new KeyNotFoundException($"Payment with reference '{referenceNumber}' not found.");
 
-            // Only PENDING payments can be cancelled — never overwrite a SUCCESS/FAILED/EXPIRED record.
             if (payment.Status != "PENDING")
             {
                 return new CancelPaymentResponse
@@ -407,7 +370,6 @@ namespace ApplicationService.Core.Application.PaymentService.Services
             return url;
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private static string GenerateReferenceNumber(string region)
         {

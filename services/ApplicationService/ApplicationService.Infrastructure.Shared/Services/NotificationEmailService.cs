@@ -7,10 +7,6 @@ using System.Net.Mail;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
-    /// <summary>
-    /// Sends policy notification emails (with PDF zip attachments) via SMTP.
-    /// Reuses the same SMTP settings as the auth email service.
-    /// </summary>
     public class NotificationEmailService : INotificationEmailService
     {
         private readonly ILogger<NotificationEmailService> _logger;

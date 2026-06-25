@@ -8,7 +8,6 @@ namespace ApplicationService.Core.Application.PaymentService.Features.Payment.Co
 {
     public class ConfirmPaymentCommand : IRequest<ConfirmPaymentResponse>
     {
-        /// <summary>The Stripe Checkout Session ID from the redirect query string.</summary>
         public string SessionId { get; set; } = string.Empty;
 
         public class ConfirmPaymentCommandHandler

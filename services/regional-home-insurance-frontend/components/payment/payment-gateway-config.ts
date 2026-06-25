@@ -1,6 +1,4 @@
-// Payment gateway configuration for different regions
 export const PAYMENT_GATEWAYS = {
-  // Cambodia - iPay88
   KH: {
     name: "iPay88",
     merchantCode: process.env.NEXT_PUBLIC_IPAY88_MERCHANT_CODE || "",
@@ -13,7 +11,6 @@ export const PAYMENT_GATEWAYS = {
     logo: "/images/ipay88-logo.png",
   },
 
-  // Philippines - Paynamics
   PH: {
     name: "Paynamics",
     merchantId: process.env.NEXT_PUBLIC_PAYNAMICS_MERCHANT_ID || "",
@@ -26,7 +23,6 @@ export const PAYMENT_GATEWAYS = {
     logo: "/images/paynamics-logo.png",
   },
 
-  // Indonesia - DOKU
   ID: {
     name: "DOKU",
     mallId: process.env.NEXT_PUBLIC_DOKU_MALL_ID || "",

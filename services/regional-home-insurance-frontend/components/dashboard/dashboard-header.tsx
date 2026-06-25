@@ -39,7 +39,7 @@ export default function DashboardHeader() {
     <header className="bg-white border-b border-[#E0E0E0] sticky top-0 z-30">
       <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between">
 
-        {/* Left — sidebar trigger + logo */}
+        {}
         <div className="flex items-center gap-2">
           <SidebarTrigger className="text-[#555555] hover:text-[#1A1A1A] hover:bg-[#FAFAFA]" />
 
@@ -60,11 +60,11 @@ export default function DashboardHeader() {
           </Link>
         </div>
 
-        {/* Right — actions */}
+        {}
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
 
-          {/* Bell */}
+          {}
           <button
             className="p-2 rounded-lg text-[#9E9E9E] hover:text-[#555555] hover:bg-[#FAFAFA] transition-colors"
             aria-label={t("notifications")}
@@ -72,7 +72,7 @@ export default function DashboardHeader() {
             <Bell className="h-5 w-5" />
           </button>
 
-          {/* Help */}
+          {}
           <button
             className="p-2 rounded-lg text-[#9E9E9E] hover:text-[#555555] hover:bg-[#FAFAFA] transition-colors"
             aria-label={t("help")}
@@ -80,7 +80,7 @@ export default function DashboardHeader() {
             <HelpCircle className="h-5 w-5" />
           </button>
 
-          {/* User menu */}
+          {}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

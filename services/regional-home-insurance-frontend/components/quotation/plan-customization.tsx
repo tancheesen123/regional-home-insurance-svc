@@ -32,7 +32,6 @@ import { getSession } from "@/lib/session"
 import { getRegionConfig, fmtAmount, clampAndRound } from "@/lib/region"
 import { getScanSession, CONFIDENCE_THRESHOLD } from "@/lib/scan-session"
 
-// ── Static constants ──────────────────────────────────────────────────────────
 
 const PLAN_TYPE_INT: Record<string, 1 | 2 | 3> = {
   "building-only":     1,
@@ -58,7 +57,6 @@ const ADD_ON_IDS = [
 ] as const
 type AddOnId = typeof ADD_ON_IDS[number]
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AddOns {
   riotStrike: boolean
@@ -74,20 +72,7 @@ interface PlanState {
   addOns: AddOns
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Scan-session helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Map the raw cover-type string the AI returns on a policy document
- * (e.g. "HOUSEOWNER/HOUSEHOLDER", "HOUSEOWNER", "HOUSEHOLDER") to our
- * internal plan-id strings.
- *
- * Malaysian insurance terminology:
- *   Houseowner   = building structure only
- *   Householder  = home contents only
- *   Both present = building + contents
- */
 function parseCoverType(raw: string): PlanId | "" {
   const u = raw.toUpperCase()
   const hasOwner  = u.includes("HOUSEOWNER") || u.includes("OWNER")
@@ -98,22 +83,14 @@ function parseCoverType(raw: string): PlanId | "" {
   return ""
 }
 
-/**
- * Strip any currency prefix / symbols / commas and parse to a plain integer.
- * e.g. "RM 3,790,266,600.00" → 3790266600
- */
 function parseSumInsuredStr(raw: string): number {
   return parseInt(raw.replace(/[^0-9]/g, ""), 10) || 0
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PlanCustomization() {
   const router = useRouter()
   const t = useTranslations("quotation")
-  // Initialise with the SSR-safe default ("" → falls back inside getRegionConfig)
-  // and switch to the real session-based config after mount, to avoid a
-  // hydration mismatch between server render and the client's localStorage session.
   const [region, setRegion] = useState(() => getRegionConfig(""))
   useEffect(() => {
     setRegion(getRegionConfig(getSession()?.countryCode ?? ""))
@@ -121,10 +98,8 @@ export default function PlanCustomization() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Per-field validation errors (plan, buildingAmount, contentAmount)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  // Plan state — initialised with building-contents defaults
   const [planState, setPlanState] = useState<PlanState>({
     selectedPlan:   "building-contents",
     buildingAmount: 0,
@@ -137,58 +112,48 @@ export default function PlanCustomization() {
     },
   })
 
-  // Live premium
   const [premiumData, setPremiumData]         = useState<PremiumData | null>(null)
   const [isPremiumLoading, setIsPremiumLoading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  // Content calculator
   const [showContentCalculator, setShowContentCalculator] = useState(false)
   const [savedRoomAmounts, setSavedRoomAmounts] = useState<RoomAmounts>(EMPTY_ROOM_AMOUNTS)
 
-  // Building calculator full-page swap
   const [showBuildingCalculator, setShowBuildingCalculator] = useState(false)
-  // True while the building amount was last set by the calculator (cleared on manual edit)
   const [buildingFromCalc, setBuildingFromCalc] = useState(false)
 
-  // ── Auto-fill from scan session (runs once on mount) ──────────────────────
   useEffect(() => {
     const session = getScanSession()
     if (!session) return
 
     const f = session.fields
 
-    // Resolve coverType — try "coverType" first, fall back to "planName"
     const coverField =
       f["coverType"]?.filled  && f["coverType"]?.value  ? f["coverType"]  :
       f["planName"]?.filled   && f["planName"]?.value   ? f["planName"]   :
       null
 
-    // Resolve sumInsured — the total sum shown on the scanned document
     const sumField =
       f["sumInsured"]?.filled && f["sumInsured"]?.value ? f["sumInsured"] :
       null
 
-    if (!coverField && !sumField) return   // nothing scanned for this step
+    if (!coverField && !sumField) return
 
     setPlanState((prev) => {
       let next = { ...prev }
 
-      // 1. Apply cover type → selectedPlan
       if (coverField && coverField.confidence >= CONFIDENCE_THRESHOLD) {
         const plan = parseCoverType(coverField.value ?? "")
         if (plan) next = { ...next, selectedPlan: plan }
       }
 
-      // 2. Apply sum insured → the correct amount field
       if (sumField && sumField.confidence >= CONFIDENCE_THRESHOLD) {
         const amount = parseSumInsuredStr(sumField.value ?? "")
         if (amount > 0) {
-          const plan = next.selectedPlan   // use the plan we just resolved above
+          const plan = next.selectedPlan
           if (plan === "content-only") {
             next = { ...next, contentAmount: amount }
           } else {
-            // "building-only", "building-contents", or not yet resolved → building
             next = { ...next, buildingAmount: amount }
           }
         }
@@ -196,10 +161,8 @@ export default function PlanCustomization() {
 
       return next
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])  // intentionally empty — read scan session once on mount only
+  }, [])
 
-  // ── Live preview ──────────────────────────────────────────────────────────
 
   const runLiveCalculation = useCallback(async (state: PlanState) => {
     const session = getSession()
@@ -229,13 +192,11 @@ export default function PlanCustomization() {
       )
       if (res.succeeded) setPremiumData(res.data)
     } catch {
-      // Non-fatal — leave previous data in place
     } finally {
       setIsPremiumLoading(false)
     }
   }, [])
 
-  // Debounced recalc on relevant state changes
   useEffect(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -253,30 +214,25 @@ export default function PlanCustomization() {
     runLiveCalculation,
   ])
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
 
-  /** Switch plan and reset sum-insured to sensible plan-specific defaults. */
   const handlePlanSelect = useCallback(
     (planId: string) => {
       setPlanState((prev) => ({
         ...prev,
         selectedPlan:   planId,
-        buildingAmount: 0,   // customer enters their own amount
+        buildingAmount: 0,
         contentAmount:  0,
       }))
-      setFieldErrors({})   // plan changed — reset all amount errors
+      setFieldErrors({})
     },
     [],
   )
 
-  /** Parse raw input value and update state immediately (raw, un-rounded). */
   const handleAmountChange = useCallback(
     (field: "buildingAmount" | "contentAmount", value: string) => {
       const num = parseInt(value.replace(/,/g, ""), 10) || 0
       setPlanState((prev) => ({ ...prev, [field]: num }))
-      // Clear the "from calculator" badge when the user manually edits the building field
       if (field === "buildingAmount") setBuildingFromCalc(false)
-      // Clear inline error for this amount field as the user types
       setFieldErrors((prev) => {
         if (!prev[field]) return prev
         const next = { ...prev }; delete next[field]; return next
@@ -285,10 +241,6 @@ export default function PlanCustomization() {
     [],
   )
 
-  /**
-   * On blur: clamp to region min/max and snap to the nearest rounding unit.
-   * This gives the same UX as Unity's `roundToNearestThousand` on blur.
-   */
   const handleAmountBlur = useCallback(
     (field: "buildingAmount" | "contentAmount") => {
       setPlanState((prev) => {
@@ -309,7 +261,6 @@ export default function PlanCustomization() {
     }))
   }, [])
 
-  /** Called when the user confirms a total in the content calculator. */
   const handleCalculatorConfirm = useCallback(
     (total: number, roomAmounts: RoomAmounts) => {
       setSavedRoomAmounts(roomAmounts)
@@ -320,7 +271,6 @@ export default function PlanCustomization() {
     [],
   )
 
-  /** Called when the user confirms a total in the building calculator. */
   const handleBuildingConfirm = useCallback(
     (total: number) => {
       const snapped = clampAndRound(total, region.buildingMin, region.buildingMax, region.roundingUnit)
@@ -332,12 +282,10 @@ export default function PlanCustomization() {
     [region],
   )
 
-  // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleProceed = async () => {
     setError(null)
 
-    // ── Validate required fields ───────────────────────────────────────────────
     const e: Record<string, string> = {}
     if (!planState.selectedPlan) {
       e.plan = t("validation.required")

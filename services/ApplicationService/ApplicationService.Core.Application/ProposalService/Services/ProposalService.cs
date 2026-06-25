@@ -1,4 +1,4 @@
-﻿using ApplicationService.Core.Application.InforcePolicyService.DTOs;
+using ApplicationService.Core.Application.InforcePolicyService.DTOs;
 using ApplicationService.Core.Application.InforcePolicyService.Interfaces.Services;
 using ApplicationService.Core.Application.ProposalService.DTOs;
 using ApplicationService.Core.Application.ProposalService.Interfaces.Repositories;
@@ -33,16 +33,10 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         private readonly IProposalErrorService       _errorService;
         private readonly IServiceScopeFactory        _scopeFactory;
 
-        // Product type variants present in the XSL file names (INS = conventional insurance)
         private const string ProductType = "INS";
-        // Language variant: EV = English Version, BV = Bahasa Version (local)
         private const string LangVariantEn    = "EV";
         private const string LangVariantLocal = "BV";
 
-        /// <summary>
-        /// Display name of the local language for each region.
-        /// Used as a filename suffix: "{policyNumber} - PDS ({LocalLangName}).pdf"
-        /// </summary>
         private static readonly Dictionary<string, string> LocalLanguageNames =
             new(StringComparer.OrdinalIgnoreCase)
             {
@@ -51,13 +45,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 ["PH"] = "Filipino",
             };
 
-        // ── Security: allowlist of valid region codes ─────────────────────────
-        // FIX #3 — Path traversal: region is used directly in file paths;
-        // validate it against a strict allowlist before any file I/O.
         private static readonly HashSet<string> AllowedRegions =
             new(StringComparer.OrdinalIgnoreCase) { "PH", "ID", "KH" };
 
-        // ── Per-region display config (currency, company info) ─────────────────
         private sealed record RegionConfig(
             string Currency,
             string CompanyName,
@@ -93,7 +83,7 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 ContactEmail:   "info@etiqa.com.my",
                 WebsiteUrl:     "www.etiqa.com.my"
             ),
-            _ => new RegionConfig(   // MY / unknown — RM defaults
+            _ => new RegionConfig(
                 Currency:       "RM",
                 CompanyName:    "Etiqa General Insurance Berhad",
                 CompanyAddress: "Level 12, Tower C, Dataran Maybank, 1 Jalan Maarof, 59000 Kuala Lumpur",
@@ -125,13 +115,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             _scopeFactory        = scopeFactory;
         }
 
-        // ── GetProposal ───────────────────────────────────────────────────────
 
         public async Task<GetProposalResponse> GetProposalAsync(GetProposalRequest request, ClaimsPrincipal user)
         {
             _logger.LogInformation("=== ProposalService.GetProposalAsync ===");
 
-            // FIX #1 — IDOR: verify the caller owns this proposal before returning any data.
             var callerId = user.FindFirst("customerId")?.Value
                 ?? throw new UnauthorizedAccessException("Missing identity claim. Please log in again.");
 
@@ -241,13 +229,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             };
         }
 
-        // ── CreateProposal ────────────────────────────────────────────────────
 
         public async Task<CreateProposalResponse> CreateProposalAsync(CreateProposalRequest request, ClaimsPrincipal user)
         {
             _logger.LogInformation("=== ProposalService.CreateProposalAsync ===");
 
-            // FIX #1 — IDOR: verify the caller owns this quotation before creating a proposal.
             var callerId = user.FindFirst("customerId")?.Value
                 ?? throw new UnauthorizedAccessException("Missing identity claim. Please log in again.");
 
@@ -331,8 +317,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 "=== ProposalService.ExecuteCallInBackend | ProposalId={ProposalId} PolicyNumber={PolicyNumber} ===",
                 request.ProposalId, request.PolicyNumber);
 
-            // FIX #3 — Path traversal: validate region against the allowlist before it is
-            // used in any file path construction inside the background task.
             if (!AllowedRegions.Contains(request.Region))
             {
                 _logger.LogError(
@@ -404,7 +388,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             var region    = request.Region.ToUpper();
             var localLang = LocalLanguageNames.TryGetValue(region, out var ln) ? ln : region;
 
-            // ── 1. PDS — English ──────────────────────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomePDSFormAsync(request, proposal, LangVariantEn, langName: null);
@@ -412,7 +395,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 2. PDS — Local language ───────────────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomePDSFormAsync(request, proposal, LangVariantLocal, localLang);
@@ -420,7 +402,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 3. ePolicy — English ──────────────────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomeEPolicyFormAsync(request, proposal, LangVariantEn, langName: null);
@@ -428,7 +409,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 4. ePolicy — Local language ───────────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomeEPolicyFormAsync(request, proposal, LangVariantLocal, localLang);
@@ -436,7 +416,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 5. Tax Invoice — English ──────────────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomeTaxInvoiceFormAsync(request, proposal, LangVariantEn, langName: null);
@@ -444,7 +423,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 else if (doc != null) savedDocuments.Add(doc);
             }
 
-            // ── 6. Tax Invoice — Local language ───────────────────────────────
             if (status)
             {
                 var (r, doc) = await HomeTaxInvoiceFormAsync(request, proposal, LangVariantLocal, localLang);
@@ -476,15 +454,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             string lang = LangVariantEn, string? langName = null)
         {
             var response = new PDFStatusResponse();
-            // langName null  → English:  "HI-ID-2026-001234 - PDS.pdf"
-            // langName set   → Local  :  "HI-ID-2026-001234 - PDS (Bahasa Indonesia).pdf"
             var fileSuffix = langName == null ? "PDS" : $"PDS ({langName})";
             var file       = $"{request.PolicyNumber} - {fileSuffix}.pdf";
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
             var entity   = _docSettings.Entity;
-            // EN → HOHH_PDS_{entity}_EN.xsl   |   Local → HOHH_PDS_{entity}_{region}.xsl  (e.g. _ID, _KH, _PH)
             var xslSuffix = lang == LangVariantLocal ? region : "EN";
             var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"HOHH_PDS_{entity}_{xslSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
@@ -493,7 +468,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
-            // FIX #11 — Polly: exclude fatal CLR exceptions from the retry predicate.
             var retryPolicy = PollyPolicy
                 .Handle<Exception>(ex => ex is not OutOfMemoryException
                                       and not StackOverflowException
@@ -536,7 +510,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
-                                // FIX #2 — Encrypt PDF before writing to disk (via IPdfService.EncryptPdf)
                                 var password  = BuildPdfPassword(proposal);
                                 var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
@@ -593,7 +566,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
-            // EN → EpolicyForm_{ProductType}_EV.xsl   |   Local → EpolicyForm_{ProductType}_{region}.xsl
             var xslFileSuffix = lang == LangVariantLocal ? region : LangVariantEn;
             var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"EpolicyForm_{ProductType}_{xslFileSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
@@ -602,7 +574,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
-            // FIX #11 — exclude fatal CLR exceptions from retry
             var retryPolicy = PollyPolicy
                 .Handle<Exception>(ex => ex is not OutOfMemoryException
                                       and not StackOverflowException
@@ -645,7 +616,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
-                                // FIX #2 — Encrypt PDF before writing to disk
                                 var password  = BuildPdfPassword(proposal);
                                 var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
@@ -702,7 +672,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             response.PDFFileName = file;
 
             var region   = request.Region.ToUpper();
-            // EN → TaxInvoice_{ProductType}_EV.xsl   |   Local → TaxInvoice_{ProductType}_{region}.xsl
             var xslFileSuffix = lang == LangVariantLocal ? region : LangVariantEn;
             var xslPath  = Path.Combine(_docSettings.DocsPath, "Home", "XSL", $"TaxInvoice_{ProductType}_{xslFileSuffix}.xsl");
             var storeDir = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
@@ -711,7 +680,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             int retryCount = _docSettings.PdfRetryCount;
             int waitTime   = 3;
 
-            // FIX #11 — exclude fatal CLR exceptions from retry
             var retryPolicy = PollyPolicy
                 .Handle<Exception>(ex => ex is not OutOfMemoryException
                                       and not StackOverflowException
@@ -754,7 +722,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                             if (pdfBytes != null && pdfBytes.Length > 0)
                             {
-                                // FIX #2 — Encrypt PDF before writing to disk
                                 var password  = BuildPdfPassword(proposal);
                                 var encrypted = _pdfService.EncryptPdf(pdfBytes, password);
 
@@ -832,7 +799,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     htmlBody = BuildFallbackEmailHtml(proposal, request.PolicyNumber);
                 }
 
-                // ── 2. Zip the generated PDFs ─────────────────────────────────
                 var storeDir    = Path.Combine(_docSettings.StoragePath, region, "Home", request.PolicyId);
                 var zipBytes    = ZipPolicyDocuments(storeDir, request.PolicyNumber);
                 var attachments = new List<EmailAttachment>();
@@ -850,7 +816,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var subject = $"Home Insurance : Your ePolicy is ready ({request.PolicyNumber})";
                 var refId   = $"HOMESDK-Email-{DateTime.UtcNow.Ticks}";
 
-                // FIX #4 — PII logging: mask email address before writing to log.
                 _logger.LogInformation("Sending policy email | Ref={RefId} To={Email}",
                     refId, MaskEmail(proposal.Email));
 
@@ -887,7 +852,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
             try
             {
-                // ── 1. Load SMS template ──────────────────────────────────────
                 var region  = request.Region.ToUpper();
                 var entity  = _docSettings.Entity.ToLower();
                 var smsFile = Path.Combine(
@@ -916,10 +880,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     smsText = $"Your Home Insurance policy {request.PolicyNumber} has been issued. Thank you.";
                 }
 
-                // ── 2. Send SMS ───────────────────────────────────────────────
                 var refId = $"HOMESDK-SMS-{DateTime.UtcNow.Ticks}";
 
-                // FIX #4 — PII logging: mask mobile number before writing to log.
                 _logger.LogInformation("Sending SMS | Ref={RefId} To={Mobile}",
                     refId, MaskMobile(proposal.MobileNumber));
 
@@ -940,13 +902,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             }
         }
 
-        /// <summary>
-        /// Builds the XML data tree for a proposal, applies the XSL transform, and returns the resulting HTML.
-        /// </summary>
-        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium loaded).</param>
-        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
-        /// <param name="xslPath">Absolute or app-relative path to the XSL stylesheet.</param>
-        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
         private string? BuildProposalXml(Proposal proposal, string policyNumber, string xslPath, string region)
         {
             try
@@ -979,11 +934,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 if (q?.HasPublicLiability          == true) addOnList.Add(("Public Liability",          "0.00"));
                 bool hasAddOn = addOnList.Count > 0;
 
-                // FIX #7 — Use AppContext.BaseDirectory (stable) instead of
-                // Directory.GetCurrentDirectory() (can change at runtime).
-                // FIX #6 — Use the actual region code instead of the hardcoded "/ID/" path.
-                // FIX #7 — Use Path.Combine instead of string concatenation with "/" to
-                // correctly handle cross-platform separators.
                 var baseDir = AppContext.BaseDirectory;
 
                 string ImgPath(string fileName) =>
@@ -1072,8 +1022,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 {
                     var xslt = new XslCompiledTransform();
 
-                    // FIX #8 — Pass null as XmlResolver to prevent the XSL from resolving
-                    // external resources (file includes, UNC paths, HTTP requests).
                     xslt.Load(xslPath, XsltSettings.Default, null);
 
                     var results = new StringWriter();
@@ -1097,13 +1045,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             }
         }
 
-        /// <summary>
-        /// Builds the XML data tree for an ePolicy document, applies the XSL transform, and returns the resulting HTML.
-        /// </summary>
-        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium loaded).</param>
-        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
-        /// <param name="xslPath">Absolute path to the EpolicyForm XSL stylesheet.</param>
-        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
         private string? HtmlEpolicyForm(Proposal proposal, string policyNumber, string xslPath, string region)
         {
             try
@@ -1111,11 +1052,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var q        = proposal.Quotation;
                 var docsPath = _docSettings.DocsPath;
 
-                // ── Dates ────────────────────────────────────────────────────────────
                 var startDate = q?.CoverageStartDate ?? DateTime.Now;
                 var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
-                // ── Premium figures ──────────────────────────────────────────────────
                 var planPremium    = q?.PlanPremium    ?? 0m;
                 var addOnPremium   = q?.AddOnPremium   ?? 0m;
                 var grossPremium   = q?.GrossPremium   ?? (planPremium + addOnPremium);
@@ -1133,14 +1072,10 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var contentsSum     = q?.ContentsSum  ?? 0m;
                 var totalSumInsured = buildingSum + contentsSum;
 
-                // ── Plan type flags ──────────────────────────────────────────────────
-                // PlanType values: "building" | "contents" | "building-contents"
                 var planType   = (q?.PlanType ?? string.Empty).ToLower();
                 var isBuilding = planType is "building" or "building-contents";
                 var isContent  = planType is "contents" or "building-contents";
 
-                // ── Construction class ───────────────────────────────────────────────
-                // ConstructionType values: "full-brick" | "partial-brick"
                 var constructionClass = (q?.ConstructionType ?? string.Empty).ToLower() switch
                 {
                     "full-brick"       => "CLASS I - CONCRETE CONSTRUCTION",
@@ -1150,8 +1085,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     _                  => "CLASS I - CONCRETE CONSTRUCTION"
                 };
 
-                // ── Building type ────────────────────────────────────────────────────
-                // PropertyType values: "landed" | "non-landed"
                 var buildingType = (q?.PropertyType ?? string.Empty).ToLower() switch
                 {
                     "landed"     => "Private Dwelling – Landed",
@@ -1159,14 +1092,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     _            => "Private Dwelling – Landed"
                 };
 
-                // ── Add-on items (premium schedule table) ────────────────────────────
                 var addOnItems = new List<XElement>();
                 if (q?.HasRiotStrike               == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Riot, Strike & Malicious Damage"), new XElement("Price", "0.00")));
                 if (q?.HasExtendedTheft            == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Extended Theft"),                  new XElement("Price", "0.00")));
                 if (q?.HasAlternativeAccommodation == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Alternative Accommodation"),       new XElement("Price", "0.00")));
                 if (q?.HasPublicLiability          == true) addOnItems.Add(new XElement("AddOnItem", new XElement("Name", "Public Liability"),                new XElement("Price", "0.00")));
 
-                // ── Images ───────────────────────────────────────────────────────────
                 var baseDir = AppContext.BaseDirectory;
 
                 string LoadEpolicyImage(string fileName)
@@ -1185,11 +1116,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 var rc = GetRegionConfig(region);
 
-                // ── XML tree ─────────────────────────────────────────────────────────
                 var xmlTree = new XDocument(
                     new XElement("root",
 
-                        // Images
                         new XElement("ImageEgibEnHeader", headerImage),
                         new XElement("ImageEgibEnFooter", footerImage),
                         new XElement("ImageEgibBmHeader", bmHeaderImage),
@@ -1197,7 +1126,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("ImageChecked",      checkedImg),
                         new XElement("ImageUnchecked",    uncheckedImg),
 
-                        // Region / currency / company
                         new XElement("P_CountryRegion",  region),
                         new XElement("P_Currency",       rc.Currency),
                         new XElement("P_CompanyName",    rc.CompanyName),
@@ -1206,7 +1134,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_ContactEmail",   rc.ContactEmail),
                         new XElement("P_WebsiteUrl",     rc.WebsiteUrl),
 
-                        // Cover letter / schedule header
                         new XElement("P_Date",    DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")),
                         new XElement("P_Name",    (proposal.Name             ?? string.Empty).ToUpper()),
                         new XElement("P_Address1",(proposal.MailAddressLine1 ?? string.Empty).ToUpper()),
@@ -1225,7 +1152,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_EndDate",           endDate.ToString("dd/MM/yyyy")),
                         new XElement("P_PeriodofInsurance", $"{startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}"),
 
-                        // Premium breakdown
                         new XElement("P_TotalSumInsured",           totalSumInsured.ToString("#,##0.00")),
                         new XElement("P_AnnualPremium",             planPremium.ToString("#,##0.00")),
                         new XElement("P_AddOnItem",                 addOnItems),
@@ -1236,16 +1162,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_TaxRate",                   taxRate),
                         new XElement("P_Tax",                       taxAmount.ToString("#,##0.00")),
 
-                        // P_StampDuty — dual-purpose:
-                        //   1st element: numeric string rendered in the premium table via xsl:value-of
-                        //   2nd element: boolean string used in the stamp duty exemption row test
-                        //   XSLT 1.0 node-set comparison (= 'true') returns true when ANY node matches.
                         new XElement("P_StampDuty", stampDuty.ToString("#,##0.00")),
                         new XElement("P_StampDuty", (stampDuty == 0m).ToString().ToLower()),
 
                         new XElement("P_Total", totalPremium.ToString("#,##0.00")),
 
-                        // Risk / property details
                         new XElement("P_RiskNo",           "001"),
                         new XElement("P_PropertyAddress1", proposal.PropAddressLine1 ?? string.Empty),
                         new XElement("P_PropertyAddress2", proposal.PropAddressLine2 ?? string.Empty),
@@ -1254,7 +1175,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_PropDistrict",     proposal.PropDistrict ?? string.Empty),
                         new XElement("P_PropVillage",      proposal.PropVillage  ?? string.Empty),
 
-                        // Coverage flags
                         new XElement("P_isBuilding",        isBuilding.ToString().ToLower()),
                         new XElement("P_isContent",         isContent.ToString().ToLower()),
                         new XElement("P_ConstructionClass", constructionClass),
@@ -1264,14 +1184,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_BuildingSumInsured", buildingSum.ToString("#,##0.00")),
                         new XElement("P_ContentSumInsured",  contentsSum.ToString("#,##0.00")),
 
-                        // Content declaration — not in regional model; defaults to empty/false
                         new XElement("P_isContentDeclaration",    "false"),
                         new XElement("P_needAdditionalPage",      "false"),
                         new XElement("P_ContentDeclaration"),
                         new XElement("P_ContentDeclaration2"),
                         new XElement("P_TotalContentDeclaration", "0.00"),
 
-                        // Add-on clause rows (4th page table)
                         new XElement("P_IsRsmdAddOnExist",          (q?.HasRiotStrike == true).ToString().ToLower()),
                         new XElement("P_RsmdAddOnCode",             q?.HasRiotStrike == true ? "RSMD"  : string.Empty),
                         new XElement("P_RsmdAddOnName",             q?.HasRiotStrike == true ? "RIOT, STRIKE AND MALICIOUS DAMAGE" : string.Empty),
@@ -1282,7 +1200,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_ExtendedTheftAddOnName",    q?.HasExtendedTheft == true ? "EXTENDED THEFT"  : string.Empty),
                         new XElement("P_ExtendedTheftAddOnRate",    "0.000"),
 
-                        // Not in regional model — default to absent
                         new XElement("P_IsSubsidenceAndLandslideAddOnExist", "false"),
                         new XElement("P_SubsidenceAndLandslideAddOnCode",    string.Empty),
                         new XElement("P_SubsidenceAndLandslideAddOnName",    string.Empty),
@@ -1291,10 +1208,8 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_DamagesByFailingTreeAddOnCode",    string.Empty),
                         new XElement("P_DamagesByFailingTreeAddOnName",    string.Empty),
 
-                        // LPPSA — not applicable in regional model; default false
                         new XElement("P_IsLppsa", "false"),
 
-                        // PDPA slip
                         new XElement("P_Nric",    proposal.IdNumber ?? string.Empty),
                         new XElement("P_Checked", "true")
                     )
@@ -1304,7 +1219,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 {
                     var xslt = new XslCompiledTransform();
 
-                    // Null resolver prevents the XSL from loading external resources.
                     xslt.Load(xslPath, XsltSettings.Default, null);
 
                     var results = new StringWriter();
@@ -1329,13 +1243,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
         }
 
 
-        /// <summary>
-        /// Builds the XML data tree for a Tax Invoice document, applies the XSL transform, and returns the resulting HTML.
-        /// </summary>
-        /// <param name="proposal">Proposal entity (with Quotation + QuotationPremium + Payments loaded).</param>
-        /// <param name="policyNumber">Formatted policy number, e.g. "HI-ID-2025-123456".</param>
-        /// <param name="xslPath">Absolute path to the TaxInvoice XSL stylesheet.</param>
-        /// <param name="region">Two-letter region code used to resolve the correct image assets.</param>
         private string? HtmlTaxInvoiceForm(Proposal proposal, string policyNumber, string xslPath, string region)
         {
             try
@@ -1343,11 +1250,9 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var q  = proposal.Quotation;
                 var docsPath = _docSettings.DocsPath;
 
-                // ── Dates ────────────────────────────────────────────────────────────
                 var startDate = q?.CoverageStartDate ?? DateTime.Now;
                 var endDate   = q?.ExpiryDate        ?? DateTime.Now.AddYears(1).AddDays(-1);
 
-                // ── Premium figures ──────────────────────────────────────────────────
                 var grossPremium   = q?.GrossPremium   ?? 0m;
                 var discountAmount = q?.DiscountAmount ?? 0m;
                 var discountRate   = grossPremium > 0
@@ -1358,8 +1263,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 var stampDuty    = q?.StampDuty  ?? 0m;
                 var totalPremium = q?.Premium    ?? 0m;
 
-                // ── Payment mode ─────────────────────────────────────────────────────
-                // Resolve from the latest successful payment; fall back to "Online".
                 var latestPayment = proposal.Payments?
                     .Where(p => p.Status == "SUCCESS")
                     .OrderByDescending(p => p.PaymentDate)
@@ -1374,13 +1277,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                     _                => "Online"
                 };
 
-                // ── Being payment text ───────────────────────────────────────────────
                 var beingPayment =
                     $"New Business - Premium for Houseowner/Householder Comprehensive Insurance " +
                     $"Policy No. {policyNumber} " +
                     $"({startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy})";
 
-                // ── Images ───────────────────────────────────────────────────────────
                 var baseDir = AppContext.BaseDirectory;
 
                 string LoadTaxImage(string fileName)
@@ -1395,15 +1296,12 @@ namespace ApplicationService.Core.Application.ProposalService.Services
 
                 var rc = GetRegionConfig(region);
 
-                // ── XML tree ─────────────────────────────────────────────────────────
                 var xmlTree = new XDocument(
                     new XElement("root",
 
-                        // Images
                         new XElement("ImageEgibEnHeader", headerImage),
                         new XElement("FooterImage",       footerImage),
 
-                        // Region / currency / company
                         new XElement("P_CountryRegion",  region),
                         new XElement("P_Currency",       rc.Currency),
                         new XElement("P_CompanyName",    rc.CompanyName),
@@ -1412,17 +1310,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_ContactEmail",   rc.ContactEmail),
                         new XElement("P_WebsiteUrl",     rc.WebsiteUrl),
 
-                        // Company tax registration (static EGIB value)
                         new XElement("P_taxRegNo",        "W10-1806-30000001"),
 
-                        // Tax invoice number — prefixed to distinguish from policy number
                         new XElement("P_TaxInvoiceNo",    $"TI-{policyNumber}"),
 
-                        // Date & payment mode
                         new XElement("P_Date",    DateTime.Now.ToString("dd/MM/yyyy")),
                         new XElement("P_Paymode", paymode),
 
-                        // Customer details
                         new XElement("P_Name",    (proposal.Name             ?? string.Empty).ToUpper()),
                         new XElement("P_Address1", proposal.MailAddressLine1 ?? string.Empty),
                         new XElement("P_Address2", proposal.MailAddressLine2 ?? string.Empty),
@@ -1432,7 +1326,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_MailDistrict",  proposal.MailDistrict ?? string.Empty),
                         new XElement("P_MailVillage",   proposal.MailVillage  ?? string.Empty),
 
-                        // Premium breakdown
                         new XElement("P_GrossPremium",  grossPremium.ToString("#,##0.00")),
                         new XElement("P_Discount",      discountAmount.ToString("#,##0.00")),
                         new XElement("P_DiscountRate",  discountRate),
@@ -1441,13 +1334,11 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                         new XElement("P_SST",           sstAmount.ToString("#,##0.00")),
                         new XElement("P_StampDuty",     stampDuty.ToString("#,##0.00")),
 
-                        // LPPSA — not in regional model; defaults to false / zero
                         new XElement("P_IsLppsa",          "false"),
                         new XElement("P_SubsidizedAmount",  "0.00"),
 
                         new XElement("P_Total", totalPremium.ToString("#,##0.00")),
 
-                        // Policy / product info
                         new XElement("P_ProductTypeName", "HOUSEOWNER/HOUSEHOLDER COMPREHENSIVE INSURANCE"),
                         new XElement("P_AgentCode",       "SYSTEM"),
                         new XElement("P_policyNo",        policyNumber),
@@ -1459,7 +1350,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 {
                     var xslt = new XslCompiledTransform();
 
-                    // Null resolver prevents the XSL from loading external resources.
                     xslt.Load(xslPath, XsltSettings.Default, null);
 
                     var results = new StringWriter();
@@ -1516,7 +1406,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return memoryStream.ToArray();
         }
 
-        /// <summary>Replaces SMS template placeholders.</summary>
         private static string ReplaceSmsPlaceholders(string template, Dictionary<string, string> replacements)
         {
             foreach (var kv in replacements)
@@ -1524,7 +1413,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return template;
         }
 
-        // FIX #5 — Escape policyNumber (was raw in the string interpolation).
         private static string BuildFallbackEmailHtml(Proposal proposal, string policyNumber) =>
             $@"<html><body>
                 <p>Dear {Escape(proposal.Name)},</p>
@@ -1533,13 +1421,10 @@ namespace ApplicationService.Core.Application.ProposalService.Services
                 <p>Thank you.</p>
                </body></html>";
 
-        /// <summary>XML/HTML-escapes a nullable string value.</summary>
         private static string Escape(string? value) =>
             string.IsNullOrEmpty(value) ? string.Empty
             : value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
-        // FIX #4 — PII masking helpers.
-        // Email: show only the domain part  e.g.  "****@gmail.com"
         private static string MaskEmail(string? email)
         {
             if (string.IsNullOrEmpty(email)) return "***";
@@ -1547,16 +1432,13 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             return at > 0 ? $"****@{email[(at + 1)..]}" : "***";
         }
 
-        // Mobile: show only the last 4 digits  e.g.  "****1234"
         private static string MaskMobile(string? mobile)
         {
             if (string.IsNullOrEmpty(mobile)) return "***";
             return mobile.Length > 4 ? $"****{mobile[^4..]}" : "***";
         }
 
-        // ── Inner types ───────────────────────────────────────────────────────
 
-        /// <summary>JSON-serialisable record that replaces the PolicyDocument entity.</summary>
         private class DocRecord
         {
             public string   DocumentId { get; set; } = string.Empty;
@@ -1566,7 +1448,6 @@ namespace ApplicationService.Core.Application.ProposalService.Services
             public DateTime UploadedAt { get; set; }
         }
 
-        // ── Helper: deserialise ValuableItemsJson ─────────────────────────────
 
         private static List<ValuableItemSnapshotDto> DeserializeValuableItems(string? json)
         {

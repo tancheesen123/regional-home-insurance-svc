@@ -8,7 +8,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PaynamicsCustomerAddress {
   addressLine1?: string
@@ -20,17 +19,15 @@ export interface PaynamicsCustomerAddress {
 }
 
 export interface PaynamicsPaymentProps {
-  /** referenceNumber returned by InitiatePayment — used as Paynamics request_id */
   orderId:        string
   amount:         number
-  currency:       string   // "PHP"
+  currency:       string
   customerEmail:  string
   customerName:   string
   mobileNumber?:  string
   address?:       PaynamicsCustomerAddress | null
 }
 
-// ── Payment methods ───────────────────────────────────────────────────────────
 
 const PAYMENT_METHODS = [
   { id: "visa-master", code: "CC",      name: "Visa / MasterCard",   icon: "💳", desc: "Credit or debit card" },
@@ -42,7 +39,6 @@ const PAYMENT_METHODS = [
 
 type MethodId = (typeof PAYMENT_METHODS)[number]["id"]
 
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PaynamicsPayment({
   orderId,
@@ -57,7 +53,6 @@ export default function PaynamicsPayment({
   const [isProcessing,   setIsProcessing]   = useState(false)
   const [signError,      setSignError]      = useState<string | null>(null)
 
-  // Split name into first / last (Paynamics requires fname + lname separately)
   const nameParts = customerName.trim().split(/\s+/)
   const fname = nameParts[0] ?? "N"
   const lname = nameParts.length > 1 ? nameParts.slice(1).join(" ") : fname

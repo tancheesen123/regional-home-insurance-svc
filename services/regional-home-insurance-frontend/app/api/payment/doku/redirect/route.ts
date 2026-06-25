@@ -24,20 +24,16 @@ export async function POST(request: NextRequest) {
       VERIFYSTATUS: formData.get("VERIFYSTATUS"),
     }
 
-    // Verify signature
     const isValidSignature = verifyDokuSignature(paymentData)
 
     if (!isValidSignature) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
     }
 
-    // Update payment status
     if (paymentData.RESPONSECODE === "0000") {
-      // Payment successful
       await updatePaymentStatus(paymentData.TRANSIDMERCHANT, "completed", paymentData)
       return NextResponse.redirect(new URL("/dashboard/quotation/success", request.url))
     } else {
-      // Payment failed
       await updatePaymentStatus(paymentData.TRANSIDMERCHANT, "failed", paymentData)
       return NextResponse.redirect(new URL("/dashboard/quotation/payment-failed", request.url))
     }
@@ -48,7 +44,6 @@ export async function POST(request: NextRequest) {
 }
 
 function verifyDokuSignature(data: any): boolean {
-  // Implement DOKU signature verification
   const crypto = require("crypto")
   const sharedKey = process.env.DOKU_SHARED_KEY || ""
   const signatureString = `${data.AMOUNT}${data.MALLID}${sharedKey}${data.TRANSIDMERCHANT}${data.RESPONSECODE}`

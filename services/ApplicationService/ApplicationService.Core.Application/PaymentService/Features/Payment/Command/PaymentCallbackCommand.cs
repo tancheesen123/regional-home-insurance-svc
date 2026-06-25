@@ -8,10 +8,8 @@ namespace ApplicationService.Core.Application.PaymentService.Features.Payment.Co
 {
     public class PaymentCallbackCommand : IRequest<Response<PaymentCallbackResponse>>
     {
-        /// <summary>Raw request body — must NOT be deserialised before passing here.</summary>
         public string Json { get; set; }
 
-        /// <summary>Value of the Stripe-Signature header.</summary>
         public string StripeSignature { get; set; }
 
         public class PaymentCallbackCommandHandler

@@ -18,19 +18,6 @@ namespace ApplicationService.WebAPI.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Inforce a proposal and issue a policy.
-        ///
-        /// Flow:
-        ///   1. Validate ProposalId
-        ///   2. Fetch proposal — throw if not found
-        ///   3. Already inforced → return existing policy immediately
-        ///   4. CheckPayment = false → agent/admin only bypass
-        ///   5. CheckPayment = true → verify a SUCCESS payment exists
-        ///   6. Generate policy number, inforce proposal, create policy
-        ///   7. Trigger async backend processing (PDF, email/SMS)
-        ///   8. Return policy details (+ download URL if WithUrlLink = true)
-        /// </summary>
         [HttpPost("[action]")]
         public async Task<IActionResult> InforcePolicy([FromBody] InforcePolicyRequest request)
         {
@@ -46,7 +33,7 @@ namespace ApplicationService.WebAPI.Controllers
                 var command = new InforcePolicyCommand
                 {
                     Request = request,
-                    User    = User   // pass ClaimsPrincipal for role/bypass checks
+                    User    = User
                 };
 
                 return Ok(await _mediator.Send(command));

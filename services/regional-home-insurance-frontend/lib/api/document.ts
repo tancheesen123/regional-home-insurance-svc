@@ -2,11 +2,10 @@ import { getSession, clearSession } from "@/lib/session"
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:44337"}/api`
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PolicyDocumentInfo {
-  fileType: string  // "PDS" | "EPolicy" | "TaxInvoice"
-  fileName: string  // e.g. "HI-ID-2026-001234 - PDS.pdf"
+  fileType: string
+  fileName: string
 }
 
 export interface DocumentStatusResponse {
@@ -15,7 +14,6 @@ export interface DocumentStatusResponse {
   documents: PolicyDocumentInfo[]
 }
 
-// ── Custom error ──────────────────────────────────────────────────────────────
 
 export class DocumentDownloadError extends Error {
   constructor(
@@ -27,7 +25,6 @@ export class DocumentDownloadError extends Error {
   }
 }
 
-// ── Internal: authenticated fetch with standard error mapping ─────────────────
 
 async function authFetch(url: string): Promise<Response> {
   const session = getSession()

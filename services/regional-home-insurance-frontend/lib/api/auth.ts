@@ -1,6 +1,5 @@
 import { request, APIResponse } from "./client"
 
-// ── Login ────────────────────────────────────────────────────────────────────
 
 export interface LoginPayload {
   email: string
@@ -27,7 +26,6 @@ export async function login(
   })
 }
 
-// ── Register ─────────────────────────────────────────────────────────────────
 
 export interface RegisterAddress {
   addressLine1: string

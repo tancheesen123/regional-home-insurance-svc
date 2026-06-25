@@ -1,13 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplicationDb
 {
-    /// <inheritdoc />
     public partial class RemoveLppsaExempt : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
@@ -15,7 +13,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.KHApplication
                 table: "AddOns");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(

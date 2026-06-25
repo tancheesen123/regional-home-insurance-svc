@@ -41,7 +41,6 @@ interface FormData {
   dateOfBirth: string
 }
 
-// Static data — defined outside component so they're never recreated on re-render
 const PROPERTY_TYPES = [
   { id: "landed", icon: Home },
   { id: "non-landed", icon: Building },
@@ -56,7 +55,6 @@ const NATIONALITIES = [
   "MALAYSIAN", "SINGAPOREAN", "INDONESIAN", "THAI", "FILIPINO", "CAMBODIAN", "OTHER",
 ]
 
-/** Label for the non-passport ID number input — changes per country. */
 function getIdInputLabel(cc: string): string {
   switch (cc.toUpperCase()) {
     case "PH": return "PhilID Number"
@@ -66,20 +64,14 @@ function getIdInputLabel(cc: string): string {
   }
 }
 
-/** inputMode for the non-passport ID field — numeric only for KTP (16 digits). */
 function getIdInputMode(cc: string): "numeric" | "text" {
   return cc.toUpperCase() === "ID" ? "numeric" : "text"
 }
 
-/** Max length for non-passport ID field — KTP is exactly 16 digits, others unrestricted. */
 function getIdMaxLength(cc: string): number | undefined {
   return cc.toUpperCase() === "ID" ? 16 : undefined
 }
 
-/**
- * Normalise a raw nationality string from the scanner to one of the
- * NATIONALITIES options. e.g. "INDONESIA" / "WNI" → "INDONESIAN".
- */
 function normaliseNationality(raw: string): string {
   const v = raw.trim().toUpperCase()
   if (v.includes("INDONESIA") || v === "WNI") return "INDONESIAN"
@@ -88,12 +80,10 @@ function normaliseNationality(raw: string): string {
   if (v.includes("PHILIPPIN") || v.includes("FILIPINO")) return "FILIPINO"
   if (v.includes("CAMBODIA")  || v.includes("KHMER"))    return "CAMBODIAN"
   if (v.includes("THAI"))                     return "THAI"
-  // Exact match already in the list?
   if (NATIONALITIES.includes(v)) return v
   return "OTHER"
 }
 
-/** Inline field-level error message shown beneath an invalid field. */
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null
   return (
@@ -105,7 +95,6 @@ function FieldError({ msg }: { msg?: string }) {
 }
 
 interface QuotationFormProps {
-  /** Raw scan result passed from DocumentScanner — field mapping handled here */
   scanResult?: import("@/lib/api/scan-document").ScanDocumentResult | null
 }
 
@@ -113,39 +102,33 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
   const router = useRouter()
   const t = useTranslations("quotation")
 
-  // ── Country code — deferred to client to avoid SSR/localStorage mismatch ───
-  // getSession() reads localStorage which is unavailable on the server,
-  // so it always returns null during SSR. We initialise with "MY" (a stable
-  // SSR-safe default), then correct to the actual country after mount.
-  const [countryCode, setCountryCode] = useState("ID")   // ID is the first supported country
+  const [countryCode, setCountryCode] = useState("ID")
   const idTypeOptions = getIdTypeOptions(countryCode)
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dobOpen, setDobOpen] = useState(false)
-  // Per-field validation errors. Key matches the `field-<key>` wrapper id.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<FormData>({
-    ownershipType:    "",         // no pre-selection — customer must choose
+    ownershipType:    "",
     coverageStartDate: undefined,
-    propertyType:     "",         // no card pre-selected
-    numberOfStorey:   1,          // stepper minimum — always valid
-    constructionType: "",         // no card pre-selected
+    propertyType:     "",
+    numberOfStorey:   1,
+    constructionType: "",
     postcode:         "",
-    currentFlooding:  "",         // no toggle pre-selected
+    currentFlooding:  "",
     unoccupiedProperty: "",
     previousLoss:     "",
-    idType: getIdTypeOptions("ID")[0].value,  // stable SSR default (first supported country)
+    idType: getIdTypeOptions("ID")[0].value,
     passportNumber:   "",
     nricNumber:       "",
-    nationality: getDefaultNationality("ID"),  // stable SSR default
+    nationality: getDefaultNationality("ID"),
     dateOfBirth:      "",
   })
 
-  // After mount: read actual session and sync country-dependent fields
   useEffect(() => {
     const cc = getSession()?.countryCode ?? "ID"
-    if (cc === countryCode) return           // already correct, no re-render needed
+    if (cc === countryCode) return
     setCountryCode(cc)
     const opts = getIdTypeOptions(cc)
     setFormData((prev) => ({
@@ -153,13 +136,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       idType:      opts[0].value,
       nationality: getDefaultNationality(cc),
     }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Scan result → form field mapping ──────────────────────────────────────
-  // scanResult contains raw document fields (nik, name, birthdate, province…).
-  // Field mapping logic will be added here once the AI key schema is finalised.
-  // For now we just track the result so the banner can reference it.
 
   const [scanFields, setScanFields] = useState<Record<string, ScanSessionField>>({})
 
@@ -168,8 +146,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
 
     const raw = scanResult.fields
 
-    // ── 1. Persist full scan result to sessionStorage ─────────────────────────
-    // Adds source:"scanned" to every field so Step 4 can also read badges.
     const sessionFields: Record<string, ScanSessionField> = {}
     Object.entries(raw).forEach(([key, field]) => {
       sessionFields[key] = { ...field, source: "scanned" }
@@ -180,16 +156,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       fields:       sessionFields,
     })
 
-    // ── 2. Apply to form — never overwrite manually typed values ──────────────
 
-    /**
-     * Try to parse a date string from several common API formats and return
-     * it as "dd/MM/yyyy" (the form's expected format). Returns null on failure.
-     * Handles: "dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yyyy HH:mm:ss"
-     */
     const normaliseDate = (raw: string): string | null => {
       const s = raw.trim()
-      // Strip time component if present: "21/05/2026 09:08:56" → "21/05/2026"
       const datePart = s.split(" ")[0]
       const formats = ["dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "MM/dd/yyyy"]
       for (const fmt of formats) {
@@ -202,7 +171,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
     setFormData((prev) => {
       const next = { ...prev }
 
-      // periodFrom → coverageStartDate (only if not yet set)
       if (!prev.coverageStartDate && raw.periodFrom?.filled && raw.periodFrom.value) {
         const normalised = normaliseDate(raw.periodFrom.value)
         if (normalised) {
@@ -211,14 +179,12 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         }
       }
 
-      // occupiedAs → propertyType  (always apply — card selection, no "typed" value)
       if (raw.occupiedAs?.filled && raw.occupiedAs.value) {
         next.propertyType = raw.occupiedAs.value.toLowerCase().includes("landed")
           ? "landed"
           : "non-landed"
       }
 
-      // constructionClassification → constructionType  (always apply)
       if (raw.constructionClassification?.filled && raw.constructionClassification.value) {
         next.constructionType = raw.constructionClassification.value
           .toUpperCase()
@@ -227,8 +193,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
           : "partial-brick"
       }
 
-      // riskAddress → postcode (only if currently empty)
-      // Split by comma, trim each segment, find first 5-digit number
       if (!prev.postcode && raw.riskAddress?.filled && raw.riskAddress.value) {
         const found = raw.riskAddress.value
           .split(",")
@@ -237,8 +201,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
         if (found) next.postcode = found
       }
 
-      // ── Detect document type: passport vs national ID ──────────────────────
-      // The scanner now emits documentType + standardized keys.
       const docType = (
         raw.documentType?.value ??
         scanResult.sources[0]?.documentType ??
@@ -248,29 +210,23 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       const isPassport = docType.includes("PASSPORT") || hasPassportNumber
 
       if (isPassport) {
-        // Switch the form to passport mode so the right inputs render
         next.idType = "passport"
 
-        // Passport number — prefer passportNumber, fall back to idNumber
         const pp = raw.passportNumber ?? raw.idNumber
         if (pp?.filled && pp.value && !prev.passportNumber) {
           next.passportNumber = pp.value
         }
 
-        // Nationality — normalise to the NATIONALITIES list (e.g. "INDONESIA" → "INDONESIAN")
         if (raw.nationality?.filled && raw.nationality.value) {
           next.nationality = normaliseNationality(raw.nationality.value)
         }
       } else {
-        // National ID (KTP / PhilID / Khmer ID) → nricNumber
         const rawId = raw.idNumber ?? raw.nik
         if (rawId?.filled && rawId.value && !prev.nricNumber) {
           next.nricNumber = rawId.value
         }
       }
 
-      // dateOfBirth / birthdate → dateOfBirth (only if currently empty)
-      // Normalise to dd/MM/yyyy regardless of what the API returns
       const rawDob = raw.dateOfBirth ?? raw.birthdate ?? raw.birthDate
       if (!prev.dateOfBirth && rawDob?.filled && rawDob.value) {
         const normalised = normaliseDate(rawDob.value)
@@ -280,34 +236,22 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       return next
     })
 
-    // ── 3. Build scanFields for badge display ─────────────────────────────────
-    // Helper: converts a ScannedField → ScanSessionField (adds source tag).
-    // Returns undefined when the field isn't present so badges stay hidden.
     const toSession = (f: typeof raw[string] | undefined): ScanSessionField | undefined =>
       f ? { ...f, source: "scanned" as const } : undefined
 
     setScanFields({
-      // Date picker badge
       periodFrom:                 toSession(raw.periodFrom),
-      // Card selections (no badge shown on cards, but tracked for manual-edit detection)
       occupiedAs:                 toSession(raw.occupiedAs),
       constructionClassification: toSession(raw.constructionClassification),
-      // Postcode badge — uses riskAddress as source; falls back to a direct postcode field
       postcode:                   toSession(raw.riskAddress ?? raw.postcode),
-      // IC / Passport fields — passport first, then idNumber (PH/KH) then nik (ID KTP)
       idNumber:    toSession(raw.passportNumber ?? raw.idNumber ?? raw.nik),
-      // Date of birth — try all common key variants
       dateOfBirth: toSession(raw.dateOfBirth ?? raw.birthdate ?? raw.birthDate),
     } as Record<string, ScanSessionField>)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanResult])
 
-  // Helper to get badge data for a given AI key
   const badge = (aiKey: string): ScanSessionField | undefined => scanFields[aiKey]
 
-  // Mark a field as manually edited when customer changes it
   const handleInputChange = useCallback((field: keyof FormData, value: string | Date | undefined | number) => {
-    // Find if this form field matches any AI key and mark it manual
     getMappingsForStep(1).forEach(({ aiKey, formKey }) => {
       if (formKey === field || (formKey === "idNumber" && (field === "passportNumber" || field === "nricNumber"))) {
         markFieldManual(aiKey)
@@ -318,7 +262,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       }
     })
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear the inline error for this field as soon as the user edits it.
     setFieldErrors((prev) => {
       if (!prev[field] && !(field === "passportNumber" || field === "nricNumber")) return prev
       const next = { ...prev }
@@ -328,7 +271,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
     })
   }, [])
 
-  // ── Validation ─────────────────────────────────────────────────────────────
   const validate = useCallback((): Record<string, string> => {
     const e: Record<string, string> = {}
 
@@ -343,11 +285,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
     if (!formData.unoccupiedProperty) e.unoccupiedProperty = t("validation.required")
     if (!formData.previousLoss)       e.previousLoss       = t("validation.required")
 
-    // Flooding: must be answered AND must not be "yes" (we cannot insure active flood risk)
     if (!formData.currentFlooding)             e.currentFlooding = t("validation.required")
     else if (formData.currentFlooding === "yes") e.currentFlooding = t("validation.floodingBlock")
 
-    // ID number — KTP (16 digits, ID region) vs passport (alphanumeric)
     if (formData.idType === "passport") {
       const pp = formData.passportNumber.trim()
       if (!pp) e.idNumber = t("validation.required")
@@ -368,7 +308,6 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
     setFormData((prev) => ({
       ...prev,
       idType: type,
-      // Snap nationality back to country default when leaving passport
       ...(type !== "passport" && { nationality: getDefaultNationality(countryCode) }),
     }))
   }, [countryCode])
@@ -384,11 +323,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
     e.preventDefault()
     setError(null)
 
-    // ── Validate required fields first ─────────────────────────────────────────
     const errs = validate()
     setFieldErrors(errs)
     if (Object.keys(errs).length > 0) {
-      // Scroll the first invalid field into view
       const firstKey = Object.keys(errs)[0]
       const el = document.getElementById(`field-${firstKey}`)
       el?.scrollIntoView({ behavior: "smooth", block: "center" })

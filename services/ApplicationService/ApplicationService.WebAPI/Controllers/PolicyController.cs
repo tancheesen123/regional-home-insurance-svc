@@ -17,9 +17,6 @@ namespace ApplicationService.WebAPI.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Returns a summary list of all inforced policies belonging to the authenticated customer.
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetPolicies()
         {
@@ -35,12 +32,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Returns full details of a single inforced policy — including its document list —
-        /// for the authenticated customer who owns the proposal.
-        /// To download a document call GET /api/document/DownloadFile?proposalId=&amp;fileType=
-        /// </summary>
-        /// <param name="proposalId">The proposal ID associated with the policy.</param>
         [HttpGet("{proposalId}")]
         public async Task<IActionResult> GetPolicy(string proposalId)
         {

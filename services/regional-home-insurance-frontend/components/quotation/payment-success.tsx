@@ -41,12 +41,10 @@ import {
 import { getSession } from "@/lib/session"
 import { getRegionConfig } from "@/lib/region"
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL_MS = 4_000    // 4 s between each status check
-const POLL_TIMEOUT_MS  = 300_000  // 5 min total before giving up
+const POLL_INTERVAL_MS = 4_000
+const POLL_TIMEOUT_MS  = 300_000
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatPlanType(planType: string): string {
   return planType
@@ -62,7 +60,6 @@ function formatAddress(addr: GetProposalData["propertyAddress"]): string {
 }
 
 function labelForFileType(fileType: string): string {
-  // Keys are lowercase so the lookup is case-insensitive
   const map: Record<string, string> = {
     pds:        "Product Disclosure Statement",
     epolicy:    "ePolicy Certificate",
@@ -72,7 +69,6 @@ function labelForFileType(fileType: string): string {
   return map[fileType.toLowerCase()] ?? fileType
 }
 
-// ── Document Card ─────────────────────────────────────────────────────────────
 
 function DocumentCard({
   doc,
@@ -116,7 +112,6 @@ function DocumentCard({
   )
 }
 
-// ── Document Skeleton (while polling) ─────────────────────────────────────────
 
 function DocumentSkeleton() {
   return (
@@ -133,48 +128,39 @@ function DocumentSkeleton() {
   )
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function PaymentSuccess() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const t            = useTranslations("quotation")
 
-  // ── URL params (from Stripe redirect) ──────────────────────────────────────
   const proposalIdFromUrl  = searchParams.get("proposalId")
   const policyNumFromUrl   = searchParams.get("policy")
 
-  // Resolve proposalId: URL first, then localStorage fallback
   const proposalId = proposalIdFromUrl ?? getProposalId() ?? ""
 
-  // ── State ──────────────────────────────────────────────────────────────────
   const [showConfetti,   setShowConfetti]   = useState(true)
   const [isLoadingData,  setIsLoadingData]  = useState(true)
   const [proposal,       setProposal]       = useState<GetProposalData | null>(null)
   const [paymentResult,  setPaymentResult]  = useState<PaymentResult | null>(null)
   const [dataError,      setDataError]      = useState<string | null>(null)
 
-  // Document polling
   const [docStatus,      setDocStatus]      = useState<"polling" | "ready" | "error" | "timeout">("polling")
   const [documents,      setDocuments]      = useState<PolicyDocumentInfo[]>([])
   const [policyNumber,   setPolicyNumber]   = useState(policyNumFromUrl ?? "")
   const [docModalOpen,   setDocModalOpen]   = useState(false)
 
-  // Per-file download loading (tracks which fileType is in-flight)
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set())
   const [isDownloadingAll, setIsDownloadingAll] = useState(false)
   const [downloadError,    setDownloadError]    = useState<string | null>(null)
 
-  // Ref so the poll loop knows when the component has unmounted
   const cancelPollRef = useRef(false)
 
-  // ── Confetti ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => setShowConfetti(false), 3000)
     return () => clearTimeout(t)
   }, [])
 
-  // ── Load proposal data ─────────────────────────────────────────────────────
   useEffect(() => {
     const payment = getPaymentResult()
     if (payment) { setPaymentResult(payment); clearPaymentResult() }
@@ -191,7 +177,6 @@ export default function PaymentSuccess() {
       .finally(() => setIsLoadingData(false))
   }, [proposalId])
 
-  // ── Document polling loop ──────────────────────────────────────────────────
   useEffect(() => {
     cancelPollRef.current = false
     if (!proposalId) { setDocStatus("error"); return }
@@ -200,7 +185,6 @@ export default function PaymentSuccess() {
       const start = Date.now()
 
       while (!cancelPollRef.current) {
-        // Timeout guard
         if (Date.now() - start >= POLL_TIMEOUT_MS) {
           if (!cancelPollRef.current) setDocStatus("timeout")
           return
@@ -214,7 +198,7 @@ export default function PaymentSuccess() {
             setDocuments(data.documents)
             if (data.policyNumber) setPolicyNumber(data.policyNumber)
             setDocStatus("ready")
-            setDocModalOpen(true)  // auto-open modal
+            setDocModalOpen(true)
             return
           }
         } catch {
@@ -222,10 +206,8 @@ export default function PaymentSuccess() {
           return
         }
 
-        // Wait before next attempt
         await new Promise<void>((resolve) => {
           const timer = setTimeout(resolve, POLL_INTERVAL_MS)
-          // If cancelled mid-wait, resolve immediately via the cancel check on next loop
           if (cancelPollRef.current) { clearTimeout(timer); resolve() }
         })
       }
@@ -235,7 +217,6 @@ export default function PaymentSuccess() {
     return () => { cancelPollRef.current = true }
   }, [proposalId])
 
-  // ── Download handlers ──────────────────────────────────────────────────────
 
   const handleDownloadSingle = async (doc: PolicyDocumentInfo) => {
     setDownloadError(null)
@@ -268,8 +249,6 @@ export default function PaymentSuccess() {
   const handleRetryPoll = () => {
     cancelPollRef.current = false
     setDocStatus("polling")
-    // Retriggering the effect by remounting isn't straightforward; easiest is
-    // to just re-call poll inline here
     async function retryPoll() {
       const start = Date.now()
       while (!cancelPollRef.current) {
@@ -294,7 +273,6 @@ export default function PaymentSuccess() {
     retryPoll()
   }
 
-  // ── Derived values ─────────────────────────────────────────────────────────
   const { symbol } = getRegionConfig(getSession()?.countryCode ?? "")
   const fmtCurrency = (n: number) =>
     `${symbol} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

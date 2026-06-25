@@ -6,11 +6,9 @@ namespace ApplicationService.Core.Application.QuotationService.DTOs
 
         public List<ValuableItemResponse> Items { get; set; } = new();
 
-        // Valuables premium breakdown
         public decimal TotalDeclaredValue { get; set; }
         public decimal ValuablesPremium { get; set; }
 
-        // Running totals (plan premium + valuables premium)
         public decimal PlanPremium { get; set; }
         public decimal TotalPremium { get; set; }
         public decimal AnnualPremium { get; set; }

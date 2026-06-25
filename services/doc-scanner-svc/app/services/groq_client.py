@@ -54,7 +54,7 @@ class GroqClient:
                 }
             ],
             max_tokens=1024,
-            temperature=0,    # deterministic output — important for structured extraction
+            temperature=0,
         )
 
         return response.choices[0].message.content or ""

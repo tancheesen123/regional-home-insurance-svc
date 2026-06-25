@@ -50,7 +50,6 @@ async def scan_content(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Maximum {MAX_PHOTOS} photos per request.")
 
-    # Validate all files are images (not PDFs — content scan is vision only)
     for f in files:
         ct = (f.content_type or "").lower().split(";")[0].strip()
         if ct not in ALLOWED_IMAGE_TYPES:

@@ -2,20 +2,9 @@ import { CheckCircle2, AlertTriangle, PenLine } from "lucide-react"
 import { type ScanSessionField, isAutoFilled, isLowConfidence } from "@/lib/scan-session"
 
 interface Props {
-  /** The ScannedField entry from sessionStorage for this form field */
   field: ScanSessionField | undefined
 }
 
-/**
- * Tiny inline badge shown next to auto-filled form labels.
- *
- * | State          | Colour | Condition                                   |
- * |----------------|--------|---------------------------------------------|
- * | Auto-filled    | green  | filled + source=scanned + confidence ≥ 0.80 |
- * | Please verify  | amber  | filled + source=scanned + confidence < 0.80 |
- * | Edited         | blue   | source=manual (customer changed the value)   |
- * | Not found / no scan | — | field undefined or filled=false             |
- */
 export default function ScanFieldBadge({ field }: Props) {
   if (!field) return null
 

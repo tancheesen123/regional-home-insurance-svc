@@ -34,7 +34,6 @@ class RandomExtractorService:
         self._pdf_converter  = PdfConverter()
         self._image_utils    = ImageUtils()
 
-    # ── Public ────────────────────────────────────────────────────────────────
 
     async def extract(
         self,
@@ -72,7 +71,6 @@ class RandomExtractorService:
 
         return self._build_result(raw, country_code, extraction_method)
 
-    # ── Prompt helpers ────────────────────────────────────────────────────────
 
     def _vision_prompt(self, country_code: str) -> str:
         template = (_PROMPTS_DIR / "scan_random.txt").read_text(encoding="utf-8")
@@ -86,7 +84,6 @@ class RandomExtractorService:
             .replace("{documentText}", document_text)
         )
 
-    # ── AI calls ──────────────────────────────────────────────────────────────
 
     async def _call_vision(self, prompt: str, image_bytes: bytes) -> str:
         try:
@@ -100,7 +97,6 @@ class RandomExtractorService:
         except (httpx.TimeoutException, httpx.HTTPStatusError):
             raise
 
-    # ── Parsing ───────────────────────────────────────────────────────────────
 
     def _build_result(
         self,
@@ -121,7 +117,6 @@ class RandomExtractorService:
                 warnings=["Could not parse document. Please check the file and try again."],
             )
 
-        # Handle array wrapping
         if isinstance(parsed, list):
             dicts = [i for i in parsed if isinstance(i, dict)]
             data: dict = {}
@@ -134,7 +129,6 @@ class RandomExtractorService:
         warnings: list[str]              = []
 
         for key, raw_val in data.items():
-            # Support {"value": ..., "confidence": ...} or flat value
             if isinstance(raw_val, dict):
                 value      = raw_val.get("value")
                 confidence = float(raw_val.get("confidence", _DEFAULT_CONFIDENCE))
@@ -143,14 +137,14 @@ class RandomExtractorService:
                 confidence = _DEFAULT_CONFIDENCE
 
             if isinstance(value, str) and not value.strip():
-                continue   # skip empty strings — prompt says only include found fields
+                continue
 
             if value is not None:
                 value = str(value).strip()
 
             filled = value is not None
             if not filled:
-                continue   # skip nulls
+                continue
 
             if filled and confidence < settings.low_confidence_threshold:
                 warnings.append(f"'{key}' has low confidence — please verify.")
@@ -176,7 +170,6 @@ class RandomExtractorService:
         )
 
 
-# ── Merge helper ──────────────────────────────────────────────────────────────
 
 def merge_random_results(results: list[RandomScanResult]) -> RandomScanResult:
     """
@@ -227,7 +220,6 @@ def merge_random_results(results: list[RandomScanResult]) -> RandomScanResult:
         for r in results
     ]
 
-    # Determine extraction method — "text" if any file used text path
     method = "text" if any(r.extractionMethod == "text" for r in results) else "vision"
 
     return RandomScanResult(
@@ -240,7 +232,6 @@ def merge_random_results(results: list[RandomScanResult]) -> RandomScanResult:
     )
 
 
-# ── Shared utility ────────────────────────────────────────────────────────────
 
 def _strip_to_json(text: str) -> str:
     text = re.sub(r"```(?:json)?\s*", "", text)

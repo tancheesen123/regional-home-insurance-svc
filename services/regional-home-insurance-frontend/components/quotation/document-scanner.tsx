@@ -11,7 +11,6 @@ import { scanDocument, type ScanDocumentResult } from "@/lib/api/scan-document"
 import { getSession } from "@/lib/session"
 import ScanResultOverview from "@/components/quotation/scan-result-overview"
 
-// ── Document type tiles ────────────────────────────────────────────────────────
 
 const DOC_TYPES = [
   { id: "IC",       label: "IC / Passport",    icon: CreditCard, available: true  },
@@ -20,34 +19,29 @@ const DOC_TYPES = [
   { id: "UTILITY",  label: "Utility Bill",     icon: Zap,        available: false },
 ] as const
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Convert camelCase / snake_case key to a readable label */
 function humanize(key: string): string {
   return key
-    .replace(/([A-Z])/g, " $1")           // camelCase → words
-    .replace(/_/g, " ")                    // snake_case → words
-    .replace(/^./, (c) => c.toUpperCase()) // capitalise first letter
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/^./, (c) => c.toUpperCase())
     .trim()
 }
 
-/** Confidence colour */
 function confColor(confidence: number, filled: boolean) {
   if (!filled) return "text-[#BDBDBD]"
   if (confidence >= 0.8) return "text-[#00A651]"
   return "text-[#D4891A]"
 }
 
-// ── Props ──────────────────────────────────────────────────────────────────────
 
 interface Props {
   onScanComplete: (result: ScanDocumentResult) => void
   onSkip:         () => void
-  onReopen:       () => void   // re-shows the full scanner UI
+  onReopen:       () => void
   collapsed:      boolean
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
 
 export default function DocumentScanner({ onScanComplete, onSkip, onReopen, collapsed }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -60,33 +54,29 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
   const [isDragging,  setIsDragging]  = useState(false)
   const [showDetails, setShowDetails] = useState(false)
 
-  // ── Transition animations ─────────────────────────────────────────────────────
-  const [animateIn,     setAnimateIn]     = useState(false) // full scanner card
-  const [stripAnimateIn, setStripAnimateIn] = useState(false) // collapsed strip
+  const [animateIn,     setAnimateIn]     = useState(false)
+  const [stripAnimateIn, setStripAnimateIn] = useState(false)
 
   useEffect(() => {
     let raf: number
     if (!collapsed) {
-      // → opening full scanner (re-scan): fade+slide down
-      setShowDetails(false)          // reset so it opens fresh next scan
+      setShowDetails(false)
       setAnimateIn(false)
       raf = requestAnimationFrame(() => {
         requestAnimationFrame(() => setAnimateIn(true))
       })
     } else {
-      // → collapsing to strip (scan done): auto-open details + fade+slide up
       setStripAnimateIn(false)
       raf = requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setStripAnimateIn(true)
-          setShowDetails(true)       // auto-expand field list after scan
+          setShowDetails(true)
         })
       })
     }
     return () => cancelAnimationFrame(raf)
   }, [collapsed])
 
-  // ── File handling ────────────────────────────────────────────────────────────
 
   const addFiles = useCallback((list: FileList | null) => {
     if (!list) return
@@ -109,7 +99,6 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     addFiles(e.dataTransfer.files)
   }, [addFiles])
 
-  // ── Scan ─────────────────────────────────────────────────────────────────────
 
   const handleScan = async () => {
     if (!files.length) return
@@ -118,9 +107,6 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     try {
       const data = await scanDocument(files, countryCode)
       setResult(data)
-      // ↑ Do NOT call onScanComplete here — that would collapse the scanner
-      // immediately and skip the ScanResultOverview. The overview calls
-      // onScanComplete itself when the user clicks "Got it, continue".
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
@@ -128,17 +114,15 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     }
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────────
 
   const filledCount = result
     ? Object.values(result.fields).filter((f) => f.filled).length
     : 0
   const totalCount  = result ? Object.keys(result.fields).length : 0
 
-  // ── Collapsed strip (shown after scan or skip) ────────────────────────────────
 
   if (collapsed) {
-    const canExpand = !!result  // only expand if there's actual scan data to show
+    const canExpand = !!result
 
     return (
       <div className={cn(
@@ -147,7 +131,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
         stripAnimateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
       )}>
 
-        {/* Toggle row — div to avoid nested <button> hydration error */}
+        {}
         <div
           role="button"
           tabIndex={0}
@@ -203,7 +187,6 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
               </button>
             )}
             {canExpand && (
-              /* Animated chevron — rotates 180° when expanded */
               <ChevronDown
                 className={cn(
                   "h-4 w-4 text-[#9E9E9E] transition-transform duration-300 ease-in-out",
@@ -214,7 +197,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
           </div>
         </div>
 
-        {/* Animated expand/collapse — max-height (compositable, GPU-accelerated) */}
+        {}
         <div
           className="overflow-hidden"
           style={{
@@ -236,11 +219,10 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
     )
   }
 
-  // ── Full scanner UI ───────────────────────────────────────────────────────────
 
   return (
     <div>
-      {/* Upload card — hide once result is shown */}
+      {}
       {!result && (
         <div className={cn(
           "rounded-2xl border-2 border-dashed border-[#F5A623] bg-[#FFFBF0] p-6 text-center",
@@ -248,18 +230,18 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
           animateIn ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}>
 
-          {/* Icon */}
+          {}
           <div className="w-14 h-14 rounded-2xl bg-[#FEF3DC] flex items-center justify-center mx-auto mb-4">
             <ScanLine className="h-7 w-7 text-[#D4891A]" />
           </div>
 
-          {/* Heading */}
+          {}
           <h2 className="text-xl font-bold text-[#1A1A1A]">Save time, let AI fill your form</h2>
           <p className="text-sm text-[#6B6B6B] mt-2 mb-5 leading-relaxed">
             Upload your IC or property document and our AI will pre-fill as many fields as possible to streamline your journey.
           </p>
 
-          {/* Drop zone */}
+          {}
           <div
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
@@ -285,7 +267,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             onChange={(e) => addFiles(e.target.files)}
           />
 
-          {/* Selected file pills */}
+          {}
           {files.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2 justify-center">
               {files.map((f) => (
@@ -304,7 +286,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             </div>
           )}
 
-          {/* Error */}
+          {}
           {error && (
             <div className="mb-4 flex items-start gap-2 rounded-lg bg-[#FFEBEE] border border-[#FECACA] px-3 py-2.5 text-left">
               <AlertCircle className="h-4 w-4 text-[#D32F2F] shrink-0 mt-0.5" />
@@ -312,7 +294,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             </div>
           )}
 
-          {/* Scan button */}
+          {}
           <button
             type="button"
             onClick={handleScan}
@@ -330,7 +312,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
             }
           </button>
 
-          {/* Skip */}
+          {}
           <div className="mt-3">
             <button
               type="button"
@@ -343,7 +325,7 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
         </div>
       )}
 
-      {/* ── Scan result — new Journey Readiness Overview ── */}
+      {}
       {result && (
         <div className={cn(
           "transition-[opacity,transform] duration-200 ease-out",
@@ -360,7 +342,6 @@ export default function DocumentScanner({ onScanComplete, onSkip, onReopen, coll
   )
 }
 
-// ── Reusable field list (used in both full and collapsed views) ────────────────
 
 function ResultFieldList({
   result,
@@ -386,7 +367,7 @@ function ResultFieldList({
               lowConf && "bg-[#FDF8EC]",
             )}
           >
-            {/* Field name */}
+            {}
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {highConf && <CheckCircle2 className="h-3.5 w-3.5 text-[#00A651] shrink-0" />}
               {lowConf  && <AlertTriangle className="h-3.5 w-3.5 text-[#D4891A] shrink-0" />}
@@ -401,7 +382,7 @@ function ResultFieldList({
               </span>
             </div>
 
-            {/* Value + confidence */}
+            {}
             <div className="flex items-center gap-2.5 shrink-0 ml-4">
               {field.filled && field.value ? (
                 <>

@@ -14,7 +14,7 @@ namespace ApplicationService.Core.Application.AuthService.DTOs.Auth
         public string? IdType { get; set; }
         public string IdNumber { get; set; }
         public string Contact { get; set; }
-        public string Region { get; set; } // PH, ID, KH
+        public string Region { get; set; }
         public AddressDto? Address { get; set; }
     }
 }

@@ -7,10 +7,6 @@ using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.DocumentService.Features.Document.Query
 {
-    /// <summary>
-    /// Downloads a single policy PDF (PDS, ePolicy, or Tax Invoice) by file-type token.
-    /// Only the authenticated customer who owns the proposal may call this endpoint.
-    /// </summary>
     public class DownloadFileQuery : IRequest<DownloadFileResult>
     {
         public string ProposalId { get; set; } = string.Empty;
@@ -26,7 +22,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
             private readonly IProposalRepository _proposalRepository;
             private readonly DocumentSettings    _docSettings;
 
-            // Maps the API fileType token → exact filename suffix (English versions).
             private static readonly Dictionary<string, string> FileTypeSuffix =
                 new(StringComparer.OrdinalIgnoreCase)
                 {
@@ -35,8 +30,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                     ["TaxInvoice"] = "- Tax Invoice.pdf",
                 };
 
-            // For local-language variants the suffix contains a parenthesised language name
-            // that differs per region, so we match by a fixed infix instead.
             private static readonly HashSet<string> LocalFileTypes =
                 new(StringComparer.OrdinalIgnoreCase)
                 {
@@ -107,7 +100,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                 string? filePath;
                 if (isLocal)
                 {
-                    // Local files have a parenthesised language name: "- PDS (Bahasa Indonesia).pdf"
                     var infix = LocalFileTypeInfix[request.FileType];
                     filePath = Directory.GetFiles(storeDir, "*.pdf")
                         .FirstOrDefault(f =>

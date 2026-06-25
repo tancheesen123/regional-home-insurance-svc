@@ -6,10 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace ApplicationService.Core.Application.SalesService.Features.Query
 {
-    /// <summary>
-    /// Returns a filtered list of sales records plus an unfiltered period summary.
-    /// Summary is always computed from the full date-range dataset (ignoring status/search filters).
-    /// </summary>
     public class GetSalesRecordsQuery : IRequest<GetSalesRecordsResult>
     {
         public GetSalesRecordsRequest Request { get; set; } = new();
@@ -37,10 +33,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     "=== GetSalesRecords | DateFrom={DateFrom} DateTo={DateTo} Status={Status} Search={Search} ===",
                     req.DateFrom, req.DateTo, req.Status, req.Search);
 
-                // Load all proposals for the period (date filter only)
                 var all = await _proposalRepository.GetSalesProposalsAsync(req.DateFrom, req.DateTo);
 
-                // Load the immediately preceding period of the same length for growth comparison
                 decimal? priorPeriodPremium = null;
                 if (req.DateFrom.HasValue && req.DateTo.HasValue)
                 {
@@ -52,10 +46,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                     priorPeriodPremium = priorProposals.Select(GetPremium).Sum();
                 }
 
-                // Summary is computed from the unfiltered period dataset
                 var summary = ComputeSummary(all, priorPeriodPremium);
 
-                // Apply additional filters for the records list
                 var filtered = all.AsEnumerable();
 
                 if (!string.IsNullOrWhiteSpace(req.Status))
@@ -90,7 +82,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
                 };
             }
 
-            // ── Mapping helpers ────────────────────────────────────────────────
 
             private static SalesRecord MapToRecord(Proposal p)
             {
@@ -208,7 +199,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
         }
     }
 
-    // ── Result types ───────────────────────────────────────────────────────────
 
     public class GetSalesRecordsResult
     {
@@ -218,7 +208,6 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
 
     public class SalesRecord
     {
-        /// <summary>ProposalId — use as recordId for GET /api/sales/{recordId}</summary>
         public string Id { get; set; } = string.Empty;
         public string PolicyNumber { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
@@ -246,10 +235,8 @@ namespace ApplicationService.Core.Application.SalesService.Features.Query
         public int PendingPolicies { get; set; }
         public decimal AveragePremium { get; set; }
 
-        /// <summary>Percentage of decided proposals (INFORCED + CANCELLED) that were INFORCED.</summary>
         public decimal ConversionRate { get; set; }
 
-        /// <summary>Percentage change in total premium vs. the immediately preceding period of the same length.</summary>
         public decimal PremiumGrowthPct { get; set; }
     }
 }

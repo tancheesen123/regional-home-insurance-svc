@@ -2,45 +2,31 @@ import { getSession, clearSession } from "@/lib/session"
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:44337"}/api`
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
-/**
- * One row from the building_rates table.
- * Backend fields: id, region, propertySubType, constructionType ("full-brick"|"partial-brick"), ratePerUnit, isActive
- */
 export interface BuildingRateRow {
   id: string
-  region: string                    // e.g. "MY" | "ID" | "PH" | "KH"
-  propertySubType: string           // "bungalow" | "semi-detached" | "terrace" | "condo" | "apartment" | "flat"
-  constructionType: string          // "full-brick" | "partial-brick"
+  region: string
+  propertySubType: string
+  constructionType: string
   ratePerUnit: number
   isActive: boolean
 }
 
-/**
- * Region config — singular object (not array) in the GET /configs response.
- * Backend fields: id, region, areaUnit, areaMin, areaMax, storeyIncrementPct,
- *                 maxStoreys, professionalFeeRate, benchmarkYear, isActive
- */
 export interface RegionConfigRow {
   id: string
   region: string
-  areaUnit: string                  // "sqft" | "sqm"
+  areaUnit: string
   areaMin: number
   areaMax: number
-  storeyIncrementPct: number        // e.g. 0.05 = 5 %
+  storeyIncrementPct: number
   maxStoreys: number
-  professionalFeeRate: number       // e.g. 0.10 = 10 %
+  professionalFeeRate: number
   benchmarkYear: number
-  buildingRate: number               // premium rate per RM/unit of building sum insured
-  contentRate: number                // premium rate per RM/unit of content sum insured
+  buildingRate: number
+  contentRate: number
   isActive: boolean
 }
 
-/**
- * One row from the location_tiers table.
- * Backend fields: id, region, tier, multiplier, label, keywords, isActive
- */
 export interface LocationTierRow {
   id: string
   region: string
@@ -51,68 +37,54 @@ export interface LocationTierRow {
   isActive: boolean
 }
 
-/**
- * One row from the risk_multipliers table.
- * Backend fields: id, region, factorKey, multiplier, description, isActive
- */
 export interface RiskMultiplierRow {
   id: string
   region: string
-  factorKey: string                 // machine key e.g. "risk.flooding", "construction.partial-brick"
+  factorKey: string
   multiplier: number
   description: string
   isActive: boolean
 }
 
-/**
- * Shape of GET /api/rateconfig/configs response (per-country).
- * Note: regionConfig is a single object, not an array.
- */
 export interface RateConfigsResponse {
   buildingRates:   BuildingRateRow[]
-  regionConfig:    RegionConfigRow        // singular object
+  regionConfig:    RegionConfigRow
   locationTiers:   LocationTierRow[]
   riskMultipliers: RiskMultiplierRow[]
 }
 
-// ─── Audit / History types ────────────────────────────────────────────────────
 
-/** One field-level change recorded inside a snapshot */
 export interface ChangeLogEntry {
   id: string
-  tableName: string   // e.g. "BuildingConstructionRates"
+  tableName: string
   recordId: string
-  fieldName: string   // e.g. "single-detached / full-brick → RatePerUnit"
+  fieldName: string
   oldValue: string
   newValue: string
   changedBy: string
-  changedAt: string   // ISO-8601
+  changedAt: string
 }
 
-/** Row returned by GET /api/rateconfig/snapshots (changeLogs is always empty here) */
 export interface SnapshotListItem {
   id: string
   region: string
   label: string
   snapshotType: "auto" | "manual" | "restored"
   createdBy: string
-  createdAt: string   // ISO-8601
+  createdAt: string
   changeLogs: []
 }
 
-/** Full snapshot with diff detail — returned by GET /api/rateconfig/snapshots/{id} */
 export interface SnapshotDetail extends Omit<SnapshotListItem, "changeLogs"> {
   changeLogs: ChangeLogEntry[]
 }
 
-/** Response from POST /api/rateconfig/restore/{id} */
 export interface RestoreResult {
   restoredSnapshotId: string
   fieldsReverted: number
   message: string
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getAdminHeaders(countryCode?: string): Record<string, string> {
   const session = getSession()

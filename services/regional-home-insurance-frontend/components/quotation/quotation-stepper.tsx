@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-// ── Route for each step number ────────────────────────────────────────────────
 
 const STEP_ROUTES: Record<number, string> = {
   1: "/dashboard/quotation/customize",
@@ -14,13 +13,11 @@ const STEP_ROUTES: Record<number, string> = {
   4: "/dashboard/quotation/summary",
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   currentStep: 1 | 2 | 3 | 4
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function QuotationStepper({ currentStep }: Props) {
   const t      = useTranslations("quotation")
@@ -33,7 +30,6 @@ export default function QuotationStepper({ currentStep }: Props) {
     t("common.summaryPayment"),
   ] as const
 
-  // Only steps already completed (< currentStep) are navigable
   const canNavigate = (step: number) => step < currentStep
 
   const handleClick = (step: number) => {
@@ -43,7 +39,7 @@ export default function QuotationStepper({ currentStep }: Props) {
   return (
     <div className="mb-8">
 
-      {/* ── Desktop: full 4-step row ─────────────────────────────────────── */}
+      {}
       <div className="hidden sm:flex items-center justify-center">
         {steps.map((label, idx) => {
           const step      = idx + 1
@@ -54,7 +50,7 @@ export default function QuotationStepper({ currentStep }: Props) {
 
           return (
             <div key={step} className="flex items-center">
-              {/* Circle + label — clickable when done */}
+              {}
               <button
                 type="button"
                 onClick={() => handleClick(step)}
@@ -66,7 +62,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                     : "cursor-default",
                 )}
               >
-                {/* Circle */}
+                {}
                 <div
                   className={cn(
                     "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-colors duration-150",
@@ -79,7 +75,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                   {isDone ? <Check className="h-4 w-4" strokeWidth={2.5} /> : step}
                 </div>
 
-                {/* Label */}
+                {}
                 <span
                   className={cn(
                     "text-sm font-medium whitespace-nowrap transition-colors duration-150",
@@ -93,7 +89,7 @@ export default function QuotationStepper({ currentStep }: Props) {
                 </span>
               </button>
 
-              {/* Connector line */}
+              {}
               {!isLast && (
                 <div
                   className={cn(
@@ -107,9 +103,9 @@ export default function QuotationStepper({ currentStep }: Props) {
         })}
       </div>
 
-      {/* ── Mobile: compact step indicator ──────────────────────────────── */}
+      {}
       <div className="sm:hidden">
-        {/* Back link — shown when not on first step */}
+        {}
         {currentStep > 1 && (
           <button
             type="button"
@@ -130,7 +126,7 @@ export default function QuotationStepper({ currentStep }: Props) {
           </span>
         </div>
 
-        {/* Segmented progress bar — completed segments are clickable */}
+        {}
         <div className="flex gap-1">
           {steps.map((_, idx) => {
             const step      = idx + 1

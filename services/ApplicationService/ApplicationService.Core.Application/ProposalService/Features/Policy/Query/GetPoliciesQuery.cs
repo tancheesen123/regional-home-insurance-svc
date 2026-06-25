@@ -5,12 +5,8 @@ using System.Security.Claims;
 
 namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Query
 {
-    /// <summary>
-    /// Returns a summary list of all inforced policies that belong to the authenticated customer.
-    /// </summary>
     public class GetPoliciesQuery : IRequest<GetPoliciesResult>
     {
-        /// <summary>Authenticated user — used to resolve the customer identity.</summary>
         public ClaimsPrincipal User { get; set; } = new ClaimsPrincipal();
 
         public class GetPoliciesQueryHandler
@@ -72,17 +68,14 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
 
     public class PolicySummary
     {
-        /// <summary>Proposal that produced this policy.</summary>
         public string ProposalId { get; set; } = string.Empty;
 
         public string PolicyId { get; set; } = string.Empty;
 
         public string PolicyNumber { get; set; } = string.Empty;
 
-        /// <summary>"building" | "contents" | "building-contents"</summary>
         public string PlanType { get; set; } = string.Empty;
 
-        /// <summary>Region code: "ID" | "KH" | "PH"</summary>
         public string Region { get; set; } = string.Empty;
 
         public decimal CoverageAmount { get; set; }
@@ -93,7 +86,6 @@ namespace ApplicationService.Core.Application.ProposalService.Features.Policy.Qu
 
         public DateTime IssuedAt { get; set; }
 
-        /// <summary>True once all PDF documents (PDS, ePolicy, Tax Invoice) have been generated.</summary>
         public bool IsDocumentReady { get; set; }
     }
 }

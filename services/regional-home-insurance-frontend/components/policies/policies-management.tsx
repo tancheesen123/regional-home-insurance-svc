@@ -35,7 +35,6 @@ import { downloadPolicyDocuments, DocumentDownloadError } from "@/lib/api"
 import { getSession } from "@/lib/session"
 import { getRegionConfig } from "@/lib/region"
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const REGION_COUNTRY: Record<string, string> = {
   MY: "Malaysia",

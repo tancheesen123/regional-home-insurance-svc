@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplicationDb
 {
-    /// <inheritdoc />
     public partial class AddAddressEntity : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
@@ -58,7 +56,6 @@ namespace ApplicationService.Infrastructure.Persistence.Migrations.PHApplication
                 onDelete: ReferentialAction.SetNull);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(

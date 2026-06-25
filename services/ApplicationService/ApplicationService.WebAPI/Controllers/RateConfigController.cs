@@ -7,28 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApplicationService.WebAPI.Controllers
 {
-    /// <summary>
-    /// Rate configuration endpoints.
-    ///
-    /// Admin endpoints (require Role=Admin):
-    ///   GET  /api/rateconfig/configs                    — all raw config rows for the region
-    ///   PUT  /api/rateconfig/building-rates             — bulk update building-rate rows
-    ///   PUT  /api/rateconfig/region-config/{id}        — update region-level config
-    ///   PUT  /api/rateconfig/location-tiers            — bulk update location-tier rows
-    ///   PUT  /api/rateconfig/location-tiers/{id}       — update a single location-tier row
-    ///   PUT  /api/rateconfig/risk-multipliers          — bulk update risk-multiplier rows
-    ///   PUT  /api/rateconfig/risk-multipliers/{id}     — update a single risk-multiplier row
-    ///   POST /api/rateconfig/seed                      — seed initial data for a region
-    ///   GET  /api/rateconfig/snapshots                 — list config snapshots (newest first)
-    ///   GET  /api/rateconfig/snapshots/{snapshotId}    — single snapshot with change-log detail
-    ///   GET  /api/rateconfig/change-logs               — paginated field-level change log
-    ///   POST /api/rateconfig/restore/{snapshotId}      — roll back to a previous snapshot
-    ///
-    /// Public endpoint (any authenticated user / frontend):
-    ///   GET  /api/rateconfig/building-config           — full config in frontend shape
-    ///
-    /// All endpoints require the X-Country-Code header: PH | ID | KH
-    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -44,25 +22,7 @@ namespace ApplicationService.WebAPI.Controllers
         private string CallerName =>
             User.Identity?.Name ?? User.FindFirst("customerId")?.Value ?? "Admin";
 
-        // ════════════════════════════════════════════════════════════════════════
-        // PUBLIC — building cost estimator (standalone calculator page)
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Calculates a recommended Building Sum Insured from the customer's floor area,
-        /// property type, construction type, storey count, province, and optional add-on costs.
-        ///
-        /// Formula (in order):
-        ///   1. constructionCost     = FloorArea × BaseRatePerUnit
-        ///   2. storeyLoading        = constructionCost × (NumberOfStoreys − 1) × StoreyIncrementPct
-        ///      storeyAdjusted       = constructionCost + storeyLoading
-        ///   3. locationAdjusted     = storeyAdjusted × LocationMultiplier   (auto-detected from Province)
-        ///   4. professionalFee      = locationAdjusted × ProfessionalFeeRate
-        ///   5. TotalRebuildingCost  = locationAdjusted + professionalFee + AdditionalCost
-        ///
-        /// Province is matched case-insensitively against stored location-tier keywords.
-        /// Unrecognised provinces default to the "urban" tier (multiplier = 1.00).
-        /// </summary>
         [HttpPost("calculate-building-cost")]
         public async Task<IActionResult> CalculateBuildingCost(
             [FromBody] BuildingCostRequest body)
@@ -96,14 +56,7 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // PUBLIC — frontend fetches this to replace hardcoded BUILDING_CONFIGS
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Returns the full building-cost estimator config for the region in the shape
-        /// the frontend expects (replaces the static BUILDING_CONFIGS object).
-        /// </summary>
         [HttpGet("building-config")]
         public async Task<IActionResult> GetBuildingConfig()
         {
@@ -121,13 +74,7 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // ADMIN — read all raw config rows
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Returns all raw rate config rows for the region (for the admin dashboard table views).
-        /// </summary>
         [HttpGet("configs")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetConfigs()
@@ -139,16 +86,7 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // ADMIN — update individual config rows
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Updates one or more construction-rate rows in a single call.
-        /// Pass an array of { id, ratePerUnit } — partial updates are supported
-        /// (send only the rows you want to change).
-        /// If any entry fails validation the entire batch is rejected; no changes are saved.
-        /// </summary>
         [HttpPut("building-rates")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateBuildingRates(
@@ -180,10 +118,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Updates the region-level config (area limits, storey rules, fees, benchmark year).
-        /// All fields are optional — only provided fields are updated.
-        /// </summary>
         [HttpPut("region-config/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRegionConfig(
@@ -212,12 +146,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Bulk-updates one or more location-tier rows in a single call.
-        /// Pass an array of { id, multiplier?, label?, keywords? } — only provided fields are updated.
-        /// Sending "keywords" replaces the entire keyword list for that tier.
-        /// If any entry fails validation the entire batch is rejected; no changes are saved.
-        /// </summary>
         [HttpPut("location-tiers")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateLocationTiers(
@@ -249,11 +177,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Updates a single location-tier row (multiplier, display label, or province keyword list).
-        /// All fields are optional — only provided fields are updated.
-        /// Sending "keywords" replaces the entire keyword list for that tier.
-        /// </summary>
         [HttpPut("location-tiers/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateLocationTier(
@@ -282,11 +205,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Bulk-updates one or more risk multiplier rows in a single call.
-        /// Pass an array of { id, multiplier, description? }.
-        /// If any entry fails validation the entire batch is rejected; no changes are saved.
-        /// </summary>
         [HttpPut("risk-multipliers")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRiskMultipliers(
@@ -318,10 +236,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Updates a single risk multiplier value (e.g. flooding loading, partial-brick surcharge).
-        /// Body: { "multiplier": 1.30, "description": "optional note" }
-        /// </summary>
         [HttpPut("risk-multipliers/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRiskMultiplier(
@@ -354,15 +268,7 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // ADMIN — seed initial data
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Seeds the initial rate configuration for the region specified in X-Country-Code.
-        /// Safe to call multiple times — returns a 200 with seeded=false if already seeded.
-        /// Call once per region (PH, ID, KH) after first deployment.
-        /// </summary>
         [HttpPost("seed")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Seed()
@@ -381,12 +287,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Inserts any missing RiskMultiplierConfig rows for the region without touching existing data.
-        /// Safe to call multiple times — skips keys that already exist.
-        /// Use this after deploying a backend update that added new multiplier keys
-        /// (e.g. age.*, quality.*, topography.*, site.*) to already-seeded regions.
-        /// </summary>
         [HttpPost("patch-seed")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PatchSeed()
@@ -406,15 +306,7 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // ADMIN — snapshot & change-log audit
-        // ════════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Returns all config snapshots for the region, newest first.
-        /// Each snapshot records the full region config at the moment of a save.
-        /// Use GET /snapshots/{snapshotId} to see the field-level change log for a specific save.
-        /// </summary>
         [HttpGet("snapshots")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetSnapshots()
@@ -426,10 +318,6 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Returns a single snapshot with the full field-level change log attached.
-        /// The snapshotJson field contains the complete region config as it was at save time.
-        /// </summary>
         [HttpGet("snapshots/{snapshotId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetSnapshotById(string snapshotId)
@@ -446,11 +334,6 @@ namespace ApplicationService.WebAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Returns a paginated list of every individual field change for the region,
-        /// newest first. Each row shows which table/record/field changed and the old vs new value.
-        /// Query params: page (default 1), pageSize (default 50, max 200).
-        /// </summary>
         [HttpGet("change-logs")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetChangeLogs(
@@ -468,11 +351,6 @@ namespace ApplicationService.WebAPI.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Restores every rate config table for the region to the values stored in the
-        /// specified snapshot. A new "restored" audit snapshot is created automatically.
-        /// Body: { "note": "optional comment" }
-        /// </summary>
         [HttpPost("restore/{snapshotId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RestoreSnapshot(

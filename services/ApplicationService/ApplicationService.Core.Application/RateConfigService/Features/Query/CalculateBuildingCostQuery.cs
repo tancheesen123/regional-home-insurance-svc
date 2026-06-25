@@ -22,13 +22,11 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 var region = request.Region.ToUpper();
                 var body   = request.Body;
 
-                // ── Load config ───────────────────────────────────────────────
                 var regionCfg = await _repo.GetRegionConfigAsync(region)
                     ?? throw new InvalidOperationException(
                         $"Rate configuration for region '{region}' has not been seeded yet. " +
                         "Call POST /api/rateconfig/seed first.");
 
-                // ── Validate inputs ───────────────────────────────────────────
                 if (body.FloorArea <= 0)
                     throw new ArgumentException("Floor area must be greater than zero.");
 
@@ -50,7 +48,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                         $"Number of storeys ({body.NumberOfStoreys}) exceeds the regional " +
                         $"maximum of {regionCfg.MaxStoreys}.");
 
-                // ── Look up base rate from RegionConfig.BuildingRatesJson ─────
                 var buildingRates = ParseBuildingRates(regionCfg.BuildingRatesJson);
                 var rateRow = buildingRates.FirstOrDefault(r =>
                     r.PropertySubType.Equals(body.PropertySubType,  StringComparison.OrdinalIgnoreCase) &&
@@ -60,10 +57,8 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                         "Valid property types: bungalow, semi-detached, terrace, condo, apartment, flat. " +
                         "Valid construction types: full-brick, partial-brick.");
 
-                // ── Load all risk multipliers for this region ─────────────────
                 var allMultipliers = await _repo.GetMultipliersAsync(region, "risk_factor");
 
-                // ── Look up the 4 classification factors ──────────────────────
                 var ageFactor        = LookupFactor(allMultipliers, $"age.{body.AgeOfBuilding}",
                     "age", "1to10 | 11to20 | 21to30 | 30plus");
 
@@ -76,36 +71,26 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 var siteFactor       = LookupFactor(allMultipliers, $"site.{body.SiteSurrounding}",
                     "siteSurrounding", "normal | confined | city-centre");
 
-                // ── Detect location tier from province ────────────────────────
                 var tiers = await _repo.GetMultipliersAsync(region, "location_tier");
                 var (detectedTier, locationMultiplier) = DetectTier(body.Province, tiers);
 
-                // ═════════════════════════════════════════════════════════════
-                // FORMULA
-                // ═════════════════════════════════════════════════════════════
 
-                // Step 1a — Raw construction cost
                 var rawCost = Round(body.FloorArea * rateRow.RatePerUnit);
 
-                // Step 1b — Classification modifiers (quality × age × topography × site)
                 var classifiedCost = Round(rawCost
                     * qualityFactor
                     * ageFactor
                     * topographyFactor
                     * siteFactor);
 
-                // Step 2 — Storey loading (applied on classified cost, before location)
                 var storeyLoadingPct  = (body.NumberOfStoreys - 1) * regionCfg.StoreyIncrementPct;
                 var storeyLoading     = Round(classifiedCost * storeyLoadingPct);
                 var storeyAdjusted    = classifiedCost + storeyLoading;
 
-                // Step 3 — Location adjustment
                 var locationAdjusted  = Round(storeyAdjusted * locationMultiplier);
 
-                // Step 4 — Professional fee (on location-adjusted amount)
                 var professionalFee   = Round(locationAdjusted * regionCfg.ProfessionalFeeRate);
 
-                // Step 5 — Add-ons (direct additions, no multiplier)
                 var furnitureCost       = Clamp(body.FurnitureCost);
                 var featuresCost        = Clamp(body.FeaturesCost);
                 var externalRenovation  = Clamp(body.ExternalRenovation);
@@ -115,26 +100,19 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                                         + externalRenovation + internalRenovation
                                         + improvedFinishes;
 
-                // Step 6 — Total rebuilding cost
                 var total = Round(locationAdjusted + professionalFee + totalAddOns);
 
-                // ═════════════════════════════════════════════════════════════
-                // BUILD RESULT
-                // ═════════════════════════════════════════════════════════════
                 return new BuildingCostResult
                 {
-                    // Inputs echoed
                     PropertySubType      = rateRow.PropertySubType,
                     ConstructionType     = rateRow.ConstructionType,
                     FloorArea            = body.FloorArea,
                     AreaUnit             = regionCfg.AreaUnit,
                     BenchmarkYear        = regionCfg.BenchmarkYear,
 
-                    // Step 1a
                     BaseRatePerUnit      = rateRow.RatePerUnit,
                     RawConstructionCost  = rawCost,
 
-                    // Step 1b
                     AgeOfBuilding        = body.AgeOfBuilding,
                     AgeFactor            = ageFactor,
                     Quality              = body.Quality,
@@ -145,22 +123,18 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     SiteFactor           = siteFactor,
                     ClassifiedCost       = classifiedCost,
 
-                    // Step 2
                     NumberOfStoreys      = body.NumberOfStoreys,
                     StoreyIncrementPct   = regionCfg.StoreyIncrementPct,
                     StoreyLoading        = storeyLoading,
                     StoreyAdjustedCost   = storeyAdjusted,
 
-                    // Step 3
                     DetectedLocationTier = detectedTier,
                     LocationMultiplier   = locationMultiplier,
                     LocationAdjustedCost = locationAdjusted,
 
-                    // Step 4
                     ProfessionalFeeRate  = regionCfg.ProfessionalFeeRate,
                     ProfessionalFee      = professionalFee,
 
-                    // Step 5
                     FurnitureCost        = furnitureCost,
                     FeaturesCost         = featuresCost,
                     ExternalRenovation   = externalRenovation,
@@ -168,18 +142,11 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                     ImprovedFinishes     = improvedFinishes,
                     TotalAddOns          = totalAddOns,
 
-                    // Step 6
                     TotalRebuildingCost  = total,
                 };
             }
 
-            // ── Helpers ───────────────────────────────────────────────────────
 
-            /// <summary>
-            /// Looks up a factor key in the loaded multipliers list.
-            /// Throws a descriptive ArgumentException if the key is not found
-            /// (likely means the value passed for that field is invalid).
-            /// </summary>
             private static decimal LookupFactor(
                 List<RateMultiplierConfig> all, string key,
                 string fieldName, string validValues)
@@ -246,7 +213,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
             private static decimal Round(decimal value) =>
                 Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
-            /// <summary>Clamps add-on amounts to 0 minimum — negative values are ignored.</summary>
             private static decimal Clamp(decimal value) => value < 0 ? 0m : value;
         }
     }

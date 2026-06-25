@@ -36,7 +36,6 @@ export default function SummaryPayment() {
       })
       .catch(() => setError(t("summary.failedToLoad")))
       .finally(() => setIsLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handlePay = async () => {
@@ -63,7 +62,6 @@ export default function SummaryPayment() {
         return
       }
 
-      // Persist so the success page can display payment details
       savePaymentResult({
         paymentId:       response.data.paymentId,
         referenceNumber: response.data.referenceNumber,
@@ -73,7 +71,6 @@ export default function SummaryPayment() {
         currency:        response.data.currency,
       })
 
-      // All regions use Stripe — it handles PHP / IDR / KHR / MYR natively
       if (response.data.stripeSession?.checkoutUrl) {
         window.location.href = response.data.stripeSession.checkoutUrl
       } else {

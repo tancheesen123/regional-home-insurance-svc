@@ -44,7 +44,6 @@ interface PolicyDetailProps {
   proposalId: string
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function safeFormatDate(dateStr: string | undefined | null, fmt = "MMM dd, yyyy"): string {
   if (!dateStr) return "—"
@@ -78,7 +77,6 @@ function YesNo({ val }: { val: boolean }) {
   return <span className={val ? "text-green-600 font-medium" : "text-gray-500"}>{val ? "Yes" : "No"}</span>
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function LoadingSkeleton() {
   return (
@@ -98,7 +96,6 @@ function LoadingSkeleton() {
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
   const router = useRouter()
@@ -109,7 +106,6 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
 
-  // Download state
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
   const [downloadingAll,   setDownloadingAll]   = useState(false)
   const [downloadError,    setDownloadError]    = useState<string | null>(null)
@@ -157,7 +153,6 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
     return () => { cancelled = true }
   }, [proposalId])
 
-  // ── Download handlers ──────────────────────────────────────────────────────
 
   const handleDownloadDoc = async (docId: string, fileType: string, fileName: string) => {
     setDownloadingDocId(docId)
@@ -211,7 +206,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => router.back()}>
@@ -225,7 +220,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
         </div>
       </div>
 
-      {/* Status Alert */}
+      {}
       <Alert className={policyStatus === "Active" ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}>
         <Shield className="h-4 w-4" />
         <AlertDescription>
@@ -235,7 +230,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
         </AlertDescription>
       </Alert>
 
-      {/* Summary Cards */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -284,7 +279,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
         </Card>
       </div>
 
-      {/* Tabs */}
+      {}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -294,10 +289,10 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
-        {/* ── Overview ── */}
+        {}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Policy Info */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -337,7 +332,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
               </CardContent>
             </Card>
 
-            {/* Coverage Details */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -372,7 +367,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
             </Card>
           </div>
 
-          {/* Insured Person (quick view) */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -413,7 +408,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
           </Card>
         </TabsContent>
 
-        {/* ── Personal Details ── */}
+        {}
         <TabsContent value="personal" className="space-y-6">
           <Card>
             <CardHeader>
@@ -484,7 +479,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
 
               <Separator />
 
-              {/* Addresses */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold mb-3 flex items-center gap-1.5">
@@ -517,7 +512,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
           </Card>
         </TabsContent>
 
-        {/* ── Property ── */}
+        {}
         <TabsContent value="property" className="space-y-6">
           <Card>
             <CardHeader>
@@ -580,7 +575,7 @@ export default function PolicyDetail({ proposalId }: PolicyDetailProps) {
 
               <Separator />
 
-              {/* Add-ons */}
+              {}
               <div>
                 <h4 className="font-semibold mb-3">Add-on Coverage</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

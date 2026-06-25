@@ -9,11 +9,6 @@ import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
-/**
- * Calendar — wraps react-day-picker v10.
- * v10 renamed most classNames / components vs v8, so the keys below follow the
- * v10 schema (month_caption, weekday, week, day, day_button, Chevron, etc.).
- */
 function Calendar({
   className,
   classNames,
@@ -35,13 +30,11 @@ function Calendar({
         month_caption: "flex justify-center pt-1 relative items-center h-9",
         caption_label: "text-sm font-medium",
 
-        // Dropdown caption (captionLayout="dropdown")
         dropdowns: "flex items-center justify-center gap-1.5 text-sm font-medium w-full",
         dropdown_root:
           "relative inline-flex items-center rounded-md border border-input bg-background px-2 py-1 text-sm",
         dropdown: "absolute inset-0 w-full opacity-0 cursor-pointer",
 
-        // Prev / next arrows
         nav: "flex items-center justify-between absolute inset-x-1 top-1 h-7",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
@@ -52,13 +45,11 @@ function Calendar({
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
 
-        // Grid
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex",
         weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
         week: "flex w-full mt-2",
 
-        // Days
         day: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),

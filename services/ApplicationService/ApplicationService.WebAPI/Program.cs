@@ -7,24 +7,10 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi.Models;
 using System.Runtime.InteropServices;
 
-// Load .env before the configuration system builds so all
-// environment variables are available to IConfiguration.
 Env.TraversePath().Load();
 
-// ── DinkToPdf native library bootstrap ───────────────────────────────────────
-// DinkToPdf's P/Invoke looks for "libwkhtmltox", but the Windows installer
-// ships the file as "wkhtmltox.dll" (no lib prefix).
-// NativeLibrary.SetDllImportResolver is the correct .NET 5+ way to intercept
-// and redirect P/Invoke calls — CustomAssemblyLoadContext does NOT work for this.
-//
-// File setup:
-//   Windows : place wkhtmltox.dll  OR  libwkhtmltox.dll next to the executable
-//   Linux   : place libwkhtmltox.so next to the executable
-//   Download: https://wkhtmltopdf.org/downloads.html
-//             → wkhtmltox-0.12.6-1.msvc2015-win64.exe  (extract wkhtmltox.dll)
 var baseDir = AppContext.BaseDirectory;
 
-// Accept either naming convention so the installer DLL works without renaming
 var wkCandidates = OperatingSystem.IsWindows()
     ? new[] { "libwkhtmltox.dll", "wkhtmltox.dll" }
     : new[] { "libwkhtmltox.so" };
@@ -35,7 +21,6 @@ var wkDllPath = wkCandidates
 
 if (wkDllPath != null)
 {
-    // Redirect every P/Invoke for "libwkhtmltox" to the actual file on disk
     NativeLibrary.SetDllImportResolver(
         typeof(PdfTools).Assembly,
         (libraryName, _, _) =>
@@ -54,7 +39,6 @@ else
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container — all endpoints require JWT by default
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add(new AuthorizeFilter());
@@ -117,7 +101,6 @@ builder.Services.AddHttpClient("QuotationService", client =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -1,17 +1,9 @@
-/**
- * Client-side Excel export for sales reports.
- * Uses SheetJS (xlsx) to generate a .xlsx file in the browser.
- *
- * NOTE: For large datasets or scheduled exports, use the backend API instead:
- *   POST /api/sales/ExportExcel  →  returns application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
- */
 
 import * as XLSX from "xlsx"
 import { format } from "date-fns"
 import type { SalesRecord, SalesSummary } from "@/lib/api/sales"
 import { formatAmount } from "@/lib/currency"
 
-// ─── Records sheet ────────────────────────────────────────────────────────────
 
 interface RecordsRow {
   "No."             : number
@@ -54,30 +46,28 @@ function buildRecordsSheet(records: SalesRecord[]): XLSX.WorkSheet {
 
   const ws = XLSX.utils.json_to_sheet(rows)
 
-  // Column widths
   ws["!cols"] = [
-    { wch: 5  },  // No.
-    { wch: 20 },  // Policy Number
-    { wch: 22 },  // Customer Name
-    { wch: 28 },  // Customer Email
-    { wch: 18 },  // Product
-    { wch: 22 },  // Coverage Type
-    { wch: 14 },  // Premium
-    { wch: 14 },  // Commission
-    { wch: 14 },  // Sale Date
-    { wch: 14 },  // Effective Date
-    { wch: 14 },  // Renewal Date
-    { wch: 12 },  // Status
-    { wch: 16 },  // Payment Method
-    { wch: 14 },  // Region
-    { wch: 20 },  // Agent
-    { wch: 12 },  // Agent ID
+    { wch: 5  },
+    { wch: 20 },
+    { wch: 22 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 20 },
+    { wch: 12 },
   ]
 
   return ws
 }
 
-// ─── Summary sheet ────────────────────────────────────────────────────────────
 
 function buildSummarySheet(
   summary: SalesSummary,

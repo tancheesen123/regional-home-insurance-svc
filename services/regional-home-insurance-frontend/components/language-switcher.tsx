@@ -19,7 +19,6 @@ export default function LanguageSwitcher() {
   const t = useTranslations("language")
 
   const handleChange = (newLocale: string) => {
-    // Replace the locale segment at the start of the path
     const segments = pathname.split("/")
     segments[1] = newLocale
     router.push(segments.join("/"))

@@ -29,7 +29,7 @@ class PdfConverter:
                 first_page=1,
                 last_page=max_pages,
                 fmt="png",
-                dpi=200,          # high enough for text to be readable by LLaMA
+                dpi=200,
             )
         except PDFInfoNotInstalledError:
             raise RuntimeError(

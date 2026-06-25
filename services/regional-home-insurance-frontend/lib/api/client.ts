@@ -9,16 +9,9 @@ export interface APIResponse<T = unknown> {
 }
 
 interface RequestOptions extends RequestInit {
-  withAuth?: boolean  // true by default — set false for public endpoints like login
+  withAuth?: boolean
 }
 
-/**
- * Base request function.
- * Automatically injects:
- *  - Authorization: Bearer <token>  (from session)
- *  - X-Country-Code                 (from session)
- *  - Content-Type: application/json
- */
 export async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
@@ -33,7 +26,6 @@ export async function request<T>(
   if (withAuth) {
     const session = getSession()
     if (!session) {
-      // Session expired — clear and redirect to login
       clearSession()
       if (typeof window !== "undefined") window.location.href = "/"
       throw new Error("Session expired")

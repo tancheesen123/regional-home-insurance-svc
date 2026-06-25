@@ -5,7 +5,6 @@ using System.Text.Json;
 
 namespace ApplicationService.Core.Application.RateConfigService.Features.Query
 {
-    // ── Admin dashboard: returns all raw config rows for a region ─────────────
 
     public class GetRateConfigsQuery : IRequest<GetRateConfigsResult>
     {
@@ -25,7 +24,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
                 var locationTiers   = await _repo.GetMultipliersAsync(region, "location_tier");
                 var riskMultipliers = await _repo.GetMultipliersAsync(region, "risk_factor");
 
-                // Building rates come from RegionConfig.BuildingRatesJson
                 var buildingRates = regionConfig == null
                     ? new List<BuildingRateDto>()
                     : ParseBuildingRates(regionConfig.BuildingRatesJson, region);
@@ -118,7 +116,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
         public List<RiskMultiplierDto>  RiskMultipliers { get; set; } = new();
     }
 
-    // ── Frontend-shaped config: replaces hardcoded BUILDING_CONFIGS ────────────
 
     public class GetBuildingConfigQuery : IRequest<BuildingConfigResponse>
     {
@@ -140,7 +137,6 @@ namespace ApplicationService.Core.Application.RateConfigService.Features.Query
 
                 var locationTiers = await _repo.GetMultipliersAsync(region, "location_tier");
 
-                // Building rates come from RegionConfig.BuildingRatesJson
                 var buildingRates = ParseBuildingRates(regionConfig.BuildingRatesJson);
 
                 var ratesDict = buildingRates

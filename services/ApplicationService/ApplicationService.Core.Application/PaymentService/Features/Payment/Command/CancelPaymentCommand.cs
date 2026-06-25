@@ -7,7 +7,6 @@ namespace ApplicationService.Core.Application.PaymentService.Features.Payment.Co
 {
     public class CancelPaymentCommand : IRequest<CancelPaymentResponse>
     {
-        /// <summary>The payment reference number from the cancel redirect query string.</summary>
         public string ReferenceNumber { get; set; } = string.Empty;
 
         public class CancelPaymentCommandHandler

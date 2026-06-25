@@ -2,24 +2,23 @@ import { getSession, clearSession } from "@/lib/session"
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:44337"}/api`
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PolicySummary {
   proposalId:      string
   policyId:        string
   policyNumber:    string
-  planType:        string   // "building-contents" | "building" | "contents"
-  region:          string   // "MY" | "PH" | "ID" | "KH"
+  planType:        string
+  region:          string
   coverageAmount:  number
-  startDate:       string   // ISO date-time
-  endDate:         string   // ISO date-time
-  issuedAt:        string   // ISO date-time
+  startDate:       string
+  endDate:         string
+  issuedAt:        string
   isDocumentReady: boolean
 }
 
 export interface PolicyDocument {
   documentId:  string
-  fileType:    string   // "PDS" | "EPolicy" | "TaxInvoice"
+  fileType:    string
   fileName:    string
   uploadedAt:  string
 }
@@ -37,7 +36,6 @@ export interface PolicyDetail extends PolicySummary {
   documents: PolicyDocument[]
 }
 
-// ── Auth fetch ────────────────────────────────────────────────────────────────
 
 async function authFetch(url: string): Promise<Response> {
   const session = getSession()

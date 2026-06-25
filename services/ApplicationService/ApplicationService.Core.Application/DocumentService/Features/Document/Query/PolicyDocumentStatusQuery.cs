@@ -81,7 +81,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                         });
                     }
 
-                    // Canonical sort: PDS → EPolicy → TaxInvoice
                     documents = documents
                         .OrderBy(d => FileTypeSortOrder(d.FileType))
                         .ToList();
@@ -101,7 +100,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
 
             private static string ResolveFileType(string fileName)
             {
-                // Local language variants checked first — pattern: "- PDS (Bahasa Indonesia).pdf"
                 if (fileName.Contains("- PDS (", StringComparison.OrdinalIgnoreCase) &&
                     fileName.EndsWith(").pdf",   StringComparison.OrdinalIgnoreCase))
                     return "PDS_Local";
@@ -112,7 +110,6 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
                     fileName.EndsWith(").pdf",            StringComparison.OrdinalIgnoreCase))
                     return "TaxInvoice_Local";
 
-                // English versions
                 if (fileName.EndsWith("- PDS.pdf",         StringComparison.OrdinalIgnoreCase))
                     return "PDS";
                 if (fileName.EndsWith("- ePolicy.pdf",     StringComparison.OrdinalIgnoreCase))
@@ -138,22 +135,17 @@ namespace ApplicationService.Core.Application.DocumentService.Features.Document.
 
     public class PolicyDocumentStatusResult
     {
-        /// <summary>True once all 3 documents (PDS, ePolicy, Tax Invoice) are ready.</summary>
         public bool IsReady { get; set; }
 
-        /// <summary>Policy number — safe to return even when not yet ready.</summary>
         public string PolicyNumber { get; set; } = string.Empty;
 
-        /// <summary>Empty list when IsReady = false.</summary>
         public List<PolicyDocumentInfo> Documents { get; set; } = new();
     }
 
     public class PolicyDocumentInfo
     {
-        /// <summary>"PDS" | "EPolicy" | "TaxInvoice"</summary>
         public string FileType { get; set; } = string.Empty;
 
-        /// <summary>Display filename, e.g. "HI-ID-2026-001234 - PDS.pdf"</summary>
         public string FileName { get; set; } = string.Empty;
     }
 }

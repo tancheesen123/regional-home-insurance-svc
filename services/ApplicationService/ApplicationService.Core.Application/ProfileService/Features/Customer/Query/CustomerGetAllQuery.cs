@@ -1,4 +1,4 @@
-﻿using ApplicationService.Core.Application.AuthService.DTOs;
+using ApplicationService.Core.Application.AuthService.DTOs;
 using ApplicationService.Core.Application.ProfileService.DTOs.Customer;
 using ApplicationService.Core.Application.ProfileService.Interfaces.Services;
 using AutoMapper;
@@ -27,13 +27,7 @@ namespace ApplicationService.Core.Application.ProfileService.Features.Customer.Q
             public async Task<Response<CustomerGetAllResponse>> Handle(CustomerGetAllQuery request, CancellationToken cancellationToken)
             {
                 _logger.LogInformation("=== Start CustomerGetAllQueryHandler ===");
-                //if (string.IsNullOrEmpty(request.CountryCode))
-                //{
-                //    throw new ValidationException("Country Code cannot be empty!");
-                //}
                 CustomerGetAllResponse retieveResult = await _customerService.GetAllCustomerAsync();
-                //RetrieveMotorProposalResponse response = new RetrieveMotorProposalResponse();
-                //response = await _motorcarService.RetrieveMotorProposalAsync(retieveResult, true, false);
                 return new Response<CustomerGetAllResponse>(retieveResult);
             }
         }

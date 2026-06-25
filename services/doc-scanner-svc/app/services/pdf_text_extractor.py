@@ -11,7 +11,7 @@ import io
 
 import pdfplumber
 
-MIN_CHARS = 50   # minimum characters to consider a PDF as text-based
+MIN_CHARS = 50
 
 
 class PdfTextExtractor:
@@ -33,5 +33,4 @@ class PdfTextExtractor:
                 return full_text if len(full_text) >= MIN_CHARS else None
 
         except Exception:
-            # Corrupt or unreadable PDF — fall back to vision path
             return None

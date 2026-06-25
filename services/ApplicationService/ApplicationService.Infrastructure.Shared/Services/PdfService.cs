@@ -7,17 +7,6 @@ using System.Text;
 
 namespace ApplicationService.Infrastructure.Shared.Services
 {
-    /// <summary>
-    /// HTML-to-PDF conversion using DinkToPdf (wkhtmltopdf wrapper).
-    ///
-    /// IMPORTANT — native library setup:
-    ///   Windows : copy libwkhtmltox.dll (64-bit) next to the published executable.
-    ///   Linux   : copy libwkhtmltox.so  next to the published executable.
-    ///   Download from https://github.com/wkhtmltopdf/wkhtmltopdf/releases
-    ///   or use the helper loader below (CustomAssemblyLoadContext) if needed.
-    ///
-    /// DI registration: MUST be Singleton — SynchronizedConverter is not scoped-safe.
-    /// </summary>
     public class PdfService : IPdfService
     {
         private readonly IConverter          _converter;
@@ -70,13 +59,11 @@ namespace ApplicationService.Infrastructure.Shared.Services
             return Task.FromResult(pdfBytes);
         }
 
-        /// <inheritdoc />
         public byte[] EncryptPdf(byte[] pdfBytes, string password)
         {
             try
             {
                 var userPwd  = Encoding.UTF8.GetBytes(password);
-                // Owner password is randomised — prevents the document being modified without iText
                 var ownerPwd = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString("N"));
 
                 var writerProps = new WriterProperties()

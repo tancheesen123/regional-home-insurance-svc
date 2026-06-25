@@ -11,7 +11,7 @@ export default function QuotationJourney() {
 
   return (
     <div className="space-y-6">
-      {/* AI Scanner — collapses to a strip after scan or skip */}
+      {}
       <DocumentScanner
         onScanComplete={(result) => {
           setScanResult(result)
@@ -22,7 +22,7 @@ export default function QuotationJourney() {
         collapsed={scannerDone}
       />
 
-      {/* Quotation form — always visible */}
+      {}
       <QuotationForm scanResult={scanResult} />
     </div>
   )

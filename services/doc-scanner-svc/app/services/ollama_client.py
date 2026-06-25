@@ -8,9 +8,7 @@ import httpx
 
 from app.config import settings
 
-# Ollama model name may include a tag (e.g. "llama3.2-vision:11b").
-# /api/tags returns names with tags, so a substring match is safe.
-_MODEL_TIMEOUT   = 600.0   # seconds — CPU inference can take 3–10 min without a GPU
+_MODEL_TIMEOUT   = 600.0
 _HEALTH_TIMEOUT  = 5.0
 
 
@@ -19,7 +17,6 @@ class OllamaClient:
         self._base_url = settings.ollama_base_url.rstrip("/")
         self._model    = settings.model_name
 
-    # ── Availability ──────────────────────────────────────────────────────────
 
     async def is_available(self) -> bool:
         """
@@ -36,7 +33,6 @@ class OllamaClient:
         except Exception:
             return False
 
-    # ── Inference ─────────────────────────────────────────────────────────────
 
     async def chat_with_image(self, prompt: str, image_bytes: bytes) -> str:
         """

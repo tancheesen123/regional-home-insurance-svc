@@ -1,10 +1,9 @@
 import { request, APIResponse } from "./client"
 
-// ── Initiate Payment ──────────────────────────────────────────────────────────
 
 export interface InitiatePaymentPayload {
   proposalId: string
-  paymentMethod: string   // "card" | "online_banking" | "ewallet"
+  paymentMethod: string
 }
 
 export interface InitiatePaymentData {
@@ -15,7 +14,6 @@ export interface InitiatePaymentData {
   currency: string
   paymentMethod: string
   gatewayName: string
-  /** Only present for Stripe regions (MY). Absent for Paynamics (PH), DOKU (ID), iPay88 (KH). */
   stripeSession?: {
     sessionId: string
     checkoutUrl: string
@@ -36,7 +34,6 @@ export async function initiatePayment(
   })
 }
 
-// ── Cancel Payment ────────────────────────────────────────────────────────────
 
 export interface CancelPaymentData {
   referenceNumber: string
@@ -44,11 +41,6 @@ export interface CancelPaymentData {
   message: string
 }
 
-/**
- * Marks a still-PENDING payment as CANCELLED so the customer can retry payment
- * for the same proposal. Called from the payment-failed page when Stripe redirects
- * the customer back with `reason=cancelled`. Public endpoint — no auth required.
- */
 export async function cancelPayment(referenceNumber: string): Promise<APIResponse<CancelPaymentData>> {
   return request<CancelPaymentData>(`/payment/CancelPayment?ref=${encodeURIComponent(referenceNumber)}`, {
     method: "POST",

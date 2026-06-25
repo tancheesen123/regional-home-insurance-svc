@@ -15,7 +15,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
 
         private ApplicationDbContext Db => _resolver.Resolve();
 
-        // ── RegionConfig ──────────────────────────────────────────────────────
 
         public Task<RegionConfig?> GetRegionConfigAsync(string region) =>
             Db.RegionConfigs
@@ -31,7 +30,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             await Task.CompletedTask;
         }
 
-        // ── RateMultiplierConfig ──────────────────────────────────────────────
 
         public Task<List<RateMultiplierConfig>> GetMultipliersAsync(string region, string type) =>
             Db.RateMultiplierConfigs
@@ -48,7 +46,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             await Task.CompletedTask;
         }
 
-        // ── AddOn ─────────────────────────────────────────────────────────────
 
         public Task<List<AddOn>> GetAddOnsAsync() =>
             Db.AddOns.Where(a => a.IsActive).OrderBy(a => a.Code).ToListAsync();
@@ -62,7 +59,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             await Task.CompletedTask;
         }
 
-        // ── Snapshots ─────────────────────────────────────────────────────────
 
         public async Task<RateConfigSnapshot> SaveSnapshotAsync(RateConfigSnapshot snapshot)
         {
@@ -80,7 +76,6 @@ namespace ApplicationService.Infrastructure.Persistence.Repositories
             Db.RateConfigSnapshots
               .FirstOrDefaultAsync(s => s.Id == snapshotId);
 
-        // ── Seeder ────────────────────────────────────────────────────────────
 
         public Task<bool> HasRegionConfigAsync(string region) =>
             Db.RegionConfigs.AnyAsync(r => r.Region == region);

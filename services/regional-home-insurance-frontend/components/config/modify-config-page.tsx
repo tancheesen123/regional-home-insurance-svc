@@ -28,7 +28,6 @@ import {
 } from "@/lib/api/rate-config"
 import { cn } from "@/lib/utils"
 
-// ─── Country derived from session (admins only see their own region) ──────────
 
 type CountryCode = "ID" | "PH" | "KH"
 

@@ -18,10 +18,8 @@ from app.services.ollama_client import OllamaClient
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
-# Low-confidence threshold — items below this get flagged
 _LOW_CONF = 0.70
 
-# Currency config per region
 _CURRENCY: dict[str, dict] = {
     "PH": {
         "code":         "PHP",
@@ -47,7 +45,6 @@ class ContentExtractorService:
         self._client      = GroqClient() if settings.use_groq else OllamaClient()
         self._image_utils = ImageUtils()
 
-    # ── Public ────────────────────────────────────────────────────────────────
 
     async def extract_room(
         self,
@@ -69,7 +66,6 @@ class ContentExtractorService:
 
         return self._parse_room(raw, photo_index)
 
-    # ── Prompt ────────────────────────────────────────────────────────────────
 
     def _build_prompt(self, country_code: str) -> str:
         cfg = _CURRENCY.get(country_code.upper(), _DEFAULT_CURRENCY)
@@ -82,7 +78,6 @@ class ContentExtractorService:
             .replace("{minValue}",     cfg["minValue"])
         )
 
-    # ── Parsing ───────────────────────────────────────────────────────────────
 
     def _parse_room(self, raw: str, photo_index: int) -> RoomResult:
         json_str = _strip_to_json(raw)
@@ -140,7 +135,6 @@ class ContentExtractorService:
         )
 
 
-# ── Merge helper ──────────────────────────────────────────────────────────────
 
 def build_content_result(
     rooms:        list[RoomResult],
@@ -153,7 +147,6 @@ def build_content_result(
     cfg      = _CURRENCY.get(country_code.upper(), _DEFAULT_CURRENCY)
     warnings: list[str] = []
 
-    # Merge rooms with the same roomType
     merged: dict[str, RoomResult] = {}
     for room in rooms:
         key = room.roomType.lower()
@@ -204,7 +197,6 @@ def build_content_result(
     )
 
 
-# ── Utilities ─────────────────────────────────────────────────────────────────
 
 def _to_float(val) -> float:
     try:
