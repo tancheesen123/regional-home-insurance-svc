@@ -503,7 +503,7 @@ const StickyBar = memo(function StickyBar({
                 : !selProvName ? "Select a province and enter your built-up area to see an estimate."
                 : `Enter your built-up area (${areaUnit}) above to see an estimate.`}
             </p>
-            <Button disabled className="shrink-0 gap-1.5 opacity-40">
+            <Button disabled className="bg-[#E0E0E0] text-[#9E9E9E] hover:bg-[#E0E0E0] h-10 rounded-lg shrink-0 gap-1.5 cursor-not-allowed">
               {bccLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               {t("calculator.buildingCalcConfirm")}
               <ArrowRight className="h-4 w-4" />
