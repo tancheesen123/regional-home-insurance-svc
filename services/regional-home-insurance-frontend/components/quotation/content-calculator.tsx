@@ -67,7 +67,7 @@ export default function ContentCalculator({
   const countryCode = getSession()?.countryCode ?? "ID"
 
   const { state: sidebarState, isMobile } = useSidebar()
-  const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "16rem" : "3rem"
+  const stickyLeft = isMobile ? "0px" : sidebarState === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)"
 
   const [amounts, setAmounts] = useState<RoomAmounts>(initialAmounts ?? EMPTY_ROOM_AMOUNTS)
 
