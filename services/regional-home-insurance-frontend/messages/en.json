@@ -555,6 +555,8 @@
       "floodingBlock": "Sorry, we cannot provide a quote for a property currently experiencing flooding. Please contact our branch for assistance.",
       "passportFormat": "Passport number must be 6-9 letters or digits",
       "ktpFormat": "KTP (NIK) number must be 16 digits",
+      "philFormat": "PhilID number must be 16 digits",
+      "khmerFormat": "Khmer ID number must be 9 digits",
       "emailFormat": "Please enter a valid email address",
       "fixHighlighted": "Please complete the highlighted fields before continuing.",
       "completeAddress": "Please complete the property address (province, city, postcode)"

@@ -555,6 +555,8 @@
       "floodingBlock": "Maaf, kami tidak dapat memberikan penawaran untuk properti yang sedang mengalami banjir. Silakan hubungi cabang kami untuk bantuan.",
       "passportFormat": "Nomor paspor harus 6-9 huruf atau angka",
       "ktpFormat": "Nomor KTP (NIK) harus 16 digit",
+      "philFormat": "Nomor PhilID harus 16 digit",
+      "khmerFormat": "Nomor Khmer ID harus 9 digit",
       "emailFormat": "Masukkan alamat email yang valid",
       "fixHighlighted": "Lengkapi kolom yang ditandai sebelum melanjutkan.",
       "completeAddress": "Lengkapi alamat properti (provinsi, kota, kode pos)"

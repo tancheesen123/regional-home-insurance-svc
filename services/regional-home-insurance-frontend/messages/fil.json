@@ -555,6 +555,8 @@
       "floodingBlock": "Paumanhin, hindi kami makapagbigay ng quote para sa ari-arian na kasalukuyang binabaha. Makipag-ugnayan sa aming sangay para sa tulong.",
       "passportFormat": "Ang passport number ay dapat 6-9 na letra o digit",
       "ktpFormat": "Ang ID number ay dapat 16 na digit",
+      "philFormat": "Ang PhilID number ay dapat 16 na digit",
+      "khmerFormat": "Ang Khmer ID number ay dapat 9 na digit",
       "emailFormat": "Maglagay ng wastong email address",
       "fixHighlighted": "Kumpletuhin ang mga naka-highlight na field bago magpatuloy.",
       "completeAddress": "Kumpletuhin ang address ng ari-arian (lalawigan, lungsod, postcode)"

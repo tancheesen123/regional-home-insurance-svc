@@ -65,11 +65,16 @@ function getIdInputLabel(cc: string): string {
 }
 
 function getIdInputMode(cc: string): "numeric" | "text" {
-  return cc.toUpperCase() === "ID" ? "numeric" : "text"
+  return ["ID", "PH", "KH"].includes(cc.toUpperCase()) ? "numeric" : "text"
 }
 
 function getIdMaxLength(cc: string): number | undefined {
-  return cc.toUpperCase() === "ID" ? 16 : undefined
+  switch (cc.toUpperCase()) {
+    case "ID": return 16
+    case "PH": return 16
+    case "KH": return 9
+    default:   return undefined
+  }
 }
 
 function normaliseNationality(raw: string): string {
@@ -223,7 +228,9 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       } else {
         const rawId = raw.idNumber ?? raw.nik
         if (rawId?.filled && rawId.value && !prev.nricNumber) {
-          next.nricNumber = rawId.value
+          next.nricNumber = ["ID", "PH", "KH"].includes(countryCode)
+            ? rawId.value.replace(/\D/g, "")
+            : rawId.value
         }
       }
 
@@ -297,6 +304,8 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
       const id = formData.nricNumber.trim()
       if (!id) e.idNumber = t("validation.required")
       else if (countryCode === "ID" && !/^\d{16}$/.test(id)) e.idNumber = t("validation.ktpFormat")
+      else if (countryCode === "PH" && !/^\d{16}$/.test(id)) e.idNumber = t("validation.philFormat")
+      else if (countryCode === "KH" && !/^\d{9}$/.test(id))  e.idNumber = t("validation.khmerFormat")
     }
 
     if (!formData.dateOfBirth) e.dateOfBirth = t("validation.selectDate")
@@ -691,7 +700,7 @@ export default function QuotationForm({ scanResult }: QuotationFormProps = {}) {
                   value={formData.nricNumber}
                   onChange={(e) => handleInputChange(
                     "nricNumber",
-                    countryCode === "ID" ? e.target.value.replace(/\D/g, "") : e.target.value,
+                    ["ID", "PH", "KH"].includes(countryCode) ? e.target.value.replace(/\D/g, "") : e.target.value,
                   )}
                   className={cn("border-[#E0E0E0] rounded-lg h-10", fieldErrors.idNumber && "border-[#D32F2F]")}
                   placeholder={t("form.nricPlaceholder")}
