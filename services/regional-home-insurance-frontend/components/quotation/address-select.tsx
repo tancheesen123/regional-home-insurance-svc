@@ -85,6 +85,12 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
 }
 
 
+// Normalise a name for fuzzy matching OCR-scanned address text against API lookups:
+// lowercase, trim, strip "kabupaten"/"kota" prefix (Indonesia-specific, no-op elsewhere)
+function normName(s: string) {
+  return s.toLowerCase().replace(/^(kabupaten|kota)\s+/i, "").trim()
+}
+
 function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCode">) {
   const [provinces, setProvinces] = useState<PhProvince[]>([])
   const [cities,    setCities]    = useState<PhCityMuni[]>([])
@@ -93,12 +99,41 @@ function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
   const [loadProv,  setLoadProv]  = useState(true)
   const [loadCity,  setLoadCity]  = useState(false)
 
+  // Track auto-fill attempts so we don't retry after a failed match
+  const autoFilled = useRef({ prov: false, city: false })
+
   useEffect(() => {
     fetchPhProvinces().then((data) => {
       setProvinces(data)
       setLoadProv(false)
     })
   }, [])
+
+  // Auto-match province from OCR value (values.state)
+  useEffect(() => {
+    if (autoFilled.current.prov || selProv || !values.state || provinces.length === 0) return
+    const target = normName(values.state)
+    const match = provinces.find((p) => normName(p.name) === target)
+    if (!match) return
+    autoFilled.current.prov = true
+    setSelProv(match.code)
+    setLoadCity(true)
+    fetchPhCities(match.code).then((list) => {
+      setCities(list)
+      setLoadCity(false)
+    })
+  }, [provinces, selProv, values.state])
+
+  // Auto-match city/municipality from OCR value (values.city)
+  useEffect(() => {
+    if (autoFilled.current.city || selCity || !values.city || cities.length === 0) return
+    const target = normName(values.city)
+    const match = cities.find((c) => normName(c.name) === target)
+    if (!match) return
+    autoFilled.current.city = true
+    setSelCity(match.code)
+    onChange({ city: match.name, postcode: match.zip_code })
+  }, [cities, selCity, values.city, onChange])
 
   const handleProvince = useCallback(async (code: string) => {
     const prov = provinces.find((p) => p.code === code)
@@ -152,11 +187,6 @@ function PhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
 }
 
 // ── Indonesia component ───────────────────────────────────────────────────────
-
-// Normalise a name for fuzzy matching: lowercase, strip "kabupaten"/"kota" prefix
-function normName(s: string) {
-  return s.toLowerCase().replace(/^(kabupaten|kota)\s+/i, "").trim()
-}
 
 function IdAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCode">) {
   const [provinces,  setProvinces]  = useState<IdOption[]>([])
@@ -374,12 +404,55 @@ function KhAddressSelect({ values, onChange, disabled }: Omit<Props, "countryCod
   const [loadDist, setLoadDist] = useState(false)
   const [loadComm, setLoadComm] = useState(false)
 
+  // Track auto-fill attempts so we don't retry after a failed match
+  const autoFilled = useRef({ prov: false, dist: false, comm: false })
+
   useEffect(() => {
     fetchKhProvinces().then((data) => {
       setProvinces(data)
       setLoadProv(false)
     })
   }, [])
+
+  // Auto-match province from OCR value (values.state)
+  useEffect(() => {
+    if (autoFilled.current.prov || selProv || !values.state || provinces.length === 0) return
+    const target = normName(values.state)
+    const match = provinces.find((p) => normName(p.name.latin) === target)
+    if (!match) return
+    autoFilled.current.prov = true
+    setSelProv(match.id)
+    setLoadDist(true)
+    fetchKhDistricts(match.id).then((list) => {
+      setDistricts(list)
+      setLoadDist(false)
+    })
+  }, [provinces, selProv, values.state])
+
+  // Auto-match district from OCR value (values.city — KH stores district under "city")
+  useEffect(() => {
+    if (autoFilled.current.dist || selDist || !values.city || districts.length === 0) return
+    const target = normName(values.city)
+    const match = districts.find((d) => normName(d.name.latin) === target)
+    if (!match) return
+    autoFilled.current.dist = true
+    setSelDist(match.id)
+    setLoadComm(true)
+    fetchKhCommunes(match.id).then((list) => {
+      setCommunes(list)
+      setLoadComm(false)
+    })
+  }, [districts, selDist, values.city])
+
+  // Auto-match commune from OCR value (values.village)
+  useEffect(() => {
+    if (autoFilled.current.comm || selComm || !values.village || communes.length === 0) return
+    const target = normName(values.village)
+    const match = communes.find((c) => normName(c.name.latin) === target)
+    if (!match) return
+    autoFilled.current.comm = true
+    setSelComm(match.id)
+  }, [communes, selComm, values.village])
 
   const handleProvince = useCallback(async (id: string) => {
     const prov = provinces.find((p) => p.id === id)
