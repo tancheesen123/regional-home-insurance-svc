@@ -1,157 +1,152 @@
+================================================================================
+  REGIONAL HOME INSURANCE ONLINE PURCHASE SYSTEM (RhiOPs)
+  Developer Reference
+================================================================================
 
+OVERVIEW
+--------
+Monorepo with three services:
+
+  Service                           Tech                      Default port
+  --------------------------------  ------------------------  -----------------------------
+  ApplicationService (backend)      C# / ASP.NET Core 9       see Properties/launchSettings.json
+  doc-scanner-svc (AI scanning)     Python / FastAPI          see .env.example / app config
+  regional-home-insurance-frontend  Next.js 15 / React 19     http://localhost:3000
+
+Regions: PH (Philippines) · ID (Indonesia) · KH (Cambodia)
+Each region has its own SQL Server database (PH, ID, KH).
+
+
+================================================================================
+  1. ApplicationService (C# / ASP.NET Core 9)
+================================================================================
+
+PREREQUISITES
+  - .NET 9 SDK
+  - SQL Server (local or remote)
+  - A Gmail account with an App Password (for sending email)
+  - A Stripe account in test mode (for payments)
+
+SOLUTION
+  services/ApplicationService/ApplicationService.sln
+
+PROJECT LAYERS
+  ApplicationService.Core.Domain                 Entities
+  ApplicationService.Core.Application            Features (CQRS via MediatR), service interfaces, DTOs
+  ApplicationService.Infrastructure.Persistence  EF Core DbContexts, migrations, repositories
+  ApplicationService.Infrastructure.Shared       Email, PDF generation, HTTP clients
+  ApplicationService.WebAPI                      Controllers, DI wiring, entry point
 
-cd UserService.WebAPI
-dotnet add package Swashbuckle.AspNetCore --version 6.9.0
-dotnet add package Microsoft.OpenApi --version 1.6.22
+REGION ROUTING
+  Every API request must include the header:
+    X-Country-Code: PH   (or ID or KH)
+  The backend uses it to select the matching regional DbContext.
 
 
-migration
+CONFIGURATION
+-------------
+Do NOT commit real secrets. Keep committed config files to placeholders only.
 
-cd D:\regional-home-insurance-svc\services\ApplicationService
+Option A: environment variables (recommended)
+  1. Copy services/ApplicationService/ApplicationService.WebAPI/.env.example to .env
+  2. Fill in your local values (.env is gitignored)
 
-for 3 region db
+Option B: .NET user secrets (per machine, outside the repo)
+  cd services/ApplicationService/ApplicationService.WebAPI
+  dotnet user-secrets set "JwtSettings:Secret" "<min 32 chars>"
+  dotnet user-secrets set "EmailSettings:Password" "<gmail app password>"
+  dotnet user-secrets set "StripeSettings:SecretKey" "sk_test_..."
 
-dotnet ef migrations add Init --context PHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+Settings used (see appsettings.json for the full list):
+  ConnectionStrings:PHUnityDb / IDUnityDb / KHUnityDb   SQL Server connection strings
+  JwtSettings:Secret                                    Must be at least 32 characters
+  EmailSettings:Username / Password                     Gmail address and App Password
+  StripeSettings:SecretKey / PublishableKey / WebhookSecret
 
-dotnet ef migrations add Init --context IDApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
 
-dotnet ef migrations add Init --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+DATABASE SETUP (EF Core migrations)
+-----------------------------------
+Run from services/ApplicationService. Repeat for PH, ID and KH contexts.
 
-db update
+  dotnet ef database update --context PHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+  dotnet ef database update --context IDApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+  dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
 
-dotnet ef database update --context PHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+To add a new migration (example name "AddPaymentFields"):
 
-dotnet ef database update --context IDApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+  dotnet ef migrations add AddPaymentFields --context PHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+  dotnet ef migrations add AddPaymentFields --context IDApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+  dotnet ef migrations add AddPaymentFields --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
 
-dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+Then run the three `database update` commands above.
 
 
-dotnet ef migrations add NewSchema --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+TEST DATA
+---------
+Create your own test users through the Register page, or insert sample rows
+using clearly fake data (e.g. names like "Test User One", emails on
+example.com, and placeholder ID numbers). Never commit real customer data.
 
 
+STRIPE SETUP
+------------
+1. Get test keys from https://dashboard.stripe.com/test/apikeys
+     sk_test_...   -> StripeSettings:SecretKey
+     pk_test_...   -> StripeSettings:PublishableKey
+2. Create a webhook endpoint in the Stripe dashboard pointing to
+     https://<your-public-host>/api/payment/Callback
+   Events:
+     - checkout.session.completed
+     - checkout.session.expired
+3. Copy the signing secret (whsec_...) -> StripeSettings:WebhookSecret
 
-dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
 
+ADDING A NEW API ENDPOINT
+-------------------------
+1. Create a controller in WebAPI/Controllers
+2. Create the query or command inside its feature folder in Core.Application
+3. Create the response DTO
+4. Create the service and its interface
+5. Create the repository (interface in Core.Application, implementation in Persistence)
+6. Register new services in WebAPI/Extensions/ApplicationServiceExtensions.cs
+   and new repositories in WebAPI/Extensions/PersistenceServiceExtensions.cs
+7. Register AutoMapper profiles if the endpoint maps DTOs
 
+Public endpoints (e.g. registration) must opt out of the global authorization filter:
 
-sql script
+  [AllowAnonymous]
+  [HttpPost("[action]")]
+  public async Task<IActionResult> Register(...) { }
 
-USE IDUnityDb;
 
-INSERT INTO UserAccounts (UserId, Email, HashedPassword, IsVerified) VALUES
-('USR-ID-001', 'budi.santoso@email.id',  'hashed_password_1', 1),
-('USR-ID-002', 'siti.rahayu@email.id',   'hashed_password_2', 1),
-('USR-ID-003', 'agus.widodo@email.id',   'hashed_password_3', 0);
+================================================================================
+  2. doc-scanner-svc (Python / FastAPI)
+================================================================================
 
-INSERT INTO Customers (CustomerId, Name, IcNumber, Address, Contact, Email, Region, UserId) VALUES
-('CUST-ID-001', 'Budi Santoso', 'ID-KTP-3201012345', 'Jl. Sudirman No. 10, Jakarta Pusat, DKI Jakarta', '+62 812 1234 5678', 'budi.santoso@email.id', 'ID', 'USR-ID-001'),
-('CUST-ID-002', 'Siti Rahayu',  'ID-KTP-3578029876', 'Jl. Raya Darmo No. 55, Surabaya, Jawa Timur',    '+62 813 2345 6789', 'siti.rahayu@email.id',  'ID', 'USR-ID-002'),
-('CUST-ID-003', 'Agus Widodo',  'ID-KTP-3471034567', 'Jl. Malioboro No. 88, Yogyakarta, DIY',           '+62 814 3456 7890', 'agus.widodo@email.id',  'ID', 'USR-ID-003');
+  cd services/doc-scanner-svc
+  cp .env.example .env        # fill in local values
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload
 
+Settings: Groq API key (cloud) or local Ollama (llama3.2-vision).
+JWT secret, issuer and audience must match ApplicationService.
 
-Step to Add new API
-- Create new controller
-- create query (inside feature)
-- create response (inside DTO)\
-- create service
-- create service interface
-- create repository
--update mapping customerMappingProfile (webAPI -> Extension ->ApplicationServiceExtension)
--update persistenceServiceExtension (webAPI -> Extension ->PersistenceServiceExtension)
 
-//ignore jwt token
-Adding [AllowAnonymous] to future public endpoints (e.g., registration):
+================================================================================
+  3. Frontend (Next.js 15)
+================================================================================
 
-[AllowAnonymous]
-[HttpPost("[action]")]
-public async Task<IActionResult> Register(...) { }
+  cd services/regional-home-insurance-frontend
+  npm install        # or pnpm install
+  npm run dev        # http://localhost:3000
 
-dotnet ef migrations add AddProfilePictureToCustomer --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
-dotnet ef database update --context KHApplicationDbContext --project ApplicationService.Infrastructure.Persistence --startup-project ApplicationService.WebAPI
+The frontend calls ApplicationService with the header X-Country-Code and a JWT
+Bearer token. Point it at the backend URL configured in its environment file.
 
 
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
-
-dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef migrations add UpdateCustomerAndAddPaymentMethod --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-
-dotnet ef database update --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef database update --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-
-
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
-
-dotnet ef migrations add RemoveProfilePicturePath --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef migrations add RemoveProfilePicturePath --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef migrations add RemoveProfilePicturePath --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-
-dotnet ef database update --context PHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef database update --context IDApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-dotnet ef database update --context KHApplicationDbContext --startup-project "..\ApplicationService.WebAPI"
-
-
-
-# From the Persistence project folder
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
-
-dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-
-dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-
-dotnet ef migrations add AddQuotationPlanFields --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-# Then update all three DBs
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
-
-dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-
-dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-
-dotnet ef migrations add AddValuableItemCategory --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-
-
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.Infrastructure.Persistence
-
-dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-
-dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-
-dotnet ef migrations add AddPaymentFields --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context PHApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context IDApplicationDbContext
-dotnet ef database update --startup-project "..\ApplicationService.WebAPI" --context KHApplicationDbContext
-
-
-1. Install NuGet package
-   cd ApplicationService.Core.Application
-   dotnet add package Stripe.net
-
-2. Get your keys from https://dashboard.stripe.com/apikeys
-   sk_test_...   → StripeSettings:SecretKey
-   pk_test_...   → StripeSettings:PublishableKey
-
-3. Create a webhook endpoint in Stripe Dashboard
-   URL: https://yourdomain.com/api/payment/Callback   (Step 7)
-   Events to listen for:
-     ✓ checkout.session.completed
-     ✓ checkout.session.expired
-   Copy the signing secret (whsec_...) → StripeSettings:WebhookSecret
-
-4. Update appsettings.json with the real values
-
-
-cd D:\regional-home-insurance-svc\services\ApplicationService\ApplicationService.WebAPI
-dotnet add package DotNetEnv
+================================================================================
+  SECURITY NOTES
+================================================================================
+  - Never commit appsettings*.json values, .env files, API keys or passwords.
+  - Rotate any credential that has been committed to git history.
+  - Use test-mode Stripe keys and sample data only in development.
